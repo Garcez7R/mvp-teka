@@ -15,6 +15,13 @@
       "when": 1772546724911,
       "tag": "0001_tricky_vivisector",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1772567109896,
+      "tag": "0002_parched_gamora",
+      "breakpoints": true
     }
   ]
 }

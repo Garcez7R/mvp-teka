@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
@@ -8,6 +9,7 @@ import { toast } from "sonner";
 import { put } from "@vercel/blob";
 
 export default function AddBook() {
+  const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     title: "",
@@ -188,6 +190,11 @@ export default function AddBook() {
       setCoverFile(null);
 
       toast.success("Livro cadastrado com sucesso! 📚");
+      
+      // Redirect to manage books after 1 second
+      setTimeout(() => {
+        navigate("/manage-books");
+      }, 1000);
     } catch (error: any) {
       toast.error(error.message || "Erro ao cadastrar livro");
       console.error(error);

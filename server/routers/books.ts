@@ -84,6 +84,29 @@ export const booksRouter = router({
       return { ...book, sebo };
     }),
 
+  // List books by sebo (for seller/owner)
+  listBySebo: protectedProcedure
+    .input(z.number())
+    .query(async ({ input, ctx }) => {
+      // Verify user owns this sebo
+      const sebo = await db
+        .select()
+        .from(sebos)
+        .where(eq(sebos.id, input))
+        .then((res) => res[0]);
+
+      if (!sebo || sebo.userId !== ctx.userId) {
+        throw new Error("Unauthorized");
+      }
+
+      const data = await db
+        .select()
+        .from(books)
+        .where(eq(books.seboId, input));
+
+      return data;
+    }),
+
   // Create new book (seller only)
   create: protectedProcedure
     .input(

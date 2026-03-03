@@ -16,6 +16,7 @@ export const users = mysqlTable("users", {
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
+  whatsapp: varchar("whatsapp", { length: 20 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin", "livreiro", "comprador"]).default("comprador").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

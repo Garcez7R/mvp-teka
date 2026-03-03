@@ -1,6 +1,10 @@
 import { Link } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 export default function Header() {
+  const { isAuthenticated, user } = useAuth();
+
   return (
     <header className="sticky top-0 z-50 bg-[#da4653] border-b border-gray-200 shadow-sm">
       <div className="container flex items-center justify-between h-16">
@@ -15,10 +19,34 @@ export default function Header() {
           <Link href="/" className="text-[#262969] hover:text-[#262969] hover:opacity-70 transition-all font-inter text-sm font-medium">
             Catálogo
           </Link>
+          
+          {isAuthenticated && (
+            <>
+              <Link href="/manage-books" className="text-[#262969] hover:text-[#262969] hover:opacity-70 transition-all font-inter text-sm font-medium">
+                Meus Livros
+              </Link>
+              <Link href="/add-book" className="text-[#262969] hover:text-[#262969] hover:opacity-70 transition-all font-inter text-sm font-medium bg-white/20 px-3 py-1 rounded">
+                + Livro
+              </Link>
+            </>
+          )}
+          
           <Link href="/about" className="text-[#262969] hover:text-[#262969] hover:opacity-70 transition-all font-inter text-sm font-medium">
             Sobre
           </Link>
 
+          {!isAuthenticated ? (
+            <a
+              href={getLoginUrl()}
+              className="text-[#262969] hover:text-[#262969] hover:opacity-70 transition-all font-inter text-sm font-medium border border-[#262969] px-3 py-1 rounded hover:bg-white/10"
+            >
+              Login
+            </a>
+          ) : (
+            <span className="text-[#262969] font-inter text-sm">
+              Olá, {user?.name?.split(" ")[0] || "Usuário"}
+            </span>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}

@@ -8,6 +8,8 @@ import Home from "./pages/Home";
 import Book from "./pages/Book";
 import About from "./pages/About";
 import AddBook from "./pages/AddBook";
+import CreateSebo from "./pages/CreateSebo";
+import ManageBooks from "./pages/ManageBooks";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -16,6 +18,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/book/:id" component={Book} />
       <Route path="/add-book" component={AddBook} />
+      <Route path="/manage-books" component={ManageBooks} />
+      <Route path="/sebo/novo" component={CreateSebo} />
       <Route path="/about" component={About} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
