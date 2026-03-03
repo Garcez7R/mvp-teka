@@ -10,6 +10,9 @@ export default function AddBook() {
   const [, navigate] = useLocation();
   const [formData, setFormData] = useState({
     seboId: "",
+    // when creating a new sebo inline:
+    newSeboName: "",
+    newSeboWhatsapp: "",
     title: "",
     author: "",
     isbn: "",
@@ -20,6 +23,7 @@ export default function AddBook() {
     pages: "",
     year: "",
   });
+  const [creatingSebo, setCreatingSebo] = useState(false);
 
   const [coverUrl, setCoverUrl] = useState<string>("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -28,6 +32,7 @@ export default function AddBook() {
   const [isUploading, setIsUploading] = useState(false);
 
   const createBookMutation = trpc.books.create.useMutation();
+  const createSeboMutation = trpc.sebos.create.useMutation();
   const { data: sebosList = [] } = trpc.sebos.list.useQuery(); // retrieve all sebos for the dropdown
 
   const searchOpenLibraryCover = async () => {
@@ -86,8 +91,12 @@ export default function AddBook() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.price || !formData.seboId) {
+    if (!formData.title || !formData.price || (!formData.seboId && !creatingSebo)) {
       toast.error("Preencha os campos obrigatórios");
+      return;
+    }
+    if (creatingSebo && (!formData.newSeboName || !formData.newSeboWhatsapp)) {
+      toast.error("Informe nome e WhatsApp do novo sebo");
       return;
     }
 
@@ -115,9 +124,25 @@ export default function AddBook() {
         }
       }
 
-      // create book for selected sebo
+      // decide sebo id: either existing or newly created
+      let seboIdToUse: number;
+      if (creatingSebo) {
+        const newSebo = await createSeboMutation.mutateAsync({
+          name: formData.newSeboName,
+          whatsapp: formData.newSeboWhatsapp,
+          description: undefined,
+          city: undefined,
+          state: undefined,
+        });
+        // trpc returns array of inserted ids
+        seboIdToUse = newSebo[0].id;
+      } else {
+        seboIdToUse = parseInt(formData.seboId);
+      }
+
+      // create book for sebo
       await createBookMutation.mutateAsync({
-        seboId: parseInt(formData.seboId),
+        seboId: seboIdToUse,
         title: formData.title,
         author: formData.author || "Desconhecido",
         isbn: formData.isbn || undefined,
@@ -135,6 +160,8 @@ export default function AddBook() {
       // Reset form
       setFormData({
         seboId: "",
+        newSeboName: "",
+        newSeboWhatsapp: "",
         title: "",
         author: "",
         isbn: "",
@@ -145,6 +172,7 @@ export default function AddBook() {
         pages: "",
         year: "",
       });
+      setCreatingSebo(false);
       setCoverUrl("");
       setCoverFile(null);
       
@@ -187,30 +215,88 @@ export default function AddBook() {
               </h2>
             </div>
 
-            <div className="md:col-span-2 flex items-center justify-between">
-              <div>
-                <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                  Sebo *
+            <div className="md:col-span-2">
+              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
+                Sebo *
+              </label>
+              <div className="flex items-center gap-4 mb-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="seboMode"
+                    checked={!creatingSebo}
+                    onChange={() => setCreatingSebo(false)}
+                  />
+                  Selecionar existente
                 </label>
-                <select
-                  required
-                  value={formData.seboId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, seboId: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
-                >
-                  <option value="">Selecione um sebo</option>
-                  {sebosList.map((s: any) => (
-                    <option key={s.id} value={s.id.toString()}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="seboMode"
+                    checked={creatingSebo}
+                    onChange={() => setCreatingSebo(true)}
+                  />
+                  Cadastrar novo
+                </label>
               </div>
-              <Link href="/sebo/novo" className="text-[#da4653] font-medium hover:underline text-sm">
-                + Novo sebo
-              </Link>
+
+              {creatingSebo ? (
+                <>
+                  <div className="mb-4">
+                    <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
+                      Nome do Sebo *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.newSeboName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, newSeboName: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                      placeholder="Ex: Livraria Clássicos"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
+                      WhatsApp para Contato *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={formData.newSeboWhatsapp}
+                      onChange={(e) =>
+                        setFormData({ ...formData, newSeboWhatsapp: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                      placeholder="11987654321"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="md:col-span-2 flex items-center justify-between">
+                  <div>
+                    <select
+                      required
+                      value={formData.seboId}
+                      onChange={(e) =>
+                        setFormData({ ...formData, seboId: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                    >
+                      <option value="">Selecione um sebo</option>
+                      {sebosList.map((s: any) => (
+                        <option key={s.id} value={s.id.toString()}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Link href="/sebo/novo" className="text-[#da4653] font-medium hover:underline text-sm">
+                    + Novo sebo
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Informações Básicas */}
