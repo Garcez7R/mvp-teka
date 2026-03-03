@@ -16,11 +16,20 @@ const queryClient = new QueryClient({
 });
 
 // Create tRPC client
-const baseUrl = import.meta.env.VITE_PUBLIC_API_URL || "";
+// Determine the API root depending on environment.
+// In local dev we talk to localhost:3000, in production we let Vercel handle
+// the routing via `/api` prefix. The VITE_PUBLIC_API_URL override can be used
+// when running on a custom domain or during preview deployments.
+const apiBase = import.meta.env.VITE_PUBLIC_API_URL
+  ? import.meta.env.VITE_PUBLIC_API_URL
+  : import.meta.env.PROD
+  ? "/api"
+  : "http://localhost:3000";
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: baseUrl ? `${baseUrl}/trpc` : "/trpc",
+      url: `${apiBase}/trpc`,
       fetch(url, options) {
         return fetch(url, {
           ...options,
