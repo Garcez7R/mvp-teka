@@ -5,9 +5,9 @@
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx watch server/_core/index.ts",
-    "build": "tsc --noEmit && vite build",
-    "build:server": "tsc --noEmit && esbuild server/_core/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --external:mysql2",
-    "start": "NODE_ENV=production node dist/index.js",
+    "build": "vite build",
+    "build:server": "true",
+    "start": "tsx server/_core/index.ts",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",

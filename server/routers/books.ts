@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { books, sebos } from "../drizzle/schema.js";
+import { books, sebos } from "../../drizzle/schema";
 import { eq, ilike, and, lte, gte } from "drizzle-orm";
 
 export const booksRouter = router({
@@ -41,11 +41,11 @@ export const booksRouter = router({
       }
 
       if (input.minPrice !== undefined) {
-        filters.push(gte(books.price, input.minPrice));
+        filters.push(gte(books.price, input.minPrice.toString()));
       }
 
       if (input.maxPrice !== undefined) {
-        filters.push(lte(books.price, input.maxPrice));
+        filters.push(lte(books.price, input.maxPrice.toString()));
       }
 
       const where = filters.length > 0 ? and(...filters) : undefined;
@@ -115,7 +115,10 @@ export const booksRouter = router({
 
       const newBook = await db
         .insert(books)
-        .values(input)
+        .values({
+          ...input,
+          price: input.price.toString(),
+        })
         .$returningId();
 
       return newBook;
@@ -159,7 +162,11 @@ export const booksRouter = router({
       }
 
       const { id, ...updateData } = input;
-      await db.update(books).set(updateData).where(eq(books.id, id));
+      const updateDataWithStringPrice = {
+        ...updateData,
+        ...(updateData.price !== undefined && { price: updateData.price.toString() }),
+      };
+      await db.update(books).set(updateDataWithStringPrice).where(eq(books.id, id));
 
       return { success: true };
     }),

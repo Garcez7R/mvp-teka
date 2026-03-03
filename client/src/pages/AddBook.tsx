@@ -154,9 +154,9 @@ export default function AddBook() {
       await createBook.mutateAsync({
         seboId: mySebo.id,
         title: formData.title,
-        author: formData.author || undefined,
+        author: formData.author || "Desconhecido",
         isbn: formData.isbn || undefined,
-        category: formData.category || undefined,
+        category: formData.category || "Outros",
         description: formData.description || undefined,
         price: parseFloat(formData.price),
         condition: formData.condition,

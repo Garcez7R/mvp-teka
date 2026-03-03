@@ -1,16 +1,6 @@
 {
-  "buildCommand": "pnpm build && pnpm build:server",
-  "outputDirectory": "dist",
-  "routes": [
-    {
-      "src": "/trpc/(.*)",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/.*()",
-      "dest": "/public/index.html"
-    }
-  ],
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist/public",
   "env": {
     "NODE_ENV": "production"
   }
