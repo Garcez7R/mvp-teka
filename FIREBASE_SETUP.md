@@ -34,7 +34,7 @@
 
 ## ✅ Passo 4: Pegar Storage Bucket Name
 
-Ainda em "Project Settings":
+Ainda em "Project Settings" :
 
 1. Tab "General"
 2. Procure por "Cloud Storage bucket"
