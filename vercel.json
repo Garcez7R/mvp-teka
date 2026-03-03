@@ -1,6 +1,19 @@
 {
-  "buildCommand": "pnpm build",
-  "outputDirectory": "dist/public",
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist/public" }
+    },
+    {
+      "src": "api/**/*.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/trpc/(.*)", "dest": "/api/trpc.ts" },
+    { "src": "/(.*)", "dest": "/dist/public/$1" }
+  ],
   "env": {
     "NODE_ENV": "production"
   }

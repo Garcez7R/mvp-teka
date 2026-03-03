@@ -23,13 +23,20 @@ const queryClient = new QueryClient({
 const apiBase = import.meta.env.VITE_PUBLIC_API_URL
   ? import.meta.env.VITE_PUBLIC_API_URL
   : import.meta.env.PROD
-  ? "/api"
+  ? "/trpc"
   : "http://localhost:3000";
+// note: when apiBase is "/trpc" above we will end up requesting "/trpc/trpc" which
+// is not desirable, so we override below when building the link
 
+
+
+// We want the final endpoint to be `/trpc` regardless of
+// apiBase.  If apiBase already ends with `/trpc` we avoid adding it twice.
+const trpcUrl = apiBase.replace(/\/trpc$/, "") + "/trpc";
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: `${apiBase}/trpc`,
+      url: trpcUrl,
       fetch(url, options) {
         return fetch(url, {
           ...options,
