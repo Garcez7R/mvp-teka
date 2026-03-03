@@ -9,8 +9,7 @@ import { put } from "@vercel/blob";
 export default function AddBook() {
   const [, navigate] = useLocation();
   const [formData, setFormData] = useState({
-    seboName: "",
-    seboWhatsapp: "",
+    seboId: "",
     title: "",
     author: "",
     isbn: "",
@@ -28,7 +27,6 @@ export default function AddBook() {
   const [coverError, setCoverError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
-  const createSeboMutation = trpc.sebos.create.useMutation();
   const createBookMutation = trpc.books.create.useMutation();
 
   const searchOpenLibraryCover = async () => {
@@ -70,26 +68,15 @@ export default function AddBook() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.price || !formData.seboName || !formData.seboWhatsapp) {
+    if (!formData.title || !formData.price || !formData.seboId) {
       toast.error("Preencha os campos obrigatórios");
       return;
     }
 
     try {
       setIsUploading(true);
-      
-      // 1. Create sebo if needed
-      const seboResult = await createSeboMutation.mutateAsync({
-        name: formData.seboName,
-        whatsapp: formData.seboWhatsapp,
-        description: undefined,
-        city: undefined,
-        state: undefined,
-      });
 
-      const seboId = seboResult[0].id;
-
-      // 2. Upload cover and get URL
+      // upload cover if needed
       let finalCoverUrl = coverUrl;
       if (coverFile) {
         try {
@@ -110,9 +97,9 @@ export default function AddBook() {
         }
       }
 
-      // 3. Create book
+      // create book for selected sebo
       await createBookMutation.mutateAsync({
-        seboId,
+        seboId: parseInt(formData.seboId),
         title: formData.title,
         author: formData.author || "Desconhecido",
         isbn: formData.isbn || undefined,
@@ -129,8 +116,7 @@ export default function AddBook() {
       
       // Reset form
       setFormData({
-        seboName: "",
-        seboWhatsapp: "",
+        seboId: "",
         title: "",
         author: "",
         isbn: "",
@@ -183,36 +169,30 @@ export default function AddBook() {
               </h2>
             </div>
 
-            <div>
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                Nome do Sebo *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.seboName}
-                onChange={(e) =>
-                  setFormData({ ...formData, seboName: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
-                placeholder="Ex: Livraria Clássicos"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                WhatsApp para Contato *
-              </label>
-              <input
-                type="tel"
-                required
-                value={formData.seboWhatsapp}
-                onChange={(e) =>
-                  setFormData({ ...formData, seboWhatsapp: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
-                placeholder="11987654321"
-              />
+            <div className="md:col-span-2 flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
+                  Sebo *
+                </label>
+                <select
+                  required
+                  value={formData.seboId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, seboId: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                >
+                  <option value="">Selecione um sebo</option>
+                  {sebosList.map((s) => (
+                    <option key={s.id} value={s.id.toString()}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Link href="/sebo/novo" className="text-[#da4653] font-medium hover:underline text-sm">
+                + Novo sebo
+              </Link>
             </div>
 
             {/* Informações Básicas */}
@@ -456,7 +436,7 @@ export default function AddBook() {
             </Link>
             <button
               type="submit"
-              disabled={createBookMutation.isPending || createSeboMutation.isPending || isUploading}
+              disabled={createBookMutation.isPending || isUploading}
               className="px-6 py-2 bg-[#da4653] hover:bg-[#c23a45] disabled:bg-gray-400 text-white rounded-lg transition-colors font-inter font-medium flex items-center gap-2"
             >
               {createBookMutation.isPending || createSeboMutation.isPending || isUploading ? (

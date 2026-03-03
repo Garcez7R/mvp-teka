@@ -16,10 +16,11 @@ const queryClient = new QueryClient({
 });
 
 // Create tRPC client
+const baseUrl = import.meta.env.VITE_PUBLIC_API_URL || "";
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:3000",
+      url: baseUrl ? `${baseUrl}/trpc` : "/trpc",
       fetch(url, options) {
         return fetch(url, {
           ...options,
