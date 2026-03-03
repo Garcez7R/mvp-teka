@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { sebos, users, books } from "../../drizzle/schema";
+import { sebos, users, books } from "../_schema.ts";
 import { eq } from "drizzle-orm";
 
 export const sebosRouter = router({

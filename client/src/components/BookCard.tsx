@@ -6,14 +6,16 @@ import BookCover from "./BookCover";
 interface BookCardProps {
   id: number;
   title: string;
+  author?: string;
   category: string;
-  price: number;
-  sebo: string;
+  price: string | number;
+  sebo?: { name: string };
   condition: string;
-  isbn: string;
+  isbn?: string;
+  coverUrl?: string;
 }
 
-export default function BookCard({ id, title, category, price, sebo, condition, isbn }: BookCardProps) {
+export default function BookCard({ id, title, author, category, price, sebo, condition, isbn, coverUrl }: BookCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = isFavorite(id);
 
@@ -22,6 +24,9 @@ export default function BookCard({ id, title, category, price, sebo, condition, 
     e.stopPropagation();
     toggleFavorite(id);
   };
+
+  const priceNumber = typeof price === "string" ? parseFloat(price) : price;
+  const seboName = typeof sebo === "string" ? sebo : sebo?.name || "Sebo";
 
   return (
     <div className="group cursor-pointer relative">
@@ -40,13 +45,19 @@ export default function BookCard({ id, title, category, price, sebo, condition, 
 
       <Link href={`/book/${id}`}>
         <div className="rounded-lg overflow-hidden border border-gray-200 group-hover:border-[#da4653] group-hover:shadow-lg transition-all duration-300 h-64">
-          <BookCover isbn={isbn} title={title} className="w-full h-full" />
+          <BookCover isbn={isbn} title={title} coverUrl={coverUrl} className="w-full h-full" />
         </div>
 
         <div className="mt-4 space-y-2">
           <h3 className="font-outfit font-bold text-[#262969] line-clamp-2 group-hover:text-[#da4653] transition-colors">
             {title}
           </h3>
+          
+          {author && (
+            <p className="font-inter text-xs text-gray-600 line-clamp-1">
+              por {author}
+            </p>
+          )}
           
           <div className="flex items-center gap-2 text-gray-600">
             <span className="text-xs font-inter bg-gray-100 px-2 py-1 rounded">{category}</span>
@@ -55,12 +66,12 @@ export default function BookCard({ id, title, category, price, sebo, condition, 
 
           <div className="flex items-center gap-1 text-gray-700 text-sm font-inter">
             <MapPin className="w-4 h-4 text-gray-400" />
-            <span className="truncate">{sebo}</span>
+            <span className="truncate">{seboName}</span>
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-gray-200">
             <span className="font-outfit font-bold text-lg text-[#da4653]">
-              R$ {price.toFixed(2)}
+              R$ {priceNumber.toFixed(2)}
             </span>
           </div>
         </div>

@@ -2,17 +2,27 @@ import { useState, useEffect } from "react";
 import { BookOpen } from "lucide-react";
 
 interface BookCoverProps {
-  isbn: string;
+  isbn?: string | null;
   title: string;
+  coverUrl?: string | null;
   className?: string;
 }
 
-export default function BookCover({ isbn, title, className = "" }: BookCoverProps) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export default function BookCover({ isbn, title, coverUrl, className = "" }: BookCoverProps) {
+  const [imageUrl, setImageUrl] = useState<string | null>(coverUrl || null);
+  const [isLoading, setIsLoading] = useState(!coverUrl);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
+    // Se já tem uma coverUrl, use-a diretamente
+    if (coverUrl) {
+      setImageUrl(coverUrl);
+      setIsLoading(false);
+      setHasError(false);
+      return;
+    }
+
+    // Caso contrário, tente buscar pelo ISBN
     if (!isbn) {
       setIsLoading(false);
       setHasError(true);
@@ -20,14 +30,14 @@ export default function BookCover({ isbn, title, className = "" }: BookCoverProp
     }
 
     // Construir URL da capa do Open Library
-    const coverUrl = `https://covers.openlibrary.org/b/isbn/${isbn.replace(/-/g, "")}-M.jpg`;
+    const openLibraryCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbn.replace(/-/g, "")}-M.jpg`;
     
     // Verificar se a imagem existe fazendo uma requisição HEAD
     const checkImage = async () => {
       try {
-        const response = await fetch(coverUrl, { method: "HEAD" });
+        const response = await fetch(openLibraryCoverUrl, { method: "HEAD" });
         if (response.ok) {
-          setImageUrl(coverUrl);
+          setImageUrl(openLibraryCoverUrl);
           setHasError(false);
         } else {
           setHasError(true);
@@ -40,7 +50,7 @@ export default function BookCover({ isbn, title, className = "" }: BookCoverProp
     };
 
     checkImage();
-  }, [isbn]);
+  }, [isbn, coverUrl]);
 
   if (isLoading) {
     return (

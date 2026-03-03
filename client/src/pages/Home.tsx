@@ -3,7 +3,7 @@ import Header from "@/components/Header";
 import SearchBar from "@/components/SearchBar";
 import BookCard from "@/components/BookCard";
 import Footer from "@/components/Footer";
-import booksData from "@/data/books.json";
+import { trpc } from "@/lib/trpc";
 import { Filter, Heart } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 
@@ -14,23 +14,27 @@ export default function Home() {
   const [showFilters, setShowFilters] = useState(false);
   const { getFavoriteCount } = useFavorites();
 
+  // Fetch books from API
+  const { data: booksData = [] } = trpc.books.list.useQuery({
+    search: searchQuery,
+    category: selectedCategory || undefined,
+    seboId: selectedSebo ? parseInt(selectedSebo) : undefined,
+    limit: 100,
+  });
+
   // Get unique categories and sebos
-  const categories = useMemo(() => Array.from(new Set(booksData.map(b => b.category))), []);
-  const sebos = useMemo(() => Array.from(new Set(booksData.map(b => b.sebo))), []);
+  const categories = useMemo(() => Array.from(new Set(booksData.map(b => b.category).filter(Boolean))), [booksData]);
+  const sebos = useMemo(() => Array.from(new Set(booksData.map(b => b.sebo?.name || "").filter(Boolean))), [booksData]);
 
   // Filter books
+  // Local filtering (search is already done in API)
   const filteredBooks = useMemo(() => {
     return booksData.filter(book => {
-      const matchesSearch = 
-        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.category.toLowerCase().includes(searchQuery.toLowerCase());
-      
       const matchesCategory = !selectedCategory || book.category === selectedCategory;
-      const matchesSebo = !selectedSebo || book.sebo === selectedSebo;
-
-      return matchesSearch && matchesCategory && matchesSebo;
+      const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
+      return matchesCategory && matchesSebo;
     });
-  }, [searchQuery, selectedCategory, selectedSebo]);
+  }, [booksData, selectedCategory, selectedSebo]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -153,11 +157,13 @@ export default function Home() {
                 key={book.id}
                 id={book.id}
                 title={book.title}
+                author={book.author}
                 category={book.category}
                 price={book.price}
                 sebo={book.sebo}
                 condition={book.condition}
                 isbn={book.isbn}
+                coverUrl={book.coverUrl}
               />
             ))}
           </div>

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { books, sebos } from "../../drizzle/schema";
+import { books, sebos } from "../_schema.ts";
 import { eq, ilike, and, lte, gte } from "drizzle-orm";
 
 export const booksRouter = router({

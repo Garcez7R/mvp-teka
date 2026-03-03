@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, publicProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { users } from "../../drizzle/schema";
+import { users } from "../_schema.ts";
 import { eq } from "drizzle-orm";
 
 export const authRouter = router({

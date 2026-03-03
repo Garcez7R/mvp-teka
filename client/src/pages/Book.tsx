@@ -2,18 +2,33 @@ import { useParams, Link } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
-import booksData from "@/data/books.json";
 import { WHATSAPP_DEFAULT } from "@/const";
-import { BookOpen, MapPin, Calendar, FileText, MessageCircle, ArrowLeft, Heart } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { BookOpen, MapPin, Calendar, FileText, MessageCircle, ArrowLeft, Heart, Loader2 } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 
 export default function Book() {
   const { id } = useParams<{ id: string }>();
-  const book = booksData.find(b => b.id === parseInt(id || "0"));
+  const bookId = parseInt(id || "0");
+  
+  // Fetch book from API
+  const { data: book, isLoading, error } = trpc.books.getById.useQuery(bookId);
   const { isFavorite, toggleFavorite } = useFavorites();
-  const favorited = isFavorite(parseInt(id || "0"));
+  const favorited = isFavorite(bookId);
 
-  if (!book) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-white">
+        <Header />
+        <main className="container flex-1 py-12 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#da4653]" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !book) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
         <Header />
@@ -30,7 +45,7 @@ export default function Book() {
     );
   }
 
-  const whatsappNumber = book.whatsapp || WHATSAPP_DEFAULT;
+  const whatsappNumber = book.sebo?.whatsapp || WHATSAPP_DEFAULT;
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=Olá! Tenho interesse no livro "${book.title}". Ainda está disponível?`;
 
   return (
@@ -50,7 +65,7 @@ export default function Book() {
           {/* Book Image */}
           <div className="md:col-span-1">
             <div className="rounded-lg overflow-hidden border border-gray-200 sticky top-24 relative h-96">
-              <BookCover isbn={book.isbn} title={book.title} className="w-full h-full" />
+              <BookCover isbn={book.isbn} title={book.title} coverUrl={book.coverUrl} className="w-full h-full" />
               
               {/* Botão de favorito na imagem */}
               <button
@@ -73,6 +88,14 @@ export default function Book() {
             <h1 className="font-outfit font-bold text-3xl text-[#262969] mb-2">
               {book.title}
             </h1>
+            
+            {/* Author */}
+            {book.author && (
+              <p className="font-inter text-lg text-gray-600 mb-4">
+                por <span className="font-semibold text-[#262969]">{book.author}</span>
+              </p>
+            )}
+            
             <div className="flex flex-wrap gap-2 mb-6">
               <span className="text-xs font-inter bg-gray-100 px-3 py-1 rounded text-gray-700">
                 {book.category}
@@ -86,41 +109,49 @@ export default function Book() {
             <div className="mb-8 pb-8 border-b border-gray-200">
               <p className="font-inter text-sm text-gray-600 mb-2">Preço</p>
               <p className="font-outfit font-bold text-4xl text-[#da4653]">
-                R$ {book.price.toFixed(2)}
+                R$ {parseFloat(book.price as unknown as string).toFixed(2)}
               </p>
             </div>
 
             {/* Description */}
-            <div className="mb-8 pb-8 border-b border-gray-200">
-              <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-3">Descrição</h2>
-              <p className="font-inter text-gray-700 leading-relaxed text-base">
-                {book.description}
-              </p>
-            </div>
+            {book.description && (
+              <div className="mb-8 pb-8 border-b border-gray-200">
+                <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-3">Descrição</h2>
+                <p className="font-inter text-gray-700 leading-relaxed text-base">
+                  {book.description}
+                </p>
+              </div>
+            )}
 
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-6 mb-8 pb-8 border-b border-gray-200">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-[#da4653]" />
-                  <p className="font-inter text-sm text-gray-600">ISBN</p>
+              {book.isbn && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-4 h-4 text-[#da4653]" />
+                    <p className="font-inter text-sm text-gray-600">ISBN</p>
+                  </div>
+                  <p className="font-inter font-semibold text-gray-900 ml-6">{book.isbn}</p>
                 </div>
-                <p className="font-inter font-semibold text-gray-900 ml-6">{book.isbn}</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <BookOpen className="w-4 h-4 text-[#da4653]" />
-                  <p className="font-inter text-sm text-gray-600">Páginas</p>
+              )}
+              {book.pages && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="w-4 h-4 text-[#da4653]" />
+                    <p className="font-inter text-sm text-gray-600">Páginas</p>
+                  </div>
+                  <p className="font-inter font-semibold text-gray-900 ml-6">{book.pages}</p>
                 </div>
-                <p className="font-inter font-semibold text-gray-900 ml-6">{book.pages}</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-4 h-4 text-[#da4653]" />
-                  <p className="font-inter text-sm text-gray-600">Ano de Publicação</p>
+              )}
+              {book.year && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="w-4 h-4 text-[#da4653]" />
+                    <p className="font-inter text-sm text-gray-600">Ano de Publicação</p>
+                  </div>
+                  <p className="font-inter font-semibold text-gray-900 ml-6">{book.year}</p>
                 </div>
-                <p className="font-inter font-semibold text-gray-900 ml-6">{book.year}</p>
-              </div>
+              )}
               <div>
                 <p className="font-inter text-sm text-gray-600 mb-2">Condição</p>
                 <p className="font-inter font-semibold text-gray-900">{book.condition}</p>
@@ -128,19 +159,21 @@ export default function Book() {
             </div>
 
             {/* Seller Info */}
-            <div className="bg-gradient-to-br from-[#da4653] to-[#c23a45] rounded-lg p-6 mb-8 border border-[#da4653] text-white">
-              <h3 className="font-outfit font-semibold text-lg mb-4">Informações do Sebo</h3>
-              <div className="flex items-center gap-3 mb-6">
-                <MapPin className="w-5 h-5" />
-                <div>
-                  <p className="font-inter text-sm opacity-90">Sebo</p>
-                  <p className="font-inter font-semibold text-base">{book.sebo}</p>
+            {book.sebo && (
+              <div className="bg-gradient-to-br from-[#da4653] to-[#c23a45] rounded-lg p-6 mb-8 border border-[#da4653] text-white">
+                <h3 className="font-outfit font-semibold text-lg mb-4">Informações do Sebo</h3>
+                <div className="flex items-center gap-3 mb-6">
+                  <MapPin className="w-5 h-5" />
+                  <div>
+                    <p className="font-inter text-sm opacity-90">Sebo</p>
+                    <p className="font-inter font-semibold text-base">{book.sebo.name}</p>
+                  </div>
                 </div>
+                <p className="font-inter text-sm opacity-90">
+                  Entre em contato diretamente via WhatsApp para confirmar disponibilidade e negociar o melhor preço.
+                </p>
               </div>
-              <p className="font-inter text-sm opacity-90">
-                Entre em contato diretamente via WhatsApp para confirmar disponibilidade e negociar o melhor preço.
-              </p>
-            </div>
+            )}
 
             {/* CTA Buttons */}
             <div className="flex flex-col gap-3 mb-8">
