@@ -53,11 +53,16 @@ export const booksRouter = router({
       const data = await db
         .select()
         .from(books)
+        .leftJoin(sebos, eq(books.seboId, sebos.id))
         .where(where)
         .limit(input.limit)
         .offset(input.offset);
 
-      return data;
+      // Format response to include sebo info
+      return data.map((row) => ({
+        ...row.books,
+        sebo: row.sebos ? { id: row.sebos.id, name: row.sebos.name } : null,
+      }));
     }),
 
   // Get single book

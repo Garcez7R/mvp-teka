@@ -29,7 +29,9 @@ export default function AddBook() {
   const [coverError, setCoverError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
-  const { data: mySebo } = trpc.sebos.getMySebo.useQuery();
+  const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, { 
+    enabled: isAuthenticated 
+  });
   const createBook = trpc.books.create.useMutation();
 
   if (!isAuthenticated) {

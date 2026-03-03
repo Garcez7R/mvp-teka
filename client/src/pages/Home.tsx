@@ -18,16 +18,14 @@ export default function Home() {
   const { data: booksData = [] } = trpc.books.list.useQuery({
     search: searchQuery,
     category: selectedCategory || undefined,
-    seboId: selectedSebo ? parseInt(selectedSebo) : undefined,
     limit: 100,
   });
 
-  // Get unique categories and sebos
+  // Get unique categories and sebos from the data
   const categories = useMemo(() => Array.from(new Set(booksData.map(b => b.category).filter(Boolean))), [booksData]);
   const sebos = useMemo(() => Array.from(new Set(booksData.map(b => b.sebo?.name || "").filter(Boolean))), [booksData]);
 
-  // Filter books
-  // Local filtering (search is already done in API)
+  // Filter books locally (search comes from API already)
   const filteredBooks = useMemo(() => {
     return booksData.filter(book => {
       const matchesCategory = !selectedCategory || book.category === selectedCategory;

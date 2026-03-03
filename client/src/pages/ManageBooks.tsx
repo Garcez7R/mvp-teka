@@ -26,7 +26,9 @@ export default function ManageBooks() {
   const [editingBook, setEditingBook] = useState<EditingBook | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const { data: mySebo } = trpc.sebos.getMySebo.useQuery();
+  const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
+    enabled: isAuthenticated
+  });
   const { data: myBooks = [] } = trpc.books.listBySebo.useQuery(
     mySebo?.id || 0,
     { enabled: !!mySebo }
