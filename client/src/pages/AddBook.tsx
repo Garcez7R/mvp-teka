@@ -39,14 +39,31 @@ export default function AddBook() {
     setCoverError("");
 
     try {
-      const response = await fetch(
-        `https://covers.openlibrary.org/b/isbn/${formData.isbn}-M.jpg`
+      const isbnClean = formData.isbn.replace(/-/g, "");
+      // fetch cover image
+      const coverResp = await fetch(
+        `https://covers.openlibrary.org/b/isbn/${isbnClean}-M.jpg`
       );
 
-      if (response.ok) {
-        setCoverUrl(response.url);
+      if (coverResp.ok) {
+        setCoverUrl(coverResp.url);
         setCoverFile(null);
-      } else {
+      }
+
+      // fetch book metadata
+      const metaResp = await fetch(`https://openlibrary.org/isbn/${isbnClean}.json`);
+      if (metaResp.ok) {
+        const meta = await metaResp.json();
+        // Only populate fields that are currently empty
+        setFormData(prev => ({
+          ...prev,
+          title: prev.title || meta.title || "",
+          author: prev.author || (meta.authors && meta.authors[0]?.name) || "",
+          // optionally fill category from subjects?
+        }));
+      }
+
+      if (!coverResp.ok) {
         setCoverError("Capa não encontrada para este ISBN");
       }
     } catch (error) {
