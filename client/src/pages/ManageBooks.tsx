@@ -84,7 +84,7 @@ export default function ManageBooks() {
   const filteredBooks = myBooks.filter(
     (book) =>
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author?.toLowerCase().includes(searchQuery.toLowerCase())
+      (book.author?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
   );
 
   const handleEdit = (book: typeof myBooks[0]) => {
@@ -92,10 +92,10 @@ export default function ManageBooks() {
     setEditingBook({
       id: book.id,
       title: book.title,
-      author: book.author,
-      isbn: book.isbn,
-      price: book.price,
-      coverUrl: book.coverUrl,
+      author: book.author || undefined,
+      isbn: book.isbn || undefined,
+      price: Number(book.price),
+      coverUrl: book.coverUrl || undefined,
     });
   };
 
@@ -137,14 +137,19 @@ export default function ManageBooks() {
         }
       }
 
-      await updateBookMutation.mutateAsync({
+      // build payload separately so we can conditionally include optional fields
+      const payload: any = {
         id: editingBook.id,
         title: editingBook.title,
         author: editingBook.author || undefined,
-        isbn: editingBook.isbn || undefined,
         price: editingBook.price,
         coverUrl: coverUrl || undefined,
-      });
+      };
+      if (editingBook.isbn) {
+        payload.isbn = editingBook.isbn;
+      }
+
+      await updateBookMutation.mutateAsync(payload);
 
       toast.success("Livro atualizado com sucesso!");
       setEditingId(null);
@@ -267,7 +272,7 @@ export default function ManageBooks() {
                         type="number"
                         placeholder="Preço"
                         step="0.01"
-                        value={editingBook?.price || ""}
+                        value={editingBook?.price?.toString() || ""}
                         onChange={(e) =>
                           setEditingBook({
                             ...editingBook!,
@@ -325,7 +330,7 @@ export default function ManageBooks() {
                       )}
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-xl font-bold text-[#da4653]">
-                          R$ {book.price.toFixed(2)}
+                          R$ {Number(book.price).toFixed(2)}
                         </span>
                         <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                           {book.condition}

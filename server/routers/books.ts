@@ -148,6 +148,7 @@ export const booksRouter = router({
         id: z.number(),
         title: z.string().optional(),
         author: z.string().optional(),
+        isbn: z.string().optional(),
         category: z.string().optional(),
         description: z.string().optional(),
         price: z.number().optional(),
