@@ -139,11 +139,18 @@ export default function AddBook() {
       // Upload image to Vercel Blob if file selected
       if (coverFile) {
         try {
-          const blob = await put(coverFile.name, coverFile, {
-            access: "public",
-            multipart: true,
-          });
-          finalCoverUrl = blob.url;
+          // Try Vercel Blob if token is available
+          if (import.meta.env.PROD) {
+            const blob = await put(coverFile.name, coverFile, {
+              access: "public",
+              multipart: true,
+            });
+            finalCoverUrl = blob.url;
+          } else {
+            // Development mode: use local file URL or skip
+            console.warn("Vercel Blob not available in development. Using local image URL.");
+            finalCoverUrl = URL.createObjectURL(coverFile);
+          }
         } catch (error: any) {
           toast.error("Erro ao fazer upload da capa: " + error.message);
           setIsUploading(false);
