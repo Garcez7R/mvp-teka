@@ -43,8 +43,8 @@ export const sebosRouter = router({
     return mySebo || null;
   }),
 
-  // Create sebo
-  create: protectedProcedure
+  // Create sebo (public)
+  create: publicProcedure
     .input(
       z.object({
         name: z.string(),
@@ -54,22 +54,13 @@ export const sebosRouter = router({
         state: z.string().optional(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      // Check if user already has a sebo
-      const existing = await db
-        .select()
-        .from(sebos)
-        .where(eq(sebos.userId, ctx.userId!))
-        .then((res) => res[0]);
-
-      if (existing) {
-        throw new Error("User already has a sebo");
-      }
-
+    .mutation(async ({ input }) => {
+      // Create sebo without userId (public contribution)
       const newSebo = await db.insert(sebos).values({
-        userId: ctx.userId!,
+        userId: 1, // Default user ID for public sebos
         ...input,
-      });
+      })
+      .$returningId();
 
       return newSebo;
     }),

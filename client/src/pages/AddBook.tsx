@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { ArrowLeft, Upload, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -10,8 +8,9 @@ import { put } from "@vercel/blob";
 
 export default function AddBook() {
   const [, navigate] = useLocation();
-  const { isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
+    seboName: "",
+    seboWhatsapp: "",
     title: "",
     author: "",
     isbn: "",
@@ -29,63 +28,8 @@ export default function AddBook() {
   const [coverError, setCoverError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
-  const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, { 
-    enabled: isAuthenticated 
-  });
-  const createBook = trpc.books.create.useMutation();
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="font-outfit font-bold text-2xl text-[#262969] mb-4">
-            Acesso Restrito
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Você precisa fazer login para cadastrar livros.
-          </p>
-          <a
-            href={getLoginUrl()}
-            className="inline-block bg-[#da4653] hover:bg-[#c23a45] text-white font-outfit font-bold py-2 px-6 rounded-lg transition-colors"
-          >
-            Fazer Login
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  if (!mySebo) {
-    return (
-      <div className="min-h-screen bg-white">
-        <div className="bg-gradient-to-br from-[#262969] to-[#1a1a4d] text-white py-6">
-          <div className="container">
-            <Link href="/">
-              <button className="flex items-center gap-2 text-white hover:opacity-80 transition-opacity mb-4">
-                <ArrowLeft className="w-5 h-5" />
-                Voltar
-              </button>
-            </Link>
-          </div>
-        </div>
-        <div className="container py-12">
-          <div className="max-w-2xl bg-red-50 border border-red-200 rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold text-red-900 mb-4">
-              Sebo não encontrado
-            </h2>
-            <p className="text-red-800 mb-6">
-              Você precisa criar um sebo antes de cadastrar livros.
-            </p>
-            <Link href="/sebo/novo">
-              <button className="bg-[#da4653] hover:bg-[#c23a45] text-white font-outfit font-bold py-2 px-6 rounded-lg transition-colors">
-                Criar Sebo
-              </button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const createSeboMutation = trpc.sebos.create.useMutation();
+  const createBookMutation = trpc.books.create.useMutation();
 
   const searchOpenLibraryCover = async () => {
     if (!formData.isbn) {
@@ -126,24 +70,29 @@ export default function AddBook() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.price) {
-      toast.error("Título e preço são obrigatórios");
-      return;
-    }
-
-    if (!mySebo) {
-      toast.error("Você precisa criar um sebo primeiro");
+    if (!formData.title || !formData.price || !formData.seboName || !formData.seboWhatsapp) {
+      toast.error("Preencha os campos obrigatórios");
       return;
     }
 
     try {
       setIsUploading(true);
-      let finalCoverUrl = coverUrl;
+      
+      // 1. Create sebo if needed
+      const seboResult = await createSeboMutation.mutateAsync({
+        name: formData.seboName,
+        whatsapp: formData.seboWhatsapp,
+        description: undefined,
+        city: undefined,
+        state: undefined,
+      });
 
-      // Upload image to Vercel Blob if file selected
+      const seboId = seboResult[0].id;
+
+      // 2. Upload cover and get URL
+      let finalCoverUrl = coverUrl;
       if (coverFile) {
         try {
-          // Try Vercel Blob if token is available
           if (import.meta.env.PROD) {
             const blob = await put(coverFile.name, coverFile, {
               access: "public",
@@ -151,8 +100,7 @@ export default function AddBook() {
             });
             finalCoverUrl = blob.url;
           } else {
-            // Development mode: use local file URL or skip
-            console.warn("Vercel Blob not available in development. Using local image URL.");
+            console.warn("Vercel Blob not available in development");
             finalCoverUrl = URL.createObjectURL(coverFile);
           }
         } catch (error: any) {
@@ -162,8 +110,9 @@ export default function AddBook() {
         }
       }
 
-      await createBook.mutateAsync({
-        seboId: mySebo.id,
+      // 3. Create book
+      await createBookMutation.mutateAsync({
+        seboId,
         title: formData.title,
         author: formData.author || "Desconhecido",
         isbn: formData.isbn || undefined,
@@ -176,8 +125,12 @@ export default function AddBook() {
         coverUrl: finalCoverUrl || undefined,
       });
 
+      toast.success("Livro cadastrado com sucesso! 📚");
+      
       // Reset form
       setFormData({
+        seboName: "",
+        seboWhatsapp: "",
         title: "",
         author: "",
         isbn: "",
@@ -190,12 +143,10 @@ export default function AddBook() {
       });
       setCoverUrl("");
       setCoverFile(null);
-
-      toast.success("Livro cadastrado com sucesso! 📚");
       
-      // Redirect to manage books after 1 second
+      // Redirect to home
       setTimeout(() => {
-        navigate("/manage-books");
+        navigate("/");
       }, 1000);
     } catch (error: any) {
       toast.error(error.message || "Erro ao cadastrar livro");
@@ -225,10 +176,49 @@ export default function AddBook() {
       <div className="container py-12">
         <form onSubmit={handleSubmit} className="max-w-2xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Informações do Sebo */}
+            <div className="md:col-span-2">
+              <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">
+                Informações do Sebo
+              </h2>
+            </div>
+
+            <div>
+              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
+                Nome do Sebo *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.seboName}
+                onChange={(e) =>
+                  setFormData({ ...formData, seboName: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                placeholder="Ex: Livraria Clássicos"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
+                WhatsApp para Contato *
+              </label>
+              <input
+                type="tel"
+                required
+                value={formData.seboWhatsapp}
+                onChange={(e) =>
+                  setFormData({ ...formData, seboWhatsapp: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                placeholder="11987654321"
+              />
+            </div>
+
             {/* Informações Básicas */}
             <div className="md:col-span-2">
               <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">
-                Informações Básicas
+                Informações do Livro
               </h2>
             </div>
 
@@ -466,10 +456,10 @@ export default function AddBook() {
             </Link>
             <button
               type="submit"
-              disabled={createBook.isPending || isUploading}
+              disabled={createBookMutation.isPending || createSeboMutation.isPending || isUploading}
               className="px-6 py-2 bg-[#da4653] hover:bg-[#c23a45] disabled:bg-gray-400 text-white rounded-lg transition-colors font-inter font-medium flex items-center gap-2"
             >
-              {createBook.isPending || isUploading ? (
+              {createBookMutation.isPending || createSeboMutation.isPending || isUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   {isUploading ? "Enviando capa..." : "Cadastrando..."}
