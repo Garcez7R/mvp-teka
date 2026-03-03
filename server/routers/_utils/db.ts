@@ -8,7 +8,8 @@ if (!connectionString) {
 }
 
 let pool: ReturnType<typeof mysql.createPool> | null = null;
-let dbInstance: ReturnType<typeof drizzle> | null = null;
+// drizzle return type gets generic schema; we just hold `any` here to avoid mismatches
+let dbInstance: any = null;
 
 function initializePool() {
   if (pool) return pool;
@@ -36,9 +37,10 @@ export function getDb() {
   return dbInstance;
 }
 
-export const db = new Proxy({} as ReturnType<typeof drizzle>, {
+export const db = new Proxy({} as any, {
   get(target, prop) {
-    return getDb()[prop as keyof typeof dbInstance];
+    const inst = getDb();
+    return inst[prop as keyof typeof inst];
   },
 });
 

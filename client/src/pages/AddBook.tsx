@@ -28,6 +28,7 @@ export default function AddBook() {
   const [isUploading, setIsUploading] = useState(false);
 
   const createBookMutation = trpc.books.create.useMutation();
+  const { data: sebosList = [] } = trpc.sebos.list.useQuery(); // retrieve all sebos for the dropdown
 
   const searchOpenLibraryCover = async () => {
     if (!formData.isbn) {
@@ -200,7 +201,7 @@ export default function AddBook() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
                 >
                   <option value="">Selecione um sebo</option>
-                  {sebosList.map((s) => (
+                  {sebosList.map((s: any) => (
                     <option key={s.id} value={s.id.toString()}>
                       {s.name}
                     </option>
@@ -456,7 +457,7 @@ export default function AddBook() {
               disabled={createBookMutation.isPending || isUploading}
               className="px-6 py-2 bg-[#da4653] hover:bg-[#c23a45] disabled:bg-gray-400 text-white rounded-lg transition-colors font-inter font-medium flex items-center gap-2"
             >
-              {createBookMutation.isPending || createSeboMutation.isPending || isUploading ? (
+              {createBookMutation.isPending || isUploading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   {isUploading ? "Enviando capa..." : "Cadastrando..."}

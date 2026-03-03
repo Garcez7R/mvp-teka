@@ -155,13 +155,13 @@ export default function Home() {
                 key={book.id}
                 id={book.id}
                 title={book.title}
-                author={book.author}
-                category={book.category}
+                author={book.author ?? undefined}
+                category={book.category ?? ""}
                 price={book.price}
-                sebo={book.sebo}
-                condition={book.condition}
-                isbn={book.isbn}
-                coverUrl={book.coverUrl}
+                sebo={book.sebo ?? undefined}
+                condition={book.condition ?? ""}
+                isbn={book.isbn ?? undefined}
+                coverUrl={book.coverUrl ?? undefined}
               />
             ))}
           </div>

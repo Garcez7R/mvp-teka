@@ -14,7 +14,9 @@ export const booksRouter = router({
         seboId: z.number().optional(),
         minPrice: z.number().optional(),
         maxPrice: z.number().optional(),
-        condition: z.string().optional(),
+        condition: z
+          .enum(["Excelente", "Bom estado", "Usado", "Desgastado"])
+          .optional(),
         limit: z.number().default(20),
         offset: z.number().default(0),
       })
@@ -180,11 +182,13 @@ export const booksRouter = router({
       }
 
       const { id, ...updateData } = input;
-      const updateDataWithStringPrice = {
+      const updateDataWithStringPrice: any = {
         ...updateData,
         ...(updateData.price !== undefined && { price: updateData.price.toString() }),
       };
-      await db.update(books).set(updateDataWithStringPrice).where(eq(books.id, id));
+      // cast to any because drizzle expects price string and our union could still
+      // include number otherwise
+      await db.update(books).set(updateDataWithStringPrice as any).where(eq(books.id, id));
 
       return { success: true };
     }),
