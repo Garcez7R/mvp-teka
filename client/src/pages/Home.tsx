@@ -33,8 +33,8 @@ export default function Home() {
           category: 'Literatura Brasileira',
           price: 25.00,
           condition: 'Bom estado',
-          isbn: '9788535923148',
-          coverUrl: 'https://covers.openlibrary.org/b/isbn/9788535923148-L.jpg',
+          isbn: undefined,
+          coverUrl: undefined,
           sebo: {
             name: 'Sebo do Porto',
             city: 'Porto Alegre',
