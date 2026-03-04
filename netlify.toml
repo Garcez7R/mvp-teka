@@ -4,6 +4,12 @@
   functions = "netlify/functions"
 
 [[redirects]]
+  from = "/trpc"
+  to = "/.netlify/functions/trpc"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/trpc/*"
   to = "/.netlify/functions/trpc/:splat"
   status = 200

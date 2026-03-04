@@ -32,12 +32,17 @@ function buildRequestUrl(event: NetlifyEvent): string {
 export const handler: Handler = async (event) => {
   try {
     const netlifyEvent = event as unknown as NetlifyEvent;
+    const requestUrl = buildRequestUrl(netlifyEvent);
+    const pathname = new URL(requestUrl).pathname;
+    const endpoint = pathname.startsWith("/.netlify/functions/trpc")
+      ? "/.netlify/functions/trpc"
+      : "/trpc";
     const body =
       netlifyEvent.isBase64Encoded && netlifyEvent.body
         ? Buffer.from(netlifyEvent.body, "base64").toString("utf-8")
         : netlifyEvent.body;
 
-    const request = new Request(buildRequestUrl(netlifyEvent), {
+    const request = new Request(requestUrl, {
       method: netlifyEvent.httpMethod,
       headers: netlifyEvent.headers,
       body:
@@ -47,7 +52,7 @@ export const handler: Handler = async (event) => {
     });
 
     const response = await fetchRequestHandler({
-      endpoint: "/.netlify/functions/trpc",
+      endpoint,
       req: request,
       router: appRouter,
       createContext: () =>
