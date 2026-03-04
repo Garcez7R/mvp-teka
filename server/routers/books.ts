@@ -61,7 +61,7 @@ export const booksRouter = router({
         .offset(input.offset);
 
       // Format response to include sebo info
-      return data.map((row) => ({
+      return data.map((row: { books: typeof books.$inferSelect; sebos: typeof sebos.$inferSelect | null }) => ({
         ...row.books,
         sebo: row.sebos ? { id: row.sebos.id, name: row.sebos.name } : null,
       }));
@@ -75,7 +75,7 @@ export const booksRouter = router({
         .select()
         .from(books)
         .where(eq(books.id, input))
-        .then((res) => res[0]);
+        .then((res: Array<typeof books.$inferSelect>) => res[0]);
 
       if (!book) {
         throw new Error("Book not found");
@@ -86,7 +86,7 @@ export const booksRouter = router({
         .select()
         .from(sebos)
         .where(eq(sebos.id, book.seboId))
-        .then((res) => res[0]);
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
       return { ...book, sebo };
     }),
@@ -100,7 +100,7 @@ export const booksRouter = router({
         .select()
         .from(sebos)
         .where(eq(sebos.id, input))
-        .then((res) => res[0]);
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
       if (!sebo || sebo.userId !== ctx.userId) {
         throw new Error("Unauthorized");
@@ -137,7 +137,7 @@ export const booksRouter = router({
         .select()
         .from(sebos)
         .where(eq(sebos.id, input.seboId))
-        .then((res) => res[0]);
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
       if (!sebo || sebo.userId !== ctx.userId) {
         throw new Error("Unauthorized: You don't own this sebo");
@@ -176,7 +176,7 @@ export const booksRouter = router({
         .select()
         .from(books)
         .where(eq(books.id, input.id))
-        .then((res) => res[0]);
+        .then((res: Array<typeof books.$inferSelect>) => res[0]);
 
       if (!book) {
         throw new Error("Book not found");
@@ -186,7 +186,7 @@ export const booksRouter = router({
         .select()
         .from(sebos)
         .where(eq(sebos.id, book.seboId))
-        .then((res) => res[0]);
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
       if (!sebo || sebo.userId !== ctx.userId) {
         throw new Error("Unauthorized");
@@ -212,7 +212,7 @@ export const booksRouter = router({
         .select()
         .from(books)
         .where(eq(books.id, input))
-        .then((res) => res[0]);
+        .then((res: Array<typeof books.$inferSelect>) => res[0]);
 
       if (!book) {
         throw new Error("Book not found");
@@ -222,7 +222,7 @@ export const booksRouter = router({
         .select()
         .from(sebos)
         .where(eq(sebos.id, book.seboId))
-        .then((res) => res[0]);
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
       if (!sebo || sebo.userId !== ctx.userId) {
         throw new Error("Unauthorized");
@@ -235,10 +235,10 @@ export const booksRouter = router({
 
   // Get categories
   getCategories: publicProcedure.query(async () => {
-    const result = await db
-      .selectDistinct({ category: books.category })
-      .from(books);
+      const result = await db
+        .selectDistinct({ category: books.category })
+        .from(books);
 
-    return result.map((r) => r.category).filter((c) => c);
+      return result.map((r: { category: string | null }) => r.category).filter((c: string | null) => c);
   }),
 });

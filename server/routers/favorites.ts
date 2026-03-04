@@ -16,7 +16,7 @@ export const favoritesRouter = router({
       .innerJoin(books, eq(favorites.bookId, books.id))
       .where(eq(favorites.userId, ctx.userId!));
 
-    return favBooks.map((item) => item.book);
+    return favBooks.map((item: { favorite: typeof favorites.$inferSelect; book: typeof books.$inferSelect }) => item.book);
   }),
 
   // Check if book is favorited
@@ -32,7 +32,7 @@ export const favoritesRouter = router({
             eq(favorites.bookId, input)
           )
         )
-        .then((res) => res[0]);
+        .then((res: Array<typeof favorites.$inferSelect>) => res[0]);
 
       return !!fav;
     }),
@@ -50,7 +50,7 @@ export const favoritesRouter = router({
             eq(favorites.bookId, input)
           )
         )
-        .then((res) => res[0]);
+        .then((res: Array<typeof favorites.$inferSelect>) => res[0]);
 
       if (existing) {
         await db.delete(favorites).where(eq(favorites.id, existing.id));

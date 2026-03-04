@@ -18,7 +18,7 @@ export const sebosRouter = router({
         .select()
         .from(sebos)
         .where(eq(sebos.id, input))
-        .then((res) => res[0]);
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
       if (!sebo) {
         throw new Error("Sebo not found");
@@ -34,11 +34,11 @@ export const sebosRouter = router({
 
   // Get current user's sebo
   getMySebo: protectedProcedure.query(async ({ ctx }) => {
-    const mySebo = await db
+      const mySebo = await db
       .select()
       .from(sebos)
       .where(eq(sebos.userId, ctx.userId!))
-      .then((res) => res[0]);
+      .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
     return mySebo || null;
   }),
@@ -84,7 +84,7 @@ export const sebosRouter = router({
         .select()
         .from(sebos)
         .where(eq(sebos.id, id))
-        .then((res) => res[0]);
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
       if (!sebo || sebo.userId !== ctx.userId) {
         throw new Error("Unauthorized");

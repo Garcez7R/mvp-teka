@@ -11,7 +11,7 @@ export const usersRouter = router({
       .select()
       .from(users)
       .where(eq(users.id, ctx.userId!))
-      .then((res) => res[0]);
+      .then((res: Array<typeof users.$inferSelect>) => res[0]);
 
     return user || null;
   }),
@@ -24,7 +24,7 @@ export const usersRouter = router({
         .select()
         .from(users)
         .where(eq(users.id, input))
-        .then((res) => res[0]);
+        .then((res: Array<typeof users.$inferSelect>) => res[0]);
 
       if (!user) {
         throw new Error("User not found");
