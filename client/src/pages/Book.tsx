@@ -192,9 +192,9 @@ export default function Book() {
           </Link>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {/* Book Image */}
-            <div className="md:col-span-1">
-              <div className="rounded-lg overflow-hidden border border-gray-200 sticky top-24 relative aspect-[2/3]">
+          {/* Book Image */}
+          <div className="md:col-span-1">
+              <div className="rounded-lg overflow-hidden border border-gray-200 sticky top-24 relative aspect-[2/3] w-1/3 mx-auto">
                 <BookCover
                   isbn={demoBook.isbn}
                   title={demoBook.title}
@@ -394,7 +394,7 @@ export default function Book() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {/* Book Image */}
           <div className="md:col-span-1">
-            <div className="rounded-lg overflow-hidden border border-gray-200 sticky top-24 relative aspect-[2/3]">
+            <div className="rounded-lg overflow-hidden border border-gray-200 sticky top-24 relative aspect-[2/3] w-1/3 mx-auto">
               <BookCover
                 isbn={book.isbn}
                 title={book.title}

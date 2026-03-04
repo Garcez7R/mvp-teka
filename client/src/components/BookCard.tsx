@@ -44,7 +44,7 @@ export default function BookCard({ id, title, author, category, price, sebo, con
       </button>
 
       <Link href={`/book/${id}`}>
-        <div className="rounded-lg overflow-hidden border border-gray-200 group-hover:border-[#da4653] group-hover:shadow-lg transition-all duration-300 aspect-[2/3]">
+        <div className="rounded-lg overflow-hidden border border-gray-200 group-hover:border-[#da4653] group-hover:shadow-lg transition-all duration-300 aspect-[2/3] w-1/3 mx-auto">
           <BookCover isbn={isbn} title={title} author={author} coverUrl={coverUrl} className="w-full h-full" />
         </div>
 
