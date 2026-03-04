@@ -9,10 +9,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "api/trpc.ts": {
-      "runtime": "nodejs20.x"
-    }
   }
 }
