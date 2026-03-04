@@ -79,46 +79,83 @@ export default function AddBook() {
 
     try {
       const isbnClean = normalizeISBN(formData.isbn);
-      
-      // 1. Buscar metadados via Open Library API
-      const metaResp = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnClean}&format=json&jscmd=data`);
-      
+      let found = false;
+      let foundCover = false;
+
+      // 1) Open Library
+      const metaResp = await fetch(
+        `https://openlibrary.org/api/books?bibkeys=ISBN:${isbnClean}&format=json&jscmd=data`
+      );
       if (metaResp.ok) {
         const data = await metaResp.json();
         const bookKey = `ISBN:${isbnClean}`;
-        
-        if (data[bookKey]) {
-          const bookInfo = data[bookKey];
-          
-          // Preencher campos automaticamente
-          setFormData(prev => ({
+        const bookInfo = data[bookKey];
+
+        if (bookInfo) {
+          setFormData((prev) => ({
             ...prev,
             title: bookInfo.title || prev.title,
             author: bookInfo.authors?.[0]?.name || prev.author,
             pages: bookInfo.number_of_pages?.toString() || prev.pages,
             year: bookInfo.publish_date?.match(/\d{4}/)?.[0] || prev.year,
-            description: bookInfo.notes || prev.description,
+            description:
+              typeof bookInfo.notes === "string" ? bookInfo.notes : prev.description,
           }));
 
-          // Tentar pegar a capa
           if (bookInfo.cover?.large || bookInfo.cover?.medium) {
             setCoverUrl(bookInfo.cover.large || bookInfo.cover.medium);
             setCoverFile(null);
-          } else {
-            // Fallback para a URL direta de capas se não estiver no JSON
-            const directCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbnClean}-L.jpg`;
-            const checkCover = await fetch(directCoverUrl, { method: 'HEAD' });
-            if (checkCover.ok && !checkCover.url.includes("blank")) {
-              setCoverUrl(directCoverUrl);
-            }
+            foundCover = true;
           }
-          
-          toast.success("Dados do livro encontrados!");
-        } else {
-          setCoverError("Livro não encontrado na base de dados. Preencha manualmente.");
+          found = true;
         }
+      }
+
+      // 2) Google Books fallback
+      if (!found) {
+        const googleResp = await fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbnClean}&maxResults=1`
+        );
+        if (googleResp.ok) {
+          const googleData = await googleResp.json();
+          const item = googleData?.items?.[0];
+          const info = item?.volumeInfo;
+          if (info) {
+            setFormData((prev) => ({
+              ...prev,
+              title: info.title || prev.title,
+              author: info.authors?.[0] || prev.author,
+              pages: info.pageCount ? String(info.pageCount) : prev.pages,
+              year: info.publishedDate?.match(/\d{4}/)?.[0] || prev.year,
+              description: info.description || prev.description,
+            }));
+
+            const thumb = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
+            if (thumb) {
+              setCoverUrl(String(thumb).replace("http://", "https://"));
+              setCoverFile(null);
+              foundCover = true;
+            }
+            found = true;
+          }
+        }
+      }
+
+      // 3) Open Library direct cover fallback
+      if (!foundCover) {
+        const directCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbnClean}-L.jpg`;
+        const checkCover = await fetch(directCoverUrl, { method: "HEAD" });
+        if (checkCover.ok && !checkCover.url.includes("blank")) {
+          setCoverUrl(directCoverUrl);
+          setCoverFile(null);
+          foundCover = true;
+        }
+      }
+
+      if (found) {
+        toast.success("Dados do livro encontrados!");
       } else {
-        setCoverError("Erro ao conectar com o serviço de busca. Verifique sua internet.");
+        setCoverError("Livro não encontrado nas bases. Preencha manualmente.");
       }
     } catch (error) {
       setCoverError("Erro de conexão. Tente novamente em alguns minutos.");

@@ -1,0 +1,35 @@
+<svg width="600" height="900" viewBox="0 0 600 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Capa de As Duas Torres</title>
+  <desc id="desc">Capa ilustrada inspirada em fantasia épica para As Duas Torres.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#263238"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect x="34" y="34" width="532" height="832" rx="10" fill="none" stroke="#d4b46a" stroke-width="3"/>
+
+  <text x="300" y="170" text-anchor="middle" fill="#d9e3f0" font-size="30" font-family="Georgia, 'Times New Roman', serif" letter-spacing="2">
+    J.R.R. TOLKIEN
+  </text>
+
+  <text x="300" y="300" text-anchor="middle" fill="#f8fafc" font-size="66" font-weight="700" font-family="Georgia, 'Times New Roman', serif">
+    AS DUAS
+  </text>
+  <text x="300" y="380" text-anchor="middle" fill="#f8fafc" font-size="66" font-weight="700" font-family="Georgia, 'Times New Roman', serif">
+    TORRES
+  </text>
+
+  <g fill="#d4b46a">
+    <rect x="180" y="500" width="26" height="190" rx="4"/>
+    <rect x="394" y="470" width="26" height="220" rx="4"/>
+  </g>
+  <g fill="#f1f5f9" opacity="0.85">
+    <polygon points="193,500 228,500 210,455"/>
+    <polygon points="407,470 442,470 424,425"/>
+  </g>
+
+  <line x1="130" y1="430" x2="470" y2="430" stroke="#d4b46a" stroke-width="2"/>
+  <line x1="130" y1="740" x2="470" y2="740" stroke="#d4b46a" stroke-width="2"/>
+</svg>

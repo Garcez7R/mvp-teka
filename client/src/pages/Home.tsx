@@ -79,7 +79,7 @@ export default function Home() {
           price: 42.00,
           condition: 'Excelente',
           isbn: '9780618346264',
-          coverUrl: 'https://covers.openlibrary.org/b/isbn/9780618346264-L.jpg',
+          coverUrl: '/covers/as-duas-torres.svg',
           sebo: {
             name: 'Livraria Releitura',
             city: 'São Paulo',

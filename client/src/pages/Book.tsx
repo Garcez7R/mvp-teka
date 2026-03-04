@@ -105,7 +105,7 @@ export default function Book() {
         price: 42.00,
         condition: 'Excelente',
         isbn: '9780618346264',
-        coverUrl: 'https://covers.openlibrary.org/b/isbn/9780618346264-L.jpg',
+        coverUrl: '/covers/as-duas-torres.svg',
         description: 'Segundo volume da trilogia O Senhor dos Anéis, onde a sociedade do anel se divide.',
         pages: 464,
         year: 2001,
