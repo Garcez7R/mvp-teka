@@ -22,12 +22,12 @@ export default function Home() {
   });
 
   // Get unique categories and sebos from the data
-  const categories = useMemo(() => Array.from(new Set(booksData.map(b => b.category).filter(Boolean))), [booksData]);
-  const sebos = useMemo(() => Array.from(new Set(booksData.map(b => b.sebo?.name || "").filter(Boolean))), [booksData]);
+  const categories = useMemo(() => Array.from(new Set(booksData.map((b: any) => b.category).filter(Boolean))), [booksData]);
+  const sebos = useMemo(() => Array.from(new Set(booksData.map((b: any) => b.sebo?.name || "").filter(Boolean))), [booksData]);
 
   // Filter books locally (search comes from API already)
   const filteredBooks = useMemo(() => {
-    return booksData.filter(book => {
+    return booksData.filter((book: any) => {
       const matchesCategory = !selectedCategory || book.category === selectedCategory;
       const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
       return matchesCategory && matchesSebo;
@@ -91,17 +91,17 @@ export default function Home() {
                     >
                       Todas
                     </button>
-                    {categories.map(cat => (
+                    {categories.map((cat: any) => (
                       <button
-                        key={cat}
-                        onClick={() => setSelectedCategory(cat)}
+                        key={cat as string}
+                        onClick={() => setSelectedCategory(cat as string)}
                         className={`block w-full text-left px-3 py-2 rounded transition-colors font-inter text-sm ${
                           selectedCategory === cat
                             ? "bg-[#da4653] text-white"
                             : "bg-white text-gray-700 hover:bg-gray-100"
                         }`}
                       >
-                        {cat}
+                        {cat as string}
                       </button>
                     ))}
                   </div>
@@ -121,17 +121,17 @@ export default function Home() {
                     >
                       Todos
                     </button>
-                    {sebos.map(sebo => (
+                    {sebos.map((sebo: any) => (
                       <button
-                        key={sebo}
-                        onClick={() => setSelectedSebo(sebo)}
+                        key={sebo as string}
+                        onClick={() => setSelectedSebo(sebo as string)}
                         className={`block w-full text-left px-3 py-2 rounded transition-colors font-inter text-sm ${
                           selectedSebo === sebo
                             ? "bg-[#da4653] text-white"
                             : "bg-white text-gray-700 hover:bg-gray-100"
                         }`}
                       >
-                        {sebo}
+                        {sebo as string}
                       </button>
                     ))}
                   </div>
@@ -150,7 +150,7 @@ export default function Home() {
         {/* Books Grid */}
         {filteredBooks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredBooks.map(book => (
+            {filteredBooks.map((book: any) => (
               <BookCard
                 key={book.id}
                 id={book.id}

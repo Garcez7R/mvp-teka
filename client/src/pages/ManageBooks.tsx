@@ -82,7 +82,7 @@ export default function ManageBooks() {
   }
 
   const filteredBooks = myBooks.filter(
-    (book) =>
+    (book: any) =>
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (book.author?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
   );
@@ -220,7 +220,7 @@ export default function ManageBooks() {
         {/* Books Grid */}
         {filteredBooks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {filteredBooks.map((book) => (
+            {filteredBooks.map((book: any) => (
               <div
                 key={book.id}
                 className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"

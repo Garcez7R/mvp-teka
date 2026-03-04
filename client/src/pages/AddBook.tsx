@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { ArrowLeft, Upload, Search, Loader2, BookOpen } from "lucide-react";
+import { ArrowLeft, Upload, Search, Loader2, BookOpen, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { put } from "@vercel/blob";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -30,6 +30,7 @@ export default function AddBook() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [searchingBook, setSearchingBook] = useState(false);
   const [coverError, setCoverError] = useState("");
+  const [isbnValid, setIsbnValid] = useState<boolean | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const createBookMutation = trpc.books.create.useMutation();
@@ -51,9 +52,30 @@ export default function AddBook() {
     }
   }, [mySebo]);
 
+  // Validar ISBN
+  const validateISBN = (isbn: string): boolean => {
+    if (!isbn) return false;
+    const clean = isbn.replace(/[-\s]/g, '');
+    return (clean.length === 10 || clean.length === 13) && /^\d+$/.test(clean);
+  };
+
+  // Atualizar validação do ISBN
+  useEffect(() => {
+    if (!formData.isbn) {
+      setIsbnValid(null);
+    } else {
+      setIsbnValid(validateISBN(formData.isbn));
+    }
+  }, [formData.isbn]);
+
   const searchBookByISBN = async () => {
     if (!formData.isbn) {
       setCoverError("Digite um ISBN para buscar o livro");
+      return;
+    }
+
+    if (!validateISBN(formData.isbn)) {
+      setCoverError("ISBN inválido. Use apenas números e hífens (10 ou 13 dígitos).");
       return;
     }
 
@@ -101,10 +123,10 @@ export default function AddBook() {
           setCoverError("Livro não encontrado na base de dados. Preencha manualmente.");
         }
       } else {
-        setCoverError("Erro ao conectar com o serviço de busca.");
+        setCoverError("Erro ao conectar com o serviço de busca. Verifique sua internet.");
       }
     } catch (error) {
-      setCoverError("Erro ao buscar livro. Tente preencher manualmente.");
+      setCoverError("Erro de conexão. Tente novamente em alguns minutos.");
     } finally {
       setSearchingBook(false);
     }
@@ -204,7 +226,7 @@ export default function AddBook() {
 
       <div className="container py-12">
         <form onSubmit={handleSubmit} className="max-w-2xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 gap-6 mb-8">
             {/* Seção do Sebo */}
             <div className="md:col-span-2">
               <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">Informações do Sebo</h2>
@@ -242,17 +264,29 @@ export default function AddBook() {
                   Digite o ISBN para preencher automaticamente os dados e a capa do livro.
                 </p>
                 <div className="flex flex-col gap-3">
-                  <input
-                    type="text"
-                    value={formData.isbn}
-                    onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none font-inter"
-                    placeholder="Ex: 9788535914849"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.isbn}
+                      onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 outline-none font-inter transition-colors ${
+                        isbnValid === true ? 'border-green-400 focus:ring-green-400' :
+                        isbnValid === false ? 'border-red-400 focus:ring-red-400' :
+                        'border-gray-300 focus:ring-[#da4653]'
+                      }`}
+                      placeholder="Ex: 9788535914849"
+                    />
+                    {isbnValid === true && (
+                      <CheckCircle className="absolute right-3 top-3 w-6 h-6 text-green-500" />
+                    )}
+                    {isbnValid === false && (
+                      <XCircle className="absolute right-3 top-3 w-6 h-6 text-red-500" />
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={searchBookByISBN}
-                    disabled={searchingBook || !formData.isbn}
+                    disabled={searchingBook || !formData.isbn || isbnValid === false}
                     className="w-full py-3 bg-[#262969] text-white rounded-lg hover:bg-[#1a1a4d] disabled:bg-gray-300 transition-colors flex items-center justify-center gap-2 font-bold"
                   >
                     {searchingBook ? (
@@ -260,16 +294,18 @@ export default function AddBook() {
                     ) : (
                       <Search className="w-5 h-5" />
                     )}
-                    Buscar Capa
+                    {searchingBook ? 'Buscando capa...' : 'Buscar Capa'}
                   </button>
                 </div>
                 {coverError && (
-                  <p className="mt-3 text-sm text-red-600 font-medium">{coverError}</p>
+                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-700 text-sm font-medium">{coverError}</p>
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
               <input
                 type="text"
@@ -360,7 +396,7 @@ export default function AddBook() {
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
               <textarea
                 value={formData.description}
@@ -371,23 +407,33 @@ export default function AddBook() {
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Capa do Livro</label>
-              <div className="flex flex-col sm:flex-row gap-6 items-start">
-                <div className="w-32 h-48 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {coverUrl ? (
-                    <img src={coverUrl} alt="Capa" className="w-full h-full object-cover" />
-                  ) : (
-                    <BookOpen className="w-10 h-10 text-gray-300" />
-                  )}
-                </div>
-                <div className="flex-1 w-full">
+              <div className="grid grid-cols-1 gap-6">
+                {/* Preview da capa encontrada */}
+                {coverUrl && (
+                  <div>
+                    <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
+                      <p className="text-green-700 font-medium mb-2 text-sm">Capa encontrada:</p>
+                      <div className="w-32 h-48 bg-white rounded-lg border border-gray-200 overflow-hidden mx-auto">
+                        <img src={coverUrl} alt="Preview da capa" className="w-full h-full object-contain" />
+                      </div>
+                      <p className="text-xs text-green-600 mt-2">Esta capa será usada no cadastro</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Upload manual */}
+                <div>
                   <label className="block border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-[#da4653] transition-all bg-gray-50 hover:bg-white">
                     <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <span className="text-sm font-medium text-gray-700 block">Fazer upload manual</span>
                     <span className="text-xs text-gray-500">PNG, JPG até 5MB</span>
                     <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
                   </label>
+                  {coverFile && (
+                    <p className="mt-2 text-sm text-gray-600">Arquivo selecionado: {coverFile.name}</p>
+                  )}
                 </div>
               </div>
             </div>

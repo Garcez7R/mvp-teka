@@ -16,7 +16,7 @@ async function seed() {
     // 1. Criar Usuário Admin/Livreiro de exemplo (usando upsert manual ou verificação)
     console.log("Verificando usuário...");
     let user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.openId, "seed-user-1")
+      where: (users: any, { eq }: any) => eq(users.openId, "seed-user-1")
     });
 
     if (!user) {
@@ -36,7 +36,7 @@ async function seed() {
     // 2. Criar Sebos de exemplo
     console.log("Verificando sebos...");
     let sebo1 = await db.query.sebos.findFirst({
-      where: (sebos, { eq }) => eq(sebos.name, "Sebo do Porto")
+      where: (sebos: any, { eq }: any) => eq(sebos.name, "Sebo do Porto")
     });
 
     if (!sebo1) {
@@ -54,7 +54,7 @@ async function seed() {
     }
 
     let sebo2 = await db.query.sebos.findFirst({
-      where: (sebos, { eq }) => eq(sebos.name, "Livraria Releitura")
+      where: (sebos: any, { eq }: any) => eq(sebos.name, "Livraria Releitura")
     });
 
     if (!sebo2) {
@@ -144,7 +144,7 @@ async function seed() {
 
     for (const book of exampleBooks) {
       const existingBook = await db.query.books.findFirst({
-        where: (books, { and, eq }) => and(eq(books.isbn, book.isbn!), eq(books.seboId, book.seboId))
+        where: (books: any, { and, eq }: any) => and(eq(books.isbn, book.isbn!), eq(books.seboId, book.seboId))
       });
 
       if (!existingBook) {
