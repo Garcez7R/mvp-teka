@@ -2,9 +2,9 @@
   "version": 2,
   "installCommand": "npx corepack enable && pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm build",
-  "outputDirectory": "dist",
+  "outputDirectory": "dist/public",
   "rewrites": [
-    { "source": "/trpc/(.*)", "destination": "/api/trpc.ts" },
+    { "source": "/trpc/(.*)", "destination": "/api/trpc" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "env": {

@@ -9,12 +9,21 @@ import { useFavorites } from "@/hooks/useFavorites";
 
 export default function Book() {
   const { id } = useParams<{ id: string }>();
-  const bookId = parseInt(id || "0");
-  
-  // Fetch book from API
-  const { data: book, isLoading, error } = trpc.books.getById.useQuery(bookId);
+  const isDemoBook = Boolean(id?.startsWith("demo-"));
+  const parsedBookId = Number.parseInt(id || "", 10);
+  const demoFavoriteId = isDemoBook ? Number.parseInt((id || "").replace("demo-", ""), 10) : null;
+  const favoriteId = isDemoBook ? demoFavoriteId : parsedBookId;
+
+  // Fetch book from API only for real IDs
+  const { data: book, isLoading, error } = trpc.books.getById.useQuery(parsedBookId, {
+    enabled: !isDemoBook && Number.isFinite(parsedBookId) && parsedBookId > 0,
+  });
   const { isFavorite, toggleFavorite } = useFavorites();
-  const favorited = isFavorite(bookId);
+  const favoriteIdNumber =
+    typeof favoriteId === "number" && Number.isFinite(favoriteId) && favoriteId > 0
+      ? favoriteId
+      : null;
+  const favorited = favoriteIdNumber !== null ? isFavorite(favoriteIdNumber) : false;
 
   if (isLoading) {
     return (
@@ -29,7 +38,7 @@ export default function Book() {
   }
 
   // Se for um livro de demonstração (id começa com 'demo-'), exibir informações de demonstração
-  if (id?.startsWith('demo-')) {
+  if (isDemoBook) {
     const demoBooks = [
       {
         id: 'demo-1',
@@ -190,7 +199,11 @@ export default function Book() {
                 
                 {/* Botão de favorito na imagem */}
                 <button
-                  onClick={() => toggleFavorite(parseInt(id.replace('demo-', '')))}
+                  onClick={() => {
+                    if (demoFavoriteId && Number.isFinite(demoFavoriteId)) {
+                      toggleFavorite(demoFavoriteId);
+                    }
+                  }}
                   className="absolute top-4 right-4 p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all z-10"
                   title={favorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                 >
@@ -308,7 +321,11 @@ export default function Book() {
                   Contatar via WhatsApp
                 </a>
                 <button
-                  onClick={() => toggleFavorite(parseInt(id.replace('demo-', '')))}
+                  onClick={() => {
+                    if (demoFavoriteId && Number.isFinite(demoFavoriteId)) {
+                      toggleFavorite(demoFavoriteId);
+                    }
+                  }}
                   className={`flex items-center justify-center gap-2 w-full font-outfit font-bold py-3 px-6 rounded-lg transition-all border-2 ${
                     favorited
                       ? "bg-[#da4653] border-[#da4653] text-white"

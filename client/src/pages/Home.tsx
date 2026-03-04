@@ -121,18 +121,24 @@ export default function Home() {
     return booksData;
   }, [booksData, searchQuery, selectedCategory, selectedSebo]);
 
-  // Get unique categories and sebos from the data
-  const categories = useMemo(() => Array.from(new Set(booksData.map((b: any) => b.category).filter(Boolean))), [booksData]);
-  const sebos = useMemo(() => Array.from(new Set(booksData.map((b: any) => b.sebo?.name || "").filter(Boolean))), [booksData]);
+  // Get unique categories and sebos from the displayed data
+  const categories = useMemo(
+    () => Array.from(new Set(displayBooks.map((b: any) => b.category).filter(Boolean))),
+    [displayBooks]
+  );
+  const sebos = useMemo(
+    () => Array.from(new Set(displayBooks.map((b: any) => b.sebo?.name || "").filter(Boolean))),
+    [displayBooks]
+  );
 
-  // Filter books locally (search comes from API already)
+  // Filter books locally
   const filteredBooks = useMemo(() => {
-    return booksData.filter((book: any) => {
+    return displayBooks.filter((book: any) => {
       const matchesCategory = !selectedCategory || book.category === selectedCategory;
       const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
       return matchesCategory && matchesSebo;
     });
-  }, [booksData, selectedCategory, selectedSebo]);
+  }, [displayBooks, selectedCategory, selectedSebo]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -248,9 +254,9 @@ export default function Home() {
         </div>
 
         {/* Books Grid */}
-        {displayBooks.length > 0 ? (
+        {filteredBooks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {displayBooks.map((book: any) => (
+            {filteredBooks.map((book: any) => (
               <BookCard
                 key={book.id}
                 id={book.id}

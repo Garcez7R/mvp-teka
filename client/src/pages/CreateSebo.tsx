@@ -21,9 +21,6 @@ export default function CreateSebo() {
     onError: (error) => {
       console.error("Erro ao criar sebo:", error);
       setError(error.message || "Erro ao criar sebo");
-    },
-    onSuccess: () => {
-      navigate("/");
     }
   });
 

@@ -16,23 +16,21 @@ const queryClient = new QueryClient({
 });
 
 // Create tRPC client
-// Determine the API root depending on environment.
-// In local dev we talk to localhost:3000, in production we let Vercel handle
-// the routing via `/api` prefix. The VITE_PUBLIC_API_URL override can be used
-// when running on a custom domain or during preview deployments.
+// - Local dev: Express server on localhost:3000
+// - Vercel: same-origin /trpc rewrite to /api/trpc
+// - Netlify: direct function endpoint /.netlify/functions/trpc
+const isNetlifyRuntime =
+  typeof window !== "undefined" && window.location.hostname.includes("netlify");
 const apiBase = import.meta.env.VITE_PUBLIC_API_URL
   ? import.meta.env.VITE_PUBLIC_API_URL
   : import.meta.env.PROD
-  ? "/trpc"
+  ? isNetlifyRuntime
+    ? "/.netlify/functions"
+    : ""
   : "http://localhost:3000";
-// note: when apiBase is "/trpc" above we will end up requesting "/trpc/trpc" which
-// is not desirable, so we override below when building the link
 
-
-
-// We want the final endpoint to be `/trpc` regardless of
-// apiBase.  If apiBase already ends with `/trpc` we avoid adding it twice.
-const trpcUrl = apiBase.replace(/\/trpc$/, "") + "/trpc";
+const normalizedApiBase = apiBase.replace(/\/$/, "").replace(/\/trpc$/, "");
+const trpcUrl = `${normalizedApiBase}/trpc`;
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
