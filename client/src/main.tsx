@@ -16,24 +16,31 @@ const queryClient = new QueryClient({
 });
 
 // Create tRPC client
-// - Local dev: Express server on localhost:3000
-// - Vercel: same-origin /trpc rewrite to /api/trpc
 // - Netlify: direct function endpoint /.netlify/functions/trpc
-const isNetlifyRuntime =
-  typeof window !== "undefined" && window.location.hostname.includes("netlify");
-const isLocalExpressRuntime =
-  typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
-  window.location.port === "3777";
-const apiBase = import.meta.env.VITE_PUBLIC_API_URL
-  ? import.meta.env.VITE_PUBLIC_API_URL
-  : import.meta.env.PROD
-  ? isNetlifyRuntime
-    ? "/.netlify/functions"
-    : ""
-  : isLocalExpressRuntime
-  ? window.location.origin
-  : "http://localhost:3000";
+// - Local Express (3777): same-origin /trpc
+// - Vite dev (5173): backend on localhost:3000
+const runtimeHost = typeof window !== "undefined" ? window.location.hostname : "";
+const runtimePort = typeof window !== "undefined" ? window.location.port : "";
+const runtimeOrigin = typeof window !== "undefined" ? window.location.origin : "";
+const isLocalRuntime = runtimeHost === "localhost" || runtimeHost === "127.0.0.1";
+const isNetlifyRuntime = runtimeHost.includes("netlify");
+const explicitApiBase = (import.meta.env.VITE_PUBLIC_API_URL || "").trim();
+const explicitPointsToLocal =
+  explicitApiBase.includes("localhost") || explicitApiBase.includes("127.0.0.1");
+
+// Avoid broken public deploys caused by env values like localhost in Netlify/Vercel.
+const safeExplicitApiBase =
+  explicitApiBase && (!explicitPointsToLocal || isLocalRuntime) ? explicitApiBase : "";
+
+const apiBase = safeExplicitApiBase
+  ? safeExplicitApiBase
+  : isNetlifyRuntime
+  ? "/.netlify/functions"
+  : isLocalRuntime && runtimePort === "3777"
+  ? runtimeOrigin
+  : isLocalRuntime
+  ? "http://localhost:3000"
+  : "";
 
 const normalizedApiBase = apiBase.replace(/\/$/, "").replace(/\/trpc$/, "");
 const trpcUrl = `${normalizedApiBase}/trpc`;
