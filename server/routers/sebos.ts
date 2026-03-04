@@ -43,8 +43,8 @@ export const sebosRouter = router({
     return mySebo || null;
   }),
 
-  // Create sebo (protected)
-  create: protectedProcedure
+  // Create sebo (public - removed authentication requirement)
+  create: publicProcedure
     .input(
       z.object({
         name: z.string(),
@@ -54,10 +54,10 @@ export const sebosRouter = router({
         state: z.string().optional(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      // Create sebo linked to the authenticated user
+    .mutation(async ({ input }) => {
+      // Create sebo without requiring authentication
       const newSebo = await db.insert(sebos).values({
-        userId: ctx.userId!,
+        userId: null, // Allow sebos without user association
         ...input,
       })
       .$returningId();
