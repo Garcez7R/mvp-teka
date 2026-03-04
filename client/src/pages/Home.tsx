@@ -63,8 +63,8 @@ export default function Home() {
           category: 'História',
           price: 35.00,
           condition: 'Bom estado',
-          isbn: '9788576863123',
-          coverUrl: 'https://covers.openlibrary.org/b/isbn/9788576863123-L.jpg',
+          isbn: '9780007218011',
+          coverUrl: 'https://covers.openlibrary.org/b/isbn/9780007218011-L.jpg',
           sebo: {
             name: 'Livraria Releitura',
             city: 'São Paulo',
@@ -78,8 +78,8 @@ export default function Home() {
           category: 'Fantasia',
           price: 42.00,
           condition: 'Excelente',
-          isbn: '9788535905220',
-          coverUrl: 'https://covers.openlibrary.org/b/isbn/9788535905220-L.jpg',
+          isbn: '9780618346264',
+          coverUrl: 'https://covers.openlibrary.org/b/isbn/9780618346264-L.jpg',
           sebo: {
             name: 'Livraria Releitura',
             city: 'São Paulo',
@@ -93,8 +93,8 @@ export default function Home() {
           category: 'Fantasia',
           price: 38.00,
           condition: 'Bom estado',
-          isbn: '9786555612345',
-          coverUrl: 'https://covers.openlibrary.org/b/isbn/9786555612345-L.jpg',
+          isbn: '9781649374042',
+          coverUrl: 'https://covers.openlibrary.org/b/isbn/9781649374042-L.jpg',
           sebo: {
             name: 'Sebo do Porto',
             city: 'Porto Alegre',

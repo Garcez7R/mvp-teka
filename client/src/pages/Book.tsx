@@ -85,8 +85,8 @@ export default function Book() {
         category: 'História',
         price: 35.00,
         condition: 'Bom estado',
-        isbn: '9788576863123',
-        coverUrl: 'https://covers.openlibrary.org/b/isbn/9788576863123-L.jpg',
+        isbn: '9780007218011',
+        coverUrl: 'https://covers.openlibrary.org/b/isbn/9780007218011-L.jpg',
         description: 'Série de romances históricos que acompanham a formação da Inglaterra nos séculos IX e X.',
         pages: 416,
         year: 2015,
@@ -104,8 +104,8 @@ export default function Book() {
         category: 'Fantasia',
         price: 42.00,
         condition: 'Excelente',
-        isbn: '9788535905220',
-        coverUrl: 'https://covers.openlibrary.org/b/isbn/9788535905220-L.jpg',
+        isbn: '9780618346264',
+        coverUrl: 'https://covers.openlibrary.org/b/isbn/9780618346264-L.jpg',
         description: 'Segundo volume da trilogia O Senhor dos Anéis, onde a sociedade do anel se divide.',
         pages: 464,
         year: 2001,
@@ -123,8 +123,8 @@ export default function Book() {
         category: 'Fantasia',
         price: 38.00,
         condition: 'Bom estado',
-        isbn: '9786555612345',
-        coverUrl: 'https://covers.openlibrary.org/b/isbn/9786555612345-L.jpg',
+        isbn: '9781649374042',
+        coverUrl: 'https://covers.openlibrary.org/b/isbn/9781649374042-L.jpg',
         description: 'Romance de fantasia com dragões e treinamento militar em uma academia de cavaleiros.',
         pages: 480,
         year: 2023,
@@ -194,8 +194,14 @@ export default function Book() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {/* Book Image */}
             <div className="md:col-span-1">
-              <div className="rounded-lg overflow-hidden border border-gray-200 sticky top-24 relative h-96">
-                <BookCover isbn={demoBook.isbn} title={demoBook.title} coverUrl={demoBook.coverUrl} className="w-full h-full" />
+              <div className="rounded-lg overflow-hidden border border-gray-200 sticky top-24 relative aspect-[2/3]">
+                <BookCover
+                  isbn={demoBook.isbn}
+                  title={demoBook.title}
+                  author={demoBook.author}
+                  coverUrl={demoBook.coverUrl}
+                  className="w-full h-full"
+                />
                 
                 {/* Botão de favorito na imagem */}
                 <button
@@ -388,8 +394,14 @@ export default function Book() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {/* Book Image */}
           <div className="md:col-span-1">
-            <div className="rounded-lg overflow-hidden border border-gray-200 sticky top-24 relative h-96">
-              <BookCover isbn={book.isbn} title={book.title} coverUrl={book.coverUrl} className="w-full h-full" />
+            <div className="rounded-lg overflow-hidden border border-gray-200 sticky top-24 relative aspect-[2/3]">
+              <BookCover
+                isbn={book.isbn}
+                title={book.title}
+                author={book.author}
+                coverUrl={book.coverUrl}
+                className="w-full h-full"
+              />
               
               {/* Botão de favorito na imagem */}
               <button

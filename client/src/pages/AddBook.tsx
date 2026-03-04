@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { ArrowLeft, Upload, Search, Loader2, BookOpen, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { put } from "@vercel/blob";
@@ -192,7 +194,9 @@ export default function AddBook() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen flex flex-col bg-white">
+      <Header />
+
       <div className="bg-gradient-to-br from-[#262969] to-[#1a1a4d] text-white py-6">
         <div className="container">
           <Link href="/">
@@ -206,7 +210,7 @@ export default function AddBook() {
         </div>
       </div>
 
-      <div className="container py-12">
+      <main className="container flex-1 py-12">
         <form onSubmit={handleSubmit} className="max-w-2xl">
           <div className="grid grid-cols-1 gap-6 mb-8">
             {/* Seção do Sebo */}
@@ -435,7 +439,9 @@ export default function AddBook() {
             </button>
           </div>
         </form>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }

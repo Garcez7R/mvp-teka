@@ -21,12 +21,18 @@ const queryClient = new QueryClient({
 // - Netlify: direct function endpoint /.netlify/functions/trpc
 const isNetlifyRuntime =
   typeof window !== "undefined" && window.location.hostname.includes("netlify");
+const isLocalExpressRuntime =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
+  window.location.port === "3777";
 const apiBase = import.meta.env.VITE_PUBLIC_API_URL
   ? import.meta.env.VITE_PUBLIC_API_URL
   : import.meta.env.PROD
   ? isNetlifyRuntime
     ? "/.netlify/functions"
     : ""
+  : isLocalExpressRuntime
+  ? window.location.origin
   : "http://localhost:3000";
 
 const normalizedApiBase = apiBase.replace(/\/$/, "").replace(/\/trpc$/, "");

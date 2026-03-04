@@ -4,11 +4,12 @@ import { BookOpen } from "lucide-react";
 interface BookCoverProps {
   isbn?: string | null;
   title: string;
+  author?: string | null;
   coverUrl?: string | null;
   className?: string;
 }
 
-export default function BookCover({ isbn, title, coverUrl, className = "" }: BookCoverProps) {
+export default function BookCover({ isbn, title, author, coverUrl, className = "" }: BookCoverProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(coverUrl || null);
   const [isLoading, setIsLoading] = useState(!coverUrl);
   const [hasError, setHasError] = useState(false);
@@ -22,35 +23,60 @@ export default function BookCover({ isbn, title, coverUrl, className = "" }: Boo
       return;
     }
 
-    // Caso contrário, tente buscar pelo ISBN
-    if (!isbn) {
-      setIsLoading(false);
-      setHasError(true);
-      return;
-    }
-
-    // Construir URL da capa do Open Library
-    const openLibraryCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbn.replace(/-/g, "")}-L.jpg`;
-    
-    // Verificar se a imagem existe fazendo uma requisição HEAD
-    const checkImage = async () => {
+    const resolveImage = async () => {
       try {
-        const response = await fetch(openLibraryCoverUrl, { method: "HEAD" });
-        if (response.ok) {
-          setImageUrl(openLibraryCoverUrl);
-          setHasError(false);
-        } else {
-          setHasError(true);
+        if (isbn) {
+          // 1) Open Library por ISBN
+          const openLibraryCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbn.replace(/-/g, "")}-L.jpg`;
+          const openLibraryResponse = await fetch(openLibraryCoverUrl, { method: "HEAD" });
+          if (openLibraryResponse.ok && !openLibraryResponse.url.includes("blank")) {
+            setImageUrl(openLibraryCoverUrl);
+            setHasError(false);
+            return;
+          }
+
+          // 2) Google Books por ISBN
+          const googleByIsbn = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn.replace(/-/g, "")}&maxResults=1`
+          );
+          if (googleByIsbn.ok) {
+            const data = await googleByIsbn.json();
+            const thumb = data?.items?.[0]?.volumeInfo?.imageLinks?.thumbnail
+              || data?.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
+            if (thumb) {
+              setImageUrl(thumb.replace("http://", "https://"));
+              setHasError(false);
+              return;
+            }
+          }
         }
-      } catch (error) {
+
+        // 3) Google Books por título/autor
+        const query = `intitle:${title}${author ? `+inauthor:${author}` : ""}`;
+        const googleByTitle = await fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1`
+        );
+        if (googleByTitle.ok) {
+          const data = await googleByTitle.json();
+          const thumb = data?.items?.[0]?.volumeInfo?.imageLinks?.thumbnail
+            || data?.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
+          if (thumb) {
+            setImageUrl(thumb.replace("http://", "https://"));
+            setHasError(false);
+            return;
+          }
+        }
+
+        setHasError(true);
+      } catch {
         setHasError(true);
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkImage();
-  }, [isbn, coverUrl]);
+    resolveImage();
+  }, [isbn, title, author, coverUrl]);
 
   if (isLoading) {
     return (
@@ -75,7 +101,7 @@ export default function BookCover({ isbn, title, coverUrl, className = "" }: Boo
     <img
       src={imageUrl}
       alt={`Capa de ${title}`}
-      className={`object-contain ${className}`}
+      className={`object-cover bg-white ${className}`}
       onError={() => setHasError(true)}
     />
   );
