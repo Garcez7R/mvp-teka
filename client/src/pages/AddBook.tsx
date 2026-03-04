@@ -35,6 +35,7 @@ export default function AddBook() {
   const createBookMutation = trpc.books.create.useMutation();
   const { data: sebosList = [] } = trpc.sebos.list.useQuery();
   const { data: mySebo, isLoading: seboLoading } = trpc.sebos.getMySebo.useQuery();
+  const canSubmit = Boolean(mySebo || formData.seboId);
 
   const normalizeISBN = (isbn: string): string =>
     isbn.toUpperCase().replace(/[^0-9X]/g, "");
@@ -181,6 +182,12 @@ export default function AddBook() {
       return;
     }
 
+    const normalizedPrice = Number(formData.price.replace(",", "."));
+    if (!Number.isFinite(normalizedPrice) || normalizedPrice <= 0) {
+      toast.error("Informe um preço válido");
+      return;
+    }
+
     try {
       setIsUploading(true);
 
@@ -217,7 +224,7 @@ export default function AddBook() {
         isbn: formData.isbn ? normalizeISBN(formData.isbn) : undefined,
         category: formData.category || "Outros",
         description: formData.description || undefined,
-        price: parseFloat(formData.price),
+        price: normalizedPrice,
         condition: formData.condition,
         pages: formData.pages ? parseInt(formData.pages) : undefined,
         year: formData.year ? parseInt(formData.year) : undefined,
@@ -274,13 +281,32 @@ export default function AddBook() {
                 <div className="space-y-4">
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <p className="text-yellow-800 font-inter text-sm">
-                      <strong>Atenção:</strong> Você precisa criar um sebo antes de cadastrar livros.
+                      <strong>Atenção:</strong> Selecione um sebo para vincular este livro.
                     </p>
                     <Link href="/sebo/novo">
                       <button className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white font-inter font-medium py-2 px-4 rounded-lg">
                         Criar Sebo
                       </button>
                     </Link>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sebo *
+                    </label>
+                    <select
+                      required={!mySebo}
+                      value={formData.seboId}
+                      onChange={(e) => setFormData({ ...formData, seboId: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
+                    >
+                      <option value="">Selecione um sebo</option>
+                      {sebosList.map((sebo: any) => (
+                        <option key={sebo.id} value={String(sebo.id)}>
+                          {sebo.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}
@@ -476,7 +502,7 @@ export default function AddBook() {
           <div className="flex gap-4 pt-6 border-t border-gray-100">
             <button
               type="submit"
-              disabled={createBookMutation.isPending || isUploading || !mySebo}
+              disabled={createBookMutation.isPending || isUploading || !canSubmit}
               className="flex-1 bg-[#da4653] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#c23a45] disabled:bg-gray-400 shadow-lg shadow-red-100 transition-all flex items-center justify-center gap-2"
             >
               {createBookMutation.isPending || isUploading ? (

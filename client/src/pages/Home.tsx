@@ -78,8 +78,8 @@ export default function Home() {
           category: 'Fantasia',
           price: 42.00,
           condition: 'Excelente',
-          isbn: '9780618346264',
-          coverUrl: '/covers/as-duas-torres.svg',
+          isbn: '9788595084759',
+          coverUrl: undefined,
           sebo: {
             name: 'Livraria Releitura',
             city: 'São Paulo',
