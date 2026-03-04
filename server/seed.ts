@@ -7,49 +7,75 @@ dotenv.config({ path: join(process.cwd(), ".env.local") });
 
 import { db } from "./routers/_utils/db.js";
 import { users, sebos, books } from "./_schema.js";
+import { sql } from "drizzle-orm";
 
 async function seed() {
   console.log("🌱 Iniciando seed...");
 
   try {
-    // 1. Criar Usuário Admin/Livreiro de exemplo
-    const [user] = await db.insert(users).values({
-      openId: "seed-user-1",
-      name: "Livreiro de Exemplo",
-      email: "contato@teka.com.br",
-      whatsapp: "51996263385",
-      role: "livreiro",
-    }).$returningId();
+    // 1. Criar Usuário Admin/Livreiro de exemplo (usando upsert manual ou verificação)
+    console.log("Verificando usuário...");
+    let user = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.openId, "seed-user-1")
+    });
 
-    console.log("✅ Usuário criado");
+    if (!user) {
+      const [newUser] = await db.insert(users).values({
+        openId: "seed-user-1",
+        name: "Livreiro de Exemplo",
+        email: "contato@teka.com.br",
+        whatsapp: "51996263385",
+        role: "livreiro",
+      }).$returningId();
+      user = { id: newUser.id } as any;
+      console.log("✅ Usuário criado");
+    } else {
+      console.log("ℹ️ Usuário já existe, pulando criação");
+    }
 
     // 2. Criar Sebos de exemplo
-    const [sebo1] = await db.insert(sebos).values({
-      userId: user.id,
-      name: "Sebo do Porto",
-      description: "Especializado em clássicos e literatura brasileira.",
-      whatsapp: "51996263385",
-      city: "Porto Alegre",
-      state: "RS",
-      verified: true,
-    }).$returningId();
+    console.log("Verificando sebos...");
+    let sebo1 = await db.query.sebos.findFirst({
+      where: (sebos, { eq }) => eq(sebos.name, "Sebo do Porto")
+    });
 
-    const [sebo2] = await db.insert(sebos).values({
-      userId: user.id,
-      name: "Livraria Releitura",
-      description: "Livros raros e edições esgotadas.",
-      whatsapp: "51996263385",
-      city: "São Paulo",
-      state: "SP",
-      verified: true,
-    }).$returningId();
+    if (!sebo1) {
+      const [newSebo1] = await db.insert(sebos).values({
+        userId: user!.id,
+        name: "Sebo do Porto",
+        description: "Especializado em clássicos e literatura brasileira.",
+        whatsapp: "51996263385",
+        city: "Porto Alegre",
+        state: "RS",
+        verified: true,
+      }).$returningId();
+      sebo1 = { id: newSebo1.id } as any;
+      console.log("✅ Sebo 1 criado");
+    }
 
-    console.log("✅ Sebos criados");
+    let sebo2 = await db.query.sebos.findFirst({
+      where: (sebos, { eq }) => eq(sebos.name, "Livraria Releitura")
+    });
 
-    // 3. Criar Livros de exemplo com ISBNs reais para as capas funcionarem
+    if (!sebo2) {
+      const [newSebo2] = await db.insert(sebos).values({
+        userId: user!.id,
+        name: "Livraria Releitura",
+        description: "Livros raros e edições esgotadas.",
+        whatsapp: "51996263385",
+        city: "São Paulo",
+        state: "SP",
+        verified: true,
+      }).$returningId();
+      sebo2 = { id: newSebo2.id } as any;
+      console.log("✅ Sebo 2 criado");
+    }
+
+    // 3. Criar Livros de exemplo
+    console.log("Verificando livros...");
     const exampleBooks = [
       {
-        seboId: sebo1.id,
+        seboId: sebo1!.id,
         title: "Dom Casmurro",
         author: "Machado de Assis",
         isbn: "9788535923148",
@@ -60,7 +86,7 @@ async function seed() {
         year: 2013,
       },
       {
-        seboId: sebo1.id,
+        seboId: sebo1!.id,
         title: "1984",
         author: "George Orwell",
         isbn: "9788535914849",
@@ -71,7 +97,7 @@ async function seed() {
         year: 2009,
       },
       {
-        seboId: sebo2.id,
+        seboId: sebo2!.id,
         title: "O Pequeno Príncipe",
         author: "Antoine de Saint-Exupéry",
         isbn: "9788522031436",
@@ -82,7 +108,7 @@ async function seed() {
         year: 2015,
       },
       {
-        seboId: sebo2.id,
+        seboId: sebo2!.id,
         title: "Sapiens: Uma Breve História da Humanidade",
         author: "Yuval Noah Harari",
         isbn: "9788525432186",
@@ -93,7 +119,7 @@ async function seed() {
         year: 2015,
       },
       {
-        seboId: sebo1.id,
+        seboId: sebo1!.id,
         title: "O Alquimista",
         author: "Paulo Coelho",
         isbn: "9788575427583",
@@ -104,7 +130,7 @@ async function seed() {
         year: 2012,
       },
       {
-        seboId: sebo2.id,
+        seboId: sebo2!.id,
         title: "Harry Potter e a Pedra Filosofal",
         author: "J.K. Rowling",
         isbn: "9788532511010",
@@ -117,10 +143,16 @@ async function seed() {
     ];
 
     for (const book of exampleBooks) {
-      await db.insert(books).values(book as any);
+      const existingBook = await db.query.books.findFirst({
+        where: (books, { and, eq }) => and(eq(books.isbn, book.isbn!), eq(books.seboId, book.seboId))
+      });
+
+      if (!existingBook) {
+        await db.insert(books).values(book as any);
+        console.log(`✅ Livro "${book.title}" criado`);
+      }
     }
 
-    console.log("✅ Livros criados");
     console.log("✨ Seed finalizado com sucesso!");
   } catch (err) {
     console.error("❌ Erro no seed:", err);
