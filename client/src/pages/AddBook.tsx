@@ -5,11 +5,8 @@ import { Link } from "wouter";
 import { ArrowLeft, Upload, Search, Loader2, BookOpen, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { put } from "@vercel/blob";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 
 export default function AddBook() {
-  const { isAuthenticated, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
 
   const [formData, setFormData] = useState({
@@ -35,22 +32,7 @@ export default function AddBook() {
 
   const createBookMutation = trpc.books.create.useMutation();
   const { data: sebosList = [] } = trpc.sebos.list.useQuery();
-  const { data: mySebo, isLoading: seboLoading } = trpc.sebos.getMySebo.useQuery(undefined, {
-    enabled: isAuthenticated
-  });
-
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      toast.error("Você precisa estar logado para cadastrar um livro");
-      window.location.href = getLoginUrl();
-    }
-  }, [isAuthenticated, authLoading]);
-
-  useEffect(() => {
-    if (mySebo && !formData.seboId) {
-      setFormData(prev => ({ ...prev, seboId: mySebo.id.toString() }));
-    }
-  }, [mySebo]);
+  const { data: mySebo, isLoading: seboLoading } = trpc.sebos.getMySebo.useQuery();
 
   // Validar ISBN
   const validateISBN = (isbn: string): boolean => {
@@ -201,7 +183,7 @@ export default function AddBook() {
     }
   };
 
-  if (authLoading || seboLoading) {
+  if (seboLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-[#da4653]" />
