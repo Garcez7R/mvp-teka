@@ -9,13 +9,11 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
 export default function AddBook() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
 
   const [formData, setFormData] = useState({
     seboId: "",
-    newSeboName: "",
-    newSeboWhatsapp: "",
     title: "",
     author: "",
     isbn: "",
@@ -35,7 +33,6 @@ export default function AddBook() {
   const [isUploading, setIsUploading] = useState(false);
 
   const createBookMutation = trpc.books.create.useMutation();
-  const createSeboMutation = trpc.sebos.create.useMutation();
   const { data: sebosList = [] } = trpc.sebos.list.useQuery();
   const { data: mySebo, isLoading: seboLoading } = trpc.sebos.getMySebo.useQuery(undefined, {
     enabled: isAuthenticated
@@ -125,7 +122,7 @@ export default function AddBook() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.price || (!formData.seboId && !creatingSebo && !mySebo)) {
+    if (!formData.title || !formData.price || (!formData.seboId && !mySebo)) {
       toast.error("Preencha os campos obrigatórios");
       return;
     }
@@ -155,12 +152,6 @@ export default function AddBook() {
       let seboIdToUse: number;
       if (mySebo) {
         seboIdToUse = mySebo.id;
-      } else if (creatingSebo) {
-        const newSebo = await createSeboMutation.mutateAsync({
-          name: formData.newSeboName,
-          whatsapp: formData.newSeboWhatsapp,
-        });
-        seboIdToUse = newSebo[0].id;
       } else {
         seboIdToUse = parseInt(formData.seboId);
       }
@@ -225,48 +216,16 @@ export default function AddBook() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2">
-                      <input type="radio" checked={!creatingSebo} onChange={() => setCreatingSebo(false)} />
-                      Selecionar existente
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input type="radio" checked={creatingSebo} onChange={() => setCreatingSebo(true)} />
-                      Cadastrar novo
-                    </label>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-yellow-800 font-inter text-sm">
+                      <strong>Atenção:</strong> Você precisa criar um sebo antes de cadastrar livros.
+                    </p>
+                    <Link href="/sebo/novo">
+                      <button className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white font-inter font-medium py-2 px-4 rounded-lg">
+                        Criar Sebo
+                      </button>
+                    </Link>
                   </div>
-                  {creatingSebo ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <input
-                        type="text"
-                        placeholder="Nome do Sebo *"
-                        required
-                        value={formData.newSeboName}
-                        onChange={(e) => setFormData({ ...formData, newSeboName: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
-                      />
-                      <input
-                        type="tel"
-                        placeholder="WhatsApp *"
-                        required
-                        value={formData.newSeboWhatsapp}
-                        onChange={(e) => setFormData({ ...formData, newSeboWhatsapp: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
-                      />
-                    </div>
-                  ) : (
-                    <select
-                      required
-                      value={formData.seboId}
-                      onChange={(e) => setFormData({ ...formData, seboId: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
-                    >
-                      <option value="">Selecione um sebo</option>
-                      {sebosList.map((s: any) => (
-                        <option key={s.id} value={s.id.toString()}>{s.name}</option>
-                      ))}
-                    </select>
-                  )}
                 </div>
               )}
             </div>
@@ -277,7 +236,7 @@ export default function AddBook() {
               
               <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-6">
                 <label className="block text-sm font-bold text-[#262969] mb-2">
-                  Comece pelo ISBN (Opcional)
+                  ISBN (Opcional)
                 </label>
                 <p className="text-xs text-gray-500 mb-4 font-inter">
                   Digite o ISBN para preencher automaticamente os dados e a capa do livro.
@@ -301,7 +260,7 @@ export default function AddBook() {
                     ) : (
                       <Search className="w-5 h-5" />
                     )}
-                    Buscar Livro
+                    Buscar Capa
                   </button>
                 </div>
                 {coverError && (
@@ -437,7 +396,7 @@ export default function AddBook() {
           <div className="flex gap-4 pt-6 border-t border-gray-100">
             <button
               type="submit"
-              disabled={createBookMutation.isPending || isUploading}
+              disabled={createBookMutation.isPending || isUploading || !mySebo}
               className="flex-1 bg-[#da4653] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#c23a45] disabled:bg-gray-400 shadow-lg shadow-red-100 transition-all flex items-center justify-center gap-2"
             >
               {createBookMutation.isPending || isUploading ? (
