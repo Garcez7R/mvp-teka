@@ -30,7 +30,7 @@ export default function BookCover({ isbn, title, coverUrl, className = "" }: Boo
     }
 
     // Construir URL da capa do Open Library
-    const openLibraryCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbn.replace(/-/g, "")}-M.jpg`;
+    const openLibraryCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbn.replace(/-/g, "")}-L.jpg`;
     
     // Verificar se a imagem existe fazendo uma requisição HEAD
     const checkImage = async () => {

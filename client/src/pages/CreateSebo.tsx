@@ -17,7 +17,15 @@ export default function CreateSebo() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const createSeboMutation = trpc.sebos.create.useMutation();
+  const createSeboMutation = trpc.sebos.create.useMutation({
+    onError: (error) => {
+      console.error("Erro ao criar sebo:", error);
+      setError(error.message || "Erro ao criar sebo");
+    },
+    onSuccess: () => {
+      navigate("/");
+    }
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
