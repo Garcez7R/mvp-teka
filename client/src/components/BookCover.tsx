@@ -75,7 +75,7 @@ export default function BookCover({ isbn, title, coverUrl, className = "" }: Boo
     <img
       src={imageUrl}
       alt={`Capa de ${title}`}
-      className={`object-cover ${className}`}
+      className={`object-contain ${className}`}
       onError={() => setHasError(true)}
     />
   );
