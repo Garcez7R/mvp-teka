@@ -34,7 +34,7 @@ export default function Home() {
           price: 25.00,
           condition: 'Bom estado',
           isbn: undefined,
-          coverUrl: undefined,
+          coverUrl: '/covers/dom-casmurro.svg',
           sebo: {
             name: 'Sebo do Porto',
             city: 'Porto Alegre',

@@ -36,11 +36,22 @@ export default function AddBook() {
   const { data: sebosList = [] } = trpc.sebos.list.useQuery();
   const { data: mySebo, isLoading: seboLoading } = trpc.sebos.getMySebo.useQuery();
 
+  const normalizeISBN = (isbn: string): string =>
+    isbn.toUpperCase().replace(/[^0-9X]/g, "");
+
   // Validar ISBN
   const validateISBN = (isbn: string): boolean => {
-    if (!isbn) return false;
-    const clean = isbn.replace(/[-\s]/g, '');
-    return (clean.length === 10 || clean.length === 13) && /^\d+$/.test(clean);
+    if (!isbn) {
+      return false;
+    }
+    const clean = normalizeISBN(isbn);
+    if (clean.length === 13) {
+      return /^\d{13}$/.test(clean);
+    }
+    if (clean.length === 10) {
+      return /^\d{9}[\dX]$/.test(clean);
+    }
+    return false;
   };
 
   // Atualizar validação do ISBN
@@ -67,7 +78,7 @@ export default function AddBook() {
     setCoverError("");
 
     try {
-      const isbnClean = formData.isbn.replace(/-/g, "");
+      const isbnClean = normalizeISBN(formData.isbn);
       
       // 1. Buscar metadados via Open Library API
       const metaResp = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnClean}&format=json&jscmd=data`);
@@ -166,7 +177,7 @@ export default function AddBook() {
         seboId: seboIdToUse,
         title: formData.title,
         author: formData.author || "Desconhecido",
-        isbn: formData.isbn || undefined,
+        isbn: formData.isbn ? normalizeISBN(formData.isbn) : undefined,
         category: formData.category || "Outros",
         description: formData.description || undefined,
         price: parseFloat(formData.price),

@@ -1,0 +1,23 @@
+<svg width="600" height="900" viewBox="0 0 600 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Capa de Dom Casmurro</title>
+  <desc id="desc">Capa ilustrada com fundo vinho e título Dom Casmurro.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4a1f2c"/>
+      <stop offset="100%" stop-color="#1f1f3a"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect x="40" y="40" width="520" height="820" rx="12" fill="none" stroke="#f2d7a2" stroke-width="3"/>
+  <text x="300" y="260" text-anchor="middle" fill="#f7e7c8" font-size="34" font-family="Georgia, 'Times New Roman', serif" letter-spacing="2">
+    MACHADO DE ASSIS
+  </text>
+  <text x="300" y="430" text-anchor="middle" fill="#ffffff" font-size="86" font-weight="700" font-family="Georgia, 'Times New Roman', serif">
+    DOM
+  </text>
+  <text x="300" y="520" text-anchor="middle" fill="#ffffff" font-size="86" font-weight="700" font-family="Georgia, 'Times New Roman', serif">
+    CASMURRO
+  </text>
+  <line x1="140" y1="330" x2="460" y2="330" stroke="#f2d7a2" stroke-width="2"/>
+  <line x1="140" y1="580" x2="460" y2="580" stroke="#f2d7a2" stroke-width="2"/>
+</svg>

@@ -48,7 +48,7 @@ export default function Book() {
         price: 25.00,
         condition: 'Bom estado',
         isbn: undefined,
-        coverUrl: undefined,
+        coverUrl: '/covers/dom-casmurro.svg',
         description: 'Clássico da literatura brasileira, narra a história de Bentinho e Capitu.',
         pages: 256,
         year: 1899,
