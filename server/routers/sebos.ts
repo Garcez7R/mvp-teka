@@ -43,8 +43,8 @@ export const sebosRouter = router({
     return mySebo || null;
   }),
 
-  // Create sebo (public)
-  create: publicProcedure
+  // Create sebo (protected)
+  create: protectedProcedure
     .input(
       z.object({
         name: z.string(),
@@ -54,10 +54,10 @@ export const sebosRouter = router({
         state: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
-      // Create sebo without userId (public contribution)
+    .mutation(async ({ input, ctx }) => {
+      // Create sebo linked to the authenticated user
       const newSebo = await db.insert(sebos).values({
-        userId: 1, // Default user ID for public sebos
+        userId: ctx.userId!,
         ...input,
       })
       .$returningId();

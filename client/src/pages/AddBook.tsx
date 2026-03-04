@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { ArrowLeft, Upload, Search, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, Search, Loader2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { put } from "@vercel/blob";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 export default function AddBook() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [, navigate] = useLocation();
+
   const [formData, setFormData] = useState({
     seboId: "",
-    // when creating a new sebo inline:
     newSeboName: "",
     newSeboWhatsapp: "",
     title: "",
@@ -23,59 +26,90 @@ export default function AddBook() {
     pages: "",
     year: "",
   });
-  const [creatingSebo, setCreatingSebo] = useState(false);
 
+  const [creatingSebo, setCreatingSebo] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string>("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [searchingCover, setSearchingCover] = useState(false);
+  const [searchingBook, setSearchingBook] = useState(false);
   const [coverError, setCoverError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
   const createBookMutation = trpc.books.create.useMutation();
   const createSeboMutation = trpc.sebos.create.useMutation();
-  const { data: sebosList = [] } = trpc.sebos.list.useQuery(); // retrieve all sebos for the dropdown
+  const { data: sebosList = [] } = trpc.sebos.list.useQuery();
+  const { data: mySebo, isLoading: seboLoading } = trpc.sebos.getMySebo.useQuery(undefined, {
+    enabled: isAuthenticated
+  });
 
-  const searchOpenLibraryCover = async () => {
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      toast.error("Você precisa estar logado para cadastrar um livro");
+      window.location.href = getLoginUrl();
+    }
+  }, [isAuthenticated, authLoading]);
+
+  useEffect(() => {
+    if (mySebo && !formData.seboId) {
+      setFormData(prev => ({ ...prev, seboId: mySebo.id.toString() }));
+    }
+  }, [mySebo]);
+
+  const searchBookByISBN = async () => {
     if (!formData.isbn) {
-      setCoverError("Digite um ISBN para buscar a capa");
+      setCoverError("Digite um ISBN para buscar o livro");
       return;
     }
 
-    setSearchingCover(true);
+    setSearchingBook(true);
     setCoverError("");
 
     try {
       const isbnClean = formData.isbn.replace(/-/g, "");
-      // fetch cover image
-      const coverResp = await fetch(
-        `https://covers.openlibrary.org/b/isbn/${isbnClean}-M.jpg`
-      );
-
-      if (coverResp.ok) {
-        setCoverUrl(coverResp.url);
-        setCoverFile(null);
-      }
-
-      // fetch book metadata
-      const metaResp = await fetch(`https://openlibrary.org/isbn/${isbnClean}.json`);
+      
+      // 1. Buscar metadados via Open Library API
+      const metaResp = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnClean}&format=json&jscmd=data`);
+      
       if (metaResp.ok) {
-        const meta = await metaResp.json();
-        // Only populate fields that are currently empty
-        setFormData(prev => ({
-          ...prev,
-          title: prev.title || meta.title || "",
-          author: prev.author || (meta.authors && meta.authors[0]?.name) || "",
-          // optionally fill category from subjects?
-        }));
-      }
+        const data = await metaResp.json();
+        const bookKey = `ISBN:${isbnClean}`;
+        
+        if (data[bookKey]) {
+          const bookInfo = data[bookKey];
+          
+          // Preencher campos automaticamente
+          setFormData(prev => ({
+            ...prev,
+            title: bookInfo.title || prev.title,
+            author: bookInfo.authors?.[0]?.name || prev.author,
+            pages: bookInfo.number_of_pages?.toString() || prev.pages,
+            year: bookInfo.publish_date?.match(/\d{4}/)?.[0] || prev.year,
+            description: bookInfo.notes || prev.description,
+          }));
 
-      if (!coverResp.ok) {
-        setCoverError("Capa não encontrada para este ISBN");
+          // Tentar pegar a capa
+          if (bookInfo.cover?.large || bookInfo.cover?.medium) {
+            setCoverUrl(bookInfo.cover.large || bookInfo.cover.medium);
+            setCoverFile(null);
+          } else {
+            // Fallback para a URL direta de capas se não estiver no JSON
+            const directCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbnClean}-L.jpg`;
+            const checkCover = await fetch(directCoverUrl, { method: 'HEAD' });
+            if (checkCover.ok && !checkCover.url.includes("blank")) {
+              setCoverUrl(directCoverUrl);
+            }
+          }
+          
+          toast.success("Dados do livro encontrados!");
+        } else {
+          setCoverError("Livro não encontrado na base de dados. Preencha manualmente.");
+        }
+      } else {
+        setCoverError("Erro ao conectar com o serviço de busca.");
       }
     } catch (error) {
-      setCoverError("Erro ao buscar capa. Tente fazer upload manual.");
+      setCoverError("Erro ao buscar livro. Tente preencher manualmente.");
     } finally {
-      setSearchingCover(false);
+      setSearchingBook(false);
     }
   };
 
@@ -91,19 +125,14 @@ export default function AddBook() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.price || (!formData.seboId && !creatingSebo)) {
+    if (!formData.title || !formData.price || (!formData.seboId && !creatingSebo && !mySebo)) {
       toast.error("Preencha os campos obrigatórios");
-      return;
-    }
-    if (creatingSebo && (!formData.newSeboName || !formData.newSeboWhatsapp)) {
-      toast.error("Informe nome e WhatsApp do novo sebo");
       return;
     }
 
     try {
       setIsUploading(true);
 
-      // upload cover if needed
       let finalCoverUrl = coverUrl;
       if (coverFile) {
         try {
@@ -114,7 +143,6 @@ export default function AddBook() {
             });
             finalCoverUrl = blob.url;
           } else {
-            console.warn("Vercel Blob not available in development");
             finalCoverUrl = URL.createObjectURL(coverFile);
           }
         } catch (error: any) {
@@ -124,23 +152,19 @@ export default function AddBook() {
         }
       }
 
-      // decide sebo id: either existing or newly created
       let seboIdToUse: number;
-      if (creatingSebo) {
+      if (mySebo) {
+        seboIdToUse = mySebo.id;
+      } else if (creatingSebo) {
         const newSebo = await createSeboMutation.mutateAsync({
           name: formData.newSeboName,
           whatsapp: formData.newSeboWhatsapp,
-          description: undefined,
-          city: undefined,
-          state: undefined,
         });
-        // trpc returns array of inserted ids
         seboIdToUse = newSebo[0].id;
       } else {
         seboIdToUse = parseInt(formData.seboId);
       }
 
-      // create book for sebo
       await createBookMutation.mutateAsync({
         seboId: seboIdToUse,
         title: formData.title,
@@ -156,41 +180,24 @@ export default function AddBook() {
       });
 
       toast.success("Livro cadastrado com sucesso! 📚");
-      
-      // Reset form
-      setFormData({
-        seboId: "",
-        newSeboName: "",
-        newSeboWhatsapp: "",
-        title: "",
-        author: "",
-        isbn: "",
-        category: "",
-        description: "",
-        price: "",
-        condition: "Bom estado",
-        pages: "",
-        year: "",
-      });
-      setCreatingSebo(false);
-      setCoverUrl("");
-      setCoverFile(null);
-      
-      // Redirect to home
-      setTimeout(() => {
-        navigate("/");
-      }, 1000);
+      setTimeout(() => navigate("/"), 1500);
     } catch (error: any) {
       toast.error(error.message || "Erro ao cadastrar livro");
-      console.error(error);
     } finally {
       setIsUploading(false);
     }
   };
 
+  if (authLoading || seboLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#da4653]" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
       <div className="bg-gradient-to-br from-[#262969] to-[#1a1a4d] text-white py-6">
         <div className="container">
           <Link href="/">
@@ -204,225 +211,166 @@ export default function AddBook() {
         </div>
       </div>
 
-      {/* Form */}
       <div className="container py-12">
         <form onSubmit={handleSubmit} className="max-w-2xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Informações do Sebo */}
+            {/* Seção do Sebo */}
             <div className="md:col-span-2">
-              <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">
-                Informações do Sebo
-              </h2>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                Sebo *
-              </label>
-              <div className="flex items-center gap-4 mb-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="seboMode"
-                    checked={!creatingSebo}
-                    onChange={() => setCreatingSebo(false)}
-                  />
-                  Selecionar existente
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="seboMode"
-                    checked={creatingSebo}
-                    onChange={() => setCreatingSebo(true)}
-                  />
-                  Cadastrar novo
-                </label>
-              </div>
-
-              {creatingSebo ? (
-                <>
-                  <div className="mb-4">
-                    <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                      Nome do Sebo *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.newSeboName}
-                      onChange={(e) =>
-                        setFormData({ ...formData, newSeboName: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
-                      placeholder="Ex: Livraria Clássicos"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                      WhatsApp para Contato *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={formData.newSeboWhatsapp}
-                      onChange={(e) =>
-                        setFormData({ ...formData, newSeboWhatsapp: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
-                      placeholder="11987654321"
-                    />
-                  </div>
-                </>
+              <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">Informações do Sebo</h2>
+              {mySebo ? (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+                  <p className="text-green-800 font-inter text-sm">
+                    Você está cadastrando livros para o sebo: <strong>{mySebo.name}</strong>
+                  </p>
+                </div>
               ) : (
-                <div className="md:col-span-2 flex items-center justify-between">
-                  <div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2">
+                      <input type="radio" checked={!creatingSebo} onChange={() => setCreatingSebo(false)} />
+                      Selecionar existente
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input type="radio" checked={creatingSebo} onChange={() => setCreatingSebo(true)} />
+                      Cadastrar novo
+                    </label>
+                  </div>
+                  {creatingSebo ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input
+                        type="text"
+                        placeholder="Nome do Sebo *"
+                        required
+                        value={formData.newSeboName}
+                        onChange={(e) => setFormData({ ...formData, newSeboName: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
+                      />
+                      <input
+                        type="tel"
+                        placeholder="WhatsApp *"
+                        required
+                        value={formData.newSeboWhatsapp}
+                        onChange={(e) => setFormData({ ...formData, newSeboWhatsapp: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
+                      />
+                    </div>
+                  ) : (
                     <select
                       required
                       value={formData.seboId}
-                      onChange={(e) =>
-                        setFormData({ ...formData, seboId: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                      onChange={(e) => setFormData({ ...formData, seboId: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
                     >
                       <option value="">Selecione um sebo</option>
                       {sebosList.map((s: any) => (
-                        <option key={s.id} value={s.id.toString()}>
-                          {s.name}
-                        </option>
+                        <option key={s.id} value={s.id.toString()}>{s.name}</option>
                       ))}
                     </select>
-                  </div>
-                  <Link href="/sebo/novo" className="text-[#da4653] font-medium hover:underline text-sm">
-                    + Novo sebo
-                  </Link>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Informações Básicas */}
+            {/* Seção do Livro - ISBN PRIMEIRO */}
             <div className="md:col-span-2">
-              <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">
-                Informações do Livro
-              </h2>
+              <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">Informações do Livro</h2>
+              
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-6">
+                <label className="block text-sm font-bold text-[#262969] mb-2">
+                  Comece pelo ISBN (Opcional)
+                </label>
+                <p className="text-xs text-gray-500 mb-4 font-inter">
+                  Digite o ISBN para preencher automaticamente os dados e a capa do livro.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={formData.isbn}
+                    onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none font-inter"
+                    placeholder="Ex: 9788535914849"
+                  />
+                  <button
+                    type="button"
+                    onClick={searchBookByISBN}
+                    disabled={searchingBook || !formData.isbn}
+                    className="w-full py-3 bg-[#262969] text-white rounded-lg hover:bg-[#1a1a4d] disabled:bg-gray-300 transition-colors flex items-center justify-center gap-2 font-bold"
+                  >
+                    {searchingBook ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Search className="w-5 h-5" />
+                    )}
+                    Buscar Livro
+                  </button>
+                </div>
+                {coverError && (
+                  <p className="mt-3 text-sm text-red-600 font-medium">{coverError}</p>
+                )}
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                Título *
-              </label>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
               <input
                 type="text"
                 required
                 value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
-                placeholder="Digite o título do livro"
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
+                placeholder="Título do livro"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                Autor
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Autor</label>
               <input
                 type="text"
                 value={formData.author}
-                onChange={(e) =>
-                  setFormData({ ...formData, author: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
                 placeholder="Nome do autor"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                ISBN
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formData.isbn}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isbn: e.target.value })
-                  }
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
-                  placeholder="Ex: 8535914915"
-                />
-                <button
-                  type="button"
-                  onClick={searchOpenLibraryCover}
-                  disabled={searchingCover || !formData.isbn}
-                  className="px-4 py-2 bg-[#da4653] hover:bg-[#c23a45] disabled:bg-gray-400 text-white rounded-lg transition-colors flex items-center gap-2 font-inter font-medium"
-                >
-                  <Search className="w-4 h-4" />
-                  {searchingCover ? "Buscando..." : "Buscar Capa"}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                Categoria
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
               <select
                 value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
               >
                 <option value="">Selecione uma categoria</option>
-                <option value="Ficção">Ficção</option>
-                <option value="Não-ficção">Não-ficção</option>
+                <option value="Literatura Brasileira">Literatura Brasileira</option>
+                <option value="Ficção Científica">Ficção Científica</option>
+                <option value="Fantasia">Fantasia</option>
                 <option value="Romance">Romance</option>
-                <option value="Mistério">Mistério</option>
-                <option value="Técnico">Técnico</option>
+                <option value="História">História</option>
                 <option value="Infantil">Infantil</option>
-                <option value="Poesia">Poesia</option>
-                <option value="Outro">Outro</option>
+                <option value="Técnico">Técnico</option>
+                <option value="Outros">Outros</option>
               </select>
             </div>
 
-            {/* Preço e Condição */}
-            <div className="md:col-span-2">
-              <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">
-                Preço e Condição
-              </h2>
-            </div>
-
             <div>
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                Preço (R$) *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$) *</label>
               <input
                 type="number"
-                required
                 step="0.01"
+                required
                 value={formData.price}
-                onChange={(e) =>
-                  setFormData({ ...formData, price: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
                 placeholder="0.00"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                Condição
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Condição</label>
               <select
                 value={formData.condition}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    condition: e.target.value as any,
-                  })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                onChange={(e) => setFormData({ ...formData, condition: e.target.value as any })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
               >
                 <option value="Excelente">Excelente</option>
                 <option value="Bom estado">Bom estado</option>
@@ -431,128 +379,71 @@ export default function AddBook() {
               </select>
             </div>
 
-            {/* Detalhes */}
-            <div className="md:col-span-2">
-              <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">
-                Detalhes Adicionais
-              </h2>
-            </div>
-
             <div>
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                Número de Páginas
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Páginas</label>
               <input
                 type="number"
                 value={formData.pages}
-                onChange={(e) =>
-                  setFormData({ ...formData, pages: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                onChange={(e) => setFormData({ ...formData, pages: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
                 placeholder="Ex: 300"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                Ano de Publicação
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ano</label>
               <input
                 type="number"
                 value={formData.year}
-                onChange={(e) =>
-                  setFormData({ ...formData, year: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
+                onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
                 placeholder="Ex: 2020"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-inter font-medium text-gray-700 mb-2">
-                Descrição
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
               <textarea
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] focus:border-transparent outline-none font-inter"
-                placeholder="Descreva o livro..."
-                rows={4}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
+                rows={3}
+                placeholder="Breve descrição do estado do livro..."
               />
             </div>
 
-            {/* Capa */}
             <div className="md:col-span-2">
-              <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">
-                Capa do Livro
-              </h2>
-
-              {coverError && (
-                <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm font-inter">
-                  {coverError}
+              <label className="block text-sm font-medium text-gray-700 mb-2">Capa do Livro</label>
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                <div className="w-32 h-48 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {coverUrl ? (
+                    <img src={coverUrl} alt="Capa" className="w-full h-full object-cover" />
+                  ) : (
+                    <BookOpen className="w-10 h-10 text-gray-300" />
+                  )}
                 </div>
-              )}
-
-              {coverUrl && (
-                <div className="mb-4">
-                  <p className="text-sm font-inter font-medium text-gray-700 mb-2">
-                    Prévia da Capa:
-                  </p>
-                  <img
-                    src={coverUrl}
-                    alt="Prévia da capa"
-                    className="h-48 object-cover rounded-lg border border-gray-300"
-                  />
+                <div className="flex-1 w-full">
+                  <label className="block border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-[#da4653] transition-all bg-gray-50 hover:bg-white">
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <span className="text-sm font-medium text-gray-700 block">Fazer upload manual</span>
+                    <span className="text-xs text-gray-500">PNG, JPG até 5MB</span>
+                    <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+                  </label>
                 </div>
-              )}
-
-              <label className="block">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-[#da4653] transition-colors">
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="font-inter font-medium text-gray-700">
-                    Clique para fazer upload da capa
-                  </p>
-                  <p className="text-sm text-gray-500 font-inter">
-                    ou arraste uma imagem aqui
-                  </p>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverUpload}
-                  className="hidden"
-                />
-              </label>
+              </div>
             </div>
           </div>
 
-          {/* Buttons */}
-          <div className="flex gap-4">
-            <Link href="/">
-              <button
-                type="button"
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-inter font-medium"
-              >
-                Cancelar
-              </button>
-            </Link>
+          <div className="flex gap-4 pt-6 border-t border-gray-100">
             <button
               type="submit"
               disabled={createBookMutation.isPending || isUploading}
-              className="px-6 py-2 bg-[#da4653] hover:bg-[#c23a45] disabled:bg-gray-400 text-white rounded-lg transition-colors font-inter font-medium flex items-center gap-2"
+              className="flex-1 bg-[#da4653] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#c23a45] disabled:bg-gray-400 shadow-lg shadow-red-100 transition-all flex items-center justify-center gap-2"
             >
               {createBookMutation.isPending || isUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {isUploading ? "Enviando capa..." : "Cadastrando..."}
-                </>
+                <Loader2 className="w-6 h-6 animate-spin" />
               ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  Cadastrar Livro
-                </>
+                "Finalizar Cadastro"
               )}
             </button>
           </div>

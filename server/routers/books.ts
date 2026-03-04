@@ -114,8 +114,8 @@ export const booksRouter = router({
       return data;
     }),
 
-  // Create new book (public - anyone can add)
-  create: publicProcedure
+  // Create new book (protected)
+  create: protectedProcedure
     .input(
       z.object({
         title: z.string(),
@@ -131,7 +131,18 @@ export const booksRouter = router({
         seboId: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Verify user owns this sebo
+      const sebo = await db
+        .select()
+        .from(sebos)
+        .where(eq(sebos.id, input.seboId))
+        .then((res) => res[0]);
+
+      if (!sebo || sebo.userId !== ctx.userId) {
+        throw new Error("Unauthorized: You don't own this sebo");
+      }
+
       const newBook = await db
         .insert(books)
         .values({
