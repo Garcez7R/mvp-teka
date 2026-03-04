@@ -114,8 +114,8 @@ export const booksRouter = router({
       return data;
     }),
 
-  // Create new book (protected)
-  create: protectedProcedure
+  // Create new book (public for MVP)
+  create: publicProcedure
     .input(
       z.object({
         title: z.string(),
@@ -131,16 +131,16 @@ export const booksRouter = router({
         seboId: z.number(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      // Verify user owns this sebo
+    .mutation(async ({ input }) => {
+      // Verify sebo exists
       const sebo = await db
         .select()
         .from(sebos)
         .where(eq(sebos.id, input.seboId))
         .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
-      if (!sebo || sebo.userId !== ctx.userId) {
-        throw new Error("Unauthorized: You don't own this sebo");
+      if (!sebo) {
+        throw new Error("Sebo not found");
       }
 
       const newBook = await db
