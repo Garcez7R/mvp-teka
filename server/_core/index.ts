@@ -13,7 +13,7 @@ import { appRouter } from "../routers/index.js";
 import { createTRPCContext } from "../routers/_utils/context.js";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3007;
 
 // Middleware
 app.use(express.json({ limit: "50mb" }));
