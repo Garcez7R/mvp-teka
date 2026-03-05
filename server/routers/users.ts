@@ -88,6 +88,35 @@ export const usersRouter = router({
       return user;
     }),
 
+  setMyRole: protectedProcedure
+    .input(
+      z.object({
+        role: z.enum(["livreiro", "comprador"]),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const currentUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, ctx.userId!))
+        .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
+
+      if (!currentUser) {
+        throw new Error("User not found");
+      }
+
+      if (currentUser.role === "admin") {
+        return { success: true, role: "admin" as const };
+      }
+
+      await db
+        .update(users)
+        .set({ role: input.role })
+        .where(eq(users.id, ctx.userId!));
+
+      return { success: true, role: input.role };
+    }),
+
   // Update user
   update: protectedProcedure
     .input(

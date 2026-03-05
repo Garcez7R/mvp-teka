@@ -9,6 +9,7 @@ import { trackEvent } from "@/lib/analytics";
 export default function Login() {
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
+  const setMyRoleMutation = trpc.users.setMyRole.useMutation();
   const [role, setRole] = useState<"livreiro" | "comprador">("livreiro");
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
@@ -67,6 +68,7 @@ export default function Login() {
             const selectedRole = roleRef.current;
             setSignupRole(selectedRole);
             setSessionIdToken(response.credential);
+            await setMyRoleMutation.mutateAsync({ role: selectedRole });
             await refreshSessionAndGo("/");
             trackEvent("google_login_success", { role: selectedRole });
           } catch (err) {
