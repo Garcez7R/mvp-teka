@@ -1,15 +1,17 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
+import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
-import Book from "./pages/Book";
-import About from "./pages/About";
-import AddBook from "./pages/AddBook";
-import CreateSebo from "./pages/CreateSebo";
-import ManageBooks from "./pages/ManageBooks";
+
+const Home = lazy(() => import("./pages/Home"));
+const Book = lazy(() => import("./pages/Book"));
+const About = lazy(() => import("./pages/About"));
+const AddBook = lazy(() => import("./pages/AddBook"));
+const CreateSebo = lazy(() => import("./pages/CreateSebo"));
+const ManageBooks = lazy(() => import("./pages/ManageBooks"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 function Router() {
   return (
@@ -34,7 +36,15 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <Suspense
+            fallback={
+              <div className="min-h-screen flex items-center justify-center bg-white">
+                <div className="w-8 h-8 border-4 border-[#da4653] border-t-transparent rounded-full animate-spin" />
+              </div>
+            }
+          >
+            <Router />
+          </Suspense>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

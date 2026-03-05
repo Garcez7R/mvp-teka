@@ -33,8 +33,19 @@ export default function AddBook() {
   const [isUploading, setIsUploading] = useState(false);
 
   const createBookMutation = trpc.books.create.useMutation();
-  const { data: sebosList = [] } = trpc.sebos.list.useQuery();
-  const { data: mySebo, isLoading: seboLoading } = trpc.sebos.getMySebo.useQuery();
+  const { data: sebosList = [], isLoading: sebosLoading } = trpc.sebos.list.useQuery(undefined, {
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+  const {
+    data: mySebo,
+    isLoading: seboLoading,
+    error: mySeboError,
+  } = trpc.sebos.getMySebo.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
   const canSubmit = Boolean(mySebo || formData.seboId);
 
   const normalizeISBN = (isbn: string): string =>
@@ -240,14 +251,6 @@ export default function AddBook() {
     }
   };
 
-  if (seboLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#da4653]" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
@@ -279,6 +282,20 @@ export default function AddBook() {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {seboLoading && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-blue-800 font-inter text-sm">
+                        Verificando se você já possui um sebo...
+                      </p>
+                    </div>
+                  )}
+                  {mySeboError && (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <p className="text-gray-700 font-inter text-sm">
+                        Sessão não autenticada. Selecione um sebo na lista para continuar.
+                      </p>
+                    </div>
+                  )}
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <p className="text-yellow-800 font-inter text-sm">
                       <strong>Atenção:</strong> Selecione um sebo para vincular este livro.
@@ -298,6 +315,7 @@ export default function AddBook() {
                       required={!mySebo}
                       value={formData.seboId}
                       onChange={(e) => setFormData({ ...formData, seboId: e.target.value })}
+                      disabled={sebosLoading}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
                     >
                       <option value="">Selecione um sebo</option>
