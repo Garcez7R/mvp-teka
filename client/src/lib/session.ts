@@ -7,19 +7,50 @@ type GoogleTokenClaims = {
   sub?: string;
   email?: string;
   name?: string;
+  exp?: number;
 };
+
+function decodeTokenClaims(token: string): GoogleTokenClaims | null {
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+    const payloadJson = atob(padded);
+    const payload = JSON.parse(payloadJson);
+    return payload && typeof payload === "object" ? payload : null;
+  } catch {
+    return null;
+  }
+}
 
 export function getSessionIdToken(): string | null {
   if (typeof window === "undefined") return null;
   const token = window.localStorage.getItem(TOKEN_KEY);
   if (!token) return null;
 
+  const claims = decodeTokenClaims(token);
+  const expSeconds = Number(claims?.exp);
+  const expMs = Number.isFinite(expSeconds) ? expSeconds * 1000 : NaN;
+  const now = Date.now();
+
+  // Primary source of truth for Google ID tokens.
+  if (Number.isFinite(expMs) && now >= expMs) {
+    clearSessionIdToken();
+    return null;
+  }
+
   const issuedAtRaw = window.localStorage.getItem(TOKEN_ISSUED_AT_KEY);
   const issuedAt = issuedAtRaw ? Number.parseInt(issuedAtRaw, 10) : NaN;
-  const isExpired =
-    !Number.isFinite(issuedAt) || Date.now() - issuedAt >= SESSION_MAX_AGE_MS;
+  // Backward compatibility for legacy sessions without exp claim handling.
+  if (!Number.isFinite(issuedAt)) {
+    window.localStorage.setItem(TOKEN_ISSUED_AT_KEY, String(now));
+    return token;
+  }
 
-  if (isExpired) {
+  const isExpiredByIssuedAt = now - issuedAt >= SESSION_MAX_AGE_MS;
+  if (!Number.isFinite(expMs) && isExpiredByIssuedAt) {
     clearSessionIdToken();
     return null;
   }
@@ -57,17 +88,5 @@ export function clearSignupRole() {
 export function getGoogleTokenClaims(): GoogleTokenClaims | null {
   const token = getSessionIdToken();
   if (!token) return null;
-
-  const parts = token.split(".");
-  if (parts.length < 2) return null;
-
-  try {
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-    const payloadJson = atob(padded);
-    const payload = JSON.parse(payloadJson);
-    return payload && typeof payload === "object" ? payload : null;
-  } catch {
-    return null;
-  }
+  return decodeTokenClaims(token);
 }

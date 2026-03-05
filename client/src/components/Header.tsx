@@ -43,10 +43,6 @@ export default function Header() {
           >
             Catálogo
           </Link>
-          
-          <Link href="/about" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
-            Sobre
-          </Link>
           {isAuthenticated && (role === "livreiro" || role === "admin") && (
             <>
               <Link href="/add-book" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
@@ -95,6 +91,9 @@ export default function Header() {
               </button>
             </div>
           )}
+          <Link href="/about" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+            Sobre
+          </Link>
         </nav>
 
         {/* Mobile Menu Button */}

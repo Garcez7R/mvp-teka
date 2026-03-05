@@ -53,11 +53,12 @@ export default function MyInterests() {
     );
   }
 
-  const hasError = Boolean(interestsError || favoritesError);
   const fallbackFavoriteBooks = allBooks.filter((book: any) =>
     localFavoriteIds.includes(String(book.id))
   );
   const effectiveFavorites = favorites.length > 0 ? favorites : fallbackFavoriteBooks;
+  const interestsTabError = Boolean(interestsError) && interests.length === 0;
+  const favoritesTabError = Boolean(favoritesError) && effectiveFavorites.length === 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -102,7 +103,7 @@ export default function MyInterests() {
             </button>
           </div>
 
-        {hasError ? (
+        {activeTab === "interests" && interestsTabError ? (
           <div className="text-center py-10 border border-red-200 rounded-xl bg-red-50">
             <p className="font-inter text-red-700 mb-3">
               Não foi possível carregar seus dados agora.
@@ -111,6 +112,21 @@ export default function MyInterests() {
               type="button"
               onClick={() => {
                 void refetchInterests();
+                void refetchFavorites();
+              }}
+              className="px-4 py-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-100"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : activeTab === "favorites" && favoritesTabError ? (
+          <div className="text-center py-10 border border-red-200 rounded-xl bg-red-50">
+            <p className="font-inter text-red-700 mb-3">
+              Não foi possível carregar seus favoritos agora.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
                 void refetchFavorites();
               }}
               className="px-4 py-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-100"
