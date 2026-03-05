@@ -5,20 +5,15 @@ import App from "./App";
 import { trpc } from "./lib/trpc";
 import "./index.css";
 
-// Create a query client for React Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 10,
     },
   },
 });
 
-// Create tRPC client
-// - Hosted environments (Vercel/Netlify/custom): same-origin /trpc
-// - Local Express (3777): same-origin /trpc
-// - Vite dev (5173): backend on localhost:3000
 const runtimeHost = typeof window !== "undefined" ? window.location.hostname : "";
 const runtimePort = typeof window !== "undefined" ? window.location.port : "";
 const runtimeOrigin = typeof window !== "undefined" ? window.location.origin : "";
@@ -27,7 +22,6 @@ const explicitApiBase = (import.meta.env.VITE_PUBLIC_API_URL || "").trim();
 const explicitPointsToLocal =
   explicitApiBase.includes("localhost") || explicitApiBase.includes("127.0.0.1");
 
-// Avoid broken public deploys caused by env values like localhost in Netlify/Vercel.
 const safeExplicitApiBase =
   explicitApiBase && (!explicitPointsToLocal || isLocalRuntime) ? explicitApiBase : "";
 
