@@ -4,10 +4,13 @@ import SearchBar from "@/components/SearchBar";
 import BookCard from "@/components/BookCard";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
-import { Filter, Heart } from "lucide-react";
+import { Filter, Heart, Bell, Plus, Trash2 } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function Home() {
+  const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSebo, setSelectedSebo] = useState<string | null>(null);
@@ -20,7 +23,47 @@ export default function Home() {
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchBarKey, setSearchBarKey] = useState(0);
+  const [wishlistTitle, setWishlistTitle] = useState("");
+  const [wishlistIsbn, setWishlistIsbn] = useState("");
+  const [onlyWishlistMatches, setOnlyWishlistMatches] = useState(false);
   const { getFavoriteCount, isFavorite } = useFavorites();
+  const utils = trpc.useUtils();
+
+  const { data: wishlistItems = [] } = trpc.wishlist.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const { data: wishlistMatches = [] } = trpc.wishlist.matches.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const addWishlistMutation = trpc.wishlist.add.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.wishlist.list.invalidate(),
+        utils.wishlist.matches.invalidate(),
+      ]);
+      setWishlistTitle("");
+      setWishlistIsbn("");
+      toast.success("Livro adicionado na lista de procura.");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Falha ao adicionar item na lista.");
+    },
+  });
+  const removeWishlistMutation = trpc.wishlist.remove.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.wishlist.list.invalidate(),
+        utils.wishlist.matches.invalidate(),
+      ]);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Falha ao remover item da lista.");
+    },
+  });
 
   const clearAllFilters = () => {
     setSearchQuery("");
@@ -33,8 +76,24 @@ export default function Home() {
     setMinPriceFilter("");
     setMaxPriceFilter("");
     setOnlyFavorites(false);
+    setOnlyWishlistMatches(false);
     setShowFilters(false);
     setSearchBarKey((prev) => prev + 1);
+  };
+
+  const handleAddWishlist = async () => {
+    if (!isAuthenticated) {
+      toast.error("Faça login para usar a lista de procura.");
+      return;
+    }
+    if (!wishlistTitle.trim() && !wishlistIsbn.trim()) {
+      toast.error("Informe um título ou ISBN.");
+      return;
+    }
+    await addWishlistMutation.mutateAsync({
+      title: wishlistTitle.trim() || undefined,
+      isbn: wishlistIsbn.trim() || undefined,
+    });
   };
 
   // Fetch books from API
@@ -168,6 +227,11 @@ export default function Home() {
 
   // Filter books locally
   const filteredBooks = useMemo(() => {
+    const matchBookIds = new Set(
+      wishlistMatches
+        .map((match: any) => Number(match.bookId))
+        .filter((id: number) => Number.isFinite(id))
+    );
     return displayBooks.filter((book: any) => {
       const matchesCategory = !selectedCategory || book.category === selectedCategory;
       const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
@@ -182,6 +246,8 @@ export default function Home() {
       const matchesState = !stateFilter || state === stateFilter.toLowerCase();
       const favoriteKey = String(book.id);
       const matchesFavorites = !onlyFavorites || isFavorite(favoriteKey);
+      const numericId = Number(book.id);
+      const matchesWishlist = !onlyWishlistMatches || matchBookIds.has(numericId);
       return (
         matchesCategory &&
         matchesSebo &&
@@ -191,7 +257,8 @@ export default function Home() {
         matchesMax &&
         matchesCity &&
         matchesState &&
-        matchesFavorites
+        matchesFavorites &&
+        matchesWishlist
       );
     });
   }, [
@@ -206,6 +273,8 @@ export default function Home() {
     stateFilter,
     isFavorite,
     onlyFavorites,
+    onlyWishlistMatches,
+    wishlistMatches,
   ]);
 
   useEffect(() => {
@@ -269,7 +338,78 @@ export default function Home() {
             <Heart className="w-4 h-4" />
             {onlyFavorites ? "Favoritos: ON" : "Favoritos"} ({getFavoriteCount()})
           </button>
+          {isAuthenticated && (
+            <button
+              onClick={() => setOnlyWishlistMatches((prev) => !prev)}
+              className="flex items-center gap-2 px-4 py-2 border-2 border-[#1f7a8c] rounded-lg hover:bg-[#1f7a8c] hover:text-white transition-colors font-inter text-sm font-medium text-[#1f7a8c]"
+              title="Ver livros da sua lista de procura"
+            >
+              <Bell className="w-4 h-4" />
+              {onlyWishlistMatches ? "Lista de Procura: ON" : "Lista de Procura"} ({wishlistMatches.length})
+            </button>
+          )}
         </div>
+
+        {isAuthenticated && (
+          <div className="mb-8 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h3 className="font-outfit font-semibold text-[#262969]">Lista de Procura</h3>
+              <span className="text-xs text-gray-600">
+                {wishlistMatches.length} match(es) ativo(s)
+              </span>
+            </div>
+            {wishlistMatches.length > 0 && (
+              <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
+                Encontramos {wishlistMatches.length} livro(s) da sua lista disponíveis no catálogo.
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+              <input
+                value={wishlistTitle}
+                onChange={(e) => setWishlistTitle(e.target.value)}
+                placeholder="Título (ex: Duna)"
+                className="px-3 py-2 border border-gray-300 rounded bg-white"
+              />
+              <input
+                value={wishlistIsbn}
+                onChange={(e) => setWishlistIsbn(e.target.value)}
+                placeholder="ISBN (opcional)"
+                className="px-3 py-2 border border-gray-300 rounded bg-white"
+              />
+              <button
+                type="button"
+                onClick={() => void handleAddWishlist()}
+                disabled={addWishlistMutation.isPending}
+                className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded bg-[#262969] text-white hover:bg-[#1a1a4d] disabled:opacity-60"
+              >
+                <Plus className="w-4 h-4" />
+                Adicionar à procura
+              </button>
+            </div>
+            {wishlistItems.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {wishlistItems.map((item: any) => (
+                  <span
+                    key={item.id}
+                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-gray-300 text-sm text-gray-700"
+                  >
+                    {item.title || item.isbn}
+                    <button
+                      type="button"
+                      onClick={() => void removeWishlistMutation.mutateAsync({ id: item.id })}
+                      className="text-red-600 hover:text-red-800"
+                      aria-label="Remover da lista de procura"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">Nenhum item na sua lista de procura ainda.</p>
+            )}
+          </div>
+        )}
 
         {showFilters && (
             <div className="mt-4 p-6 bg-gray-50 rounded-lg border border-gray-200">

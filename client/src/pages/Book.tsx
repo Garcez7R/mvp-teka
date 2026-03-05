@@ -9,9 +9,29 @@ import { trackEvent } from "@/lib/analytics";
 import { BookOpen, MapPin, Calendar, FileText, MessageCircle, ArrowLeft, Heart, Loader2 } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
+
+const LOCAL_INTEREST_KEY = "teka_local_interest_book_ids";
+
+function saveLocalInterest(bookId: number): number {
+  if (typeof window === "undefined") return 1;
+  try {
+    const raw = window.localStorage.getItem(LOCAL_INTEREST_KEY);
+    const parsed = raw ? (JSON.parse(raw) as number[]) : [];
+    const values = Array.isArray(parsed) ? parsed : [];
+    if (!values.includes(bookId)) {
+      values.push(bookId);
+      window.localStorage.setItem(LOCAL_INTEREST_KEY, JSON.stringify(values));
+    }
+    return values.length;
+  } catch {
+    return 1;
+  }
+}
 
 export default function Book() {
   const { id } = useParams<{ id: string }>();
+  const { isAuthenticated, refresh } = useAuth();
   const isDemoBook = Boolean(id?.startsWith("demo-"));
   const parsedBookId = Number.parseInt(id || "", 10);
   const favoriteId = isDemoBook ? (id || null) : Number.isFinite(parsedBookId) ? parsedBookId : null;
@@ -56,6 +76,11 @@ export default function Book() {
       toast.error("Não foi possível registrar interesse neste livro.");
       return;
     }
+    if (!isAuthenticated) {
+      toast.error("Faça login para registrar interesse.");
+      window.location.href = "/login";
+      return;
+    }
     try {
       const result = await registerInterestMutation.mutateAsync({ bookId });
       const total = result?.totalInterests;
@@ -65,11 +90,35 @@ export default function Book() {
           : "Interesse registrado com sucesso."
       );
     } catch (error: any) {
-      const message =
+      const message = String(error?.message || "");
+      const unauthenticated =
+        error?.data?.code === "UNAUTHORIZED" || /not authenticated/i.test(message);
+
+      if (unauthenticated) {
+        try {
+          await refresh();
+          const retry = await registerInterestMutation.mutateAsync({ bookId });
+          const retryTotal = retry?.totalInterests;
+          toast.success(
+            retryTotal && Number.isFinite(retryTotal)
+              ? `Interesse registrado. ${retryTotal} pessoa(s) interessada(s).`
+              : "Interesse registrado com sucesso."
+          );
+          return;
+        } catch {
+          const localTotal = saveLocalInterest(bookId);
+          toast.success(
+            `Interesse salvo localmente. Total local: ${localTotal}.`
+          );
+          return;
+        }
+      }
+
+      const fallbackMessage =
         typeof error?.message === "string" && error.message.length > 0
           ? error.message
           : "Faça login para registrar interesse.";
-      toast.error(message);
+      toast.error(fallbackMessage);
     }
   };
 

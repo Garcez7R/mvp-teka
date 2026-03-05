@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
@@ -7,7 +6,6 @@ import { setSessionIdToken, setSignupRole } from "@/lib/session";
 import { trackEvent } from "@/lib/analytics";
 
 export default function Login() {
-  const [, navigate] = useLocation();
   const utils = trpc.useUtils();
   const setMyRoleMutation = trpc.users.setMyRole.useMutation();
   const [role, setRole] = useState<"livreiro" | "comprador">("livreiro");
@@ -49,7 +47,7 @@ export default function Login() {
 
   const refreshSessionAndGo = async (destination = "/") => {
     await ensureServerSession();
-    navigate(destination);
+    window.location.assign(destination);
   };
 
   useEffect(() => {

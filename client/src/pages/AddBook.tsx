@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
@@ -35,6 +35,13 @@ export default function AddBook() {
   const [isbnValid, setIsbnValid] = useState<boolean | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showSeboCreatedBanner, setShowSeboCreatedBanner] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerError, setScannerError] = useState("");
+  const [scannerBusy, setScannerBusy] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scannerActiveRef = useRef(false);
+  const scanFrameRef = useRef<number | null>(null);
 
   const createBookMutation = trpc.books.create.useMutation();
   const { data: sebosList = [], isLoading: sebosLoading } = trpc.sebos.list.useQuery(undefined, {
@@ -95,13 +102,14 @@ export default function AddBook() {
     }
   }, []);
 
-  const searchBookByISBN = async () => {
-    if (!formData.isbn) {
+  const searchBookByISBN = async (isbnInput?: string) => {
+    const isbnValue = isbnInput ?? formData.isbn;
+    if (!isbnValue) {
       setCoverError("Digite um ISBN para buscar o livro");
       return;
     }
 
-    if (!validateISBN(formData.isbn)) {
+    if (!validateISBN(isbnValue)) {
       setCoverError("ISBN inválido. Use apenas números e hífens (10 ou 13 dígitos).");
       return;
     }
@@ -111,7 +119,7 @@ export default function AddBook() {
     trackEvent("isbn_lookup_started");
 
     try {
-      const isbnClean = normalizeISBN(formData.isbn);
+      const isbnClean = normalizeISBN(isbnValue);
       if (curatedCoverByIsbn[isbnClean]) {
         setCoverUrl(curatedCoverByIsbn[isbnClean]);
         setCoverFile(null);
@@ -209,6 +217,115 @@ export default function AddBook() {
       setSearchingBook(false);
     }
   };
+
+  const stopScanner = () => {
+    scannerActiveRef.current = false;
+    setScannerBusy(false);
+    if (scanFrameRef.current) {
+      cancelAnimationFrame(scanFrameRef.current);
+      scanFrameRef.current = null;
+    }
+    if (streamRef.current) {
+      for (const track of streamRef.current.getTracks()) {
+        track.stop();
+      }
+      streamRef.current = null;
+    }
+    setScannerOpen(false);
+  };
+
+  const extractISBNFromRaw = (raw: string): string | null => {
+    const normalized = normalizeISBN(raw);
+    if (validateISBN(normalized)) return normalized;
+
+    const candidates = raw.match(/\b(?:97[89][0-9X\- ]{10,}|[0-9X\- ]{10,})\b/g) || [];
+    for (const candidate of candidates) {
+      const clean = normalizeISBN(candidate);
+      if (validateISBN(clean)) {
+        return clean;
+      }
+    }
+    return null;
+  };
+
+  const startScanner = async () => {
+    if (typeof window === "undefined") return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setScannerError("Seu navegador não suporta acesso à câmera.");
+      return;
+    }
+
+    const BarcodeDetectorCtor = (window as any).BarcodeDetector;
+    if (!BarcodeDetectorCtor) {
+      setScannerError("Leitura de código por câmera não suportada neste navegador.");
+      return;
+    }
+
+    try {
+      setScannerError("");
+      setScannerOpen(true);
+      setScannerBusy(true);
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+      streamRef.current = stream;
+
+      const video = videoRef.current;
+      if (!video) {
+        throw new Error("Visualização da câmera indisponível.");
+      }
+      video.srcObject = stream;
+      await video.play();
+
+      const detector = new BarcodeDetectorCtor({
+        formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"],
+      });
+      scannerActiveRef.current = true;
+
+      const scanLoop = async () => {
+        if (!scannerActiveRef.current || !videoRef.current) return;
+        try {
+          const barcodes = await detector.detect(videoRef.current);
+          if (barcodes?.length) {
+            for (const barcode of barcodes) {
+              const rawValue = String(barcode.rawValue || "");
+              const isbnFound = extractISBNFromRaw(rawValue);
+              if (isbnFound) {
+                setFormData((prev) => ({ ...prev, isbn: isbnFound }));
+                toast.success(`ISBN detectado: ${isbnFound}`);
+                stopScanner();
+                await searchBookByISBN(isbnFound);
+                return;
+              }
+            }
+          }
+        } catch {
+          // Keep loop alive while scanner is active.
+        }
+
+        scanFrameRef.current = requestAnimationFrame(() => {
+          void scanLoop();
+        });
+      };
+
+      void scanLoop();
+    } catch (error) {
+      stopScanner();
+      setScannerError(
+        error instanceof Error ? error.message : "Não foi possível iniciar a câmera."
+      );
+    } finally {
+      setScannerBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopScanner();
+    };
+  }, []);
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -418,10 +535,44 @@ export default function AddBook() {
                     )}
                     {searchingBook ? 'Buscando capa...' : 'Buscar Capa'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => void startScanner()}
+                    disabled={scannerBusy}
+                    className="w-full py-3 border-2 border-[#1f7a8c] text-[#1f7a8c] rounded-lg hover:bg-[#1f7a8c] hover:text-white disabled:opacity-50 transition-colors font-bold"
+                  >
+                    {scannerBusy ? "Abrindo câmera..." : "Escanear ISBN com câmera"}
+                  </button>
                 </div>
+                {scannerOpen && (
+                  <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
+                    <p className="text-sm text-gray-700 mb-2">
+                      Aponte a câmera para o código de barras do livro.
+                    </p>
+                    <video
+                      ref={videoRef}
+                      className="w-full max-h-72 rounded-lg bg-black"
+                      autoPlay
+                      muted
+                      playsInline
+                    />
+                    <button
+                      type="button"
+                      onClick={stopScanner}
+                      className="mt-3 px-3 py-2 text-sm rounded border border-gray-300 hover:bg-gray-100"
+                    >
+                      Fechar câmera
+                    </button>
+                  </div>
+                )}
                 {coverError && (
                   <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-red-700 text-sm font-medium">{coverError}</p>
+                  </div>
+                )}
+                {scannerError && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-amber-700 text-sm font-medium">{scannerError}</p>
                   </div>
                 )}
               </div>
