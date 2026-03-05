@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure, livreiroProcedure } from "./_utils/trpc.js";
+import { router, publicProcedure, protectedProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { sebos, books } from "../_schema.ts";
+import { sebos, books, users } from "../_schema.ts";
 import { eq } from "drizzle-orm";
 
 export const sebosRouter = router({
@@ -43,8 +43,8 @@ export const sebosRouter = router({
     return mySebo || null;
   }),
 
-  // Create sebo (livreiro/admin)
-  create: livreiroProcedure
+  // Create sebo (authenticated user; promotes buyer to seller on first creation)
+  create: protectedProcedure
     .input(
       z.object({
         name: z.string(),
@@ -55,6 +55,23 @@ export const sebosRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const currentUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, ctx.userId!))
+        .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
+
+      if (!currentUser) {
+        throw new Error("User not found");
+      }
+
+      if (currentUser.role === "comprador" || currentUser.role === "user") {
+        await db
+          .update(users)
+          .set({ role: "livreiro" })
+          .where(eq(users.id, currentUser.id));
+      }
+
       const newSebo = await db.insert(sebos).values({
         userId: ctx.userId!,
         ...input,
