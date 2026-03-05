@@ -17,6 +17,8 @@ export default function SettingsPage() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [installStatus, setInstallStatus] = useState("");
   const [cameraStatus, setCameraStatus] = useState("Não verificado");
+  const [cameraHelpText, setCameraHelpText] = useState("");
+  const [cameraHelpCopied, setCameraHelpCopied] = useState(false);
 
   useEffect(() => {
     const standalone =
@@ -38,6 +40,50 @@ export default function SettingsPage() {
       window.removeEventListener("teka:pwa-installed", refreshInstallAvailability);
     };
   }, []);
+
+  useEffect(() => {
+    const ua = navigator.userAgent || "";
+    const isAndroid = /Android/i.test(ua);
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+    let steps: string[] = [];
+    if (isAndroid) {
+      steps = isStandalone
+        ? [
+            "1. Abra Configurações do Android > Apps > TEKA.",
+            "2. Entre em Permissões > Câmera.",
+            "3. Marque como Permitir.",
+            "4. Volte ao app e toque em Verificar câmera.",
+          ]
+        : [
+            "1. No Chrome, toque no cadeado da URL.",
+            "2. Abra Permissões do site > Câmera.",
+            "3. Defina como Permitir.",
+            "4. Recarregue a página e toque em Verificar câmera.",
+          ];
+    } else if (isIOS) {
+      steps = isStandalone
+        ? [
+            "1. Abra Ajustes do iPhone > TEKA.",
+            "2. Ative a opção Câmera.",
+            "3. Volte ao app e toque em Verificar câmera.",
+          ]
+        : [
+            "1. Abra Ajustes do iPhone > Safari > Câmera.",
+            "2. Selecione Permitir.",
+            "3. Reabra o site e toque em Verificar câmera.",
+          ];
+    } else {
+      steps = [
+        "1. No Chrome, clique no cadeado ao lado da URL.",
+        "2. Em Câmera, selecione Permitir.",
+        "3. Recarregue a página.",
+        "4. Se necessário, confira em chrome://settings/content/camera.",
+      ];
+    }
+
+    setCameraHelpText(steps.join("\n"));
+  }, [isStandalone]);
 
   useEffect(() => {
     if (!window.isSecureContext) {
@@ -113,6 +159,24 @@ export default function SettingsPage() {
     }
   };
 
+  const handleCopyCameraHelp = async () => {
+    try {
+      await navigator.clipboard.writeText(cameraHelpText);
+      setCameraHelpCopied(true);
+      window.setTimeout(() => setCameraHelpCopied(false), 2000);
+    } catch {
+      setInstallStatus("Não foi possível copiar automaticamente as instruções.");
+    }
+  };
+
+  const handleOpenBrowserCameraSettings = () => {
+    try {
+      window.open("chrome://settings/content/camera", "_blank", "noopener,noreferrer");
+    } catch {
+      setInstallStatus("Abra manualmente: chrome://settings/content/camera");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
@@ -164,6 +228,28 @@ export default function SettingsPage() {
               Verificar câmera
             </button>
             <p className="mt-3 text-sm text-gray-700">Status: {cameraStatus}</p>
+            <div className="mt-4 p-3 border border-gray-200 rounded-lg bg-gray-50">
+              <p className="text-sm font-semibold text-[#262969] mb-2">Como liberar câmera</p>
+              <pre className="text-xs text-gray-700 whitespace-pre-wrap font-inter">
+                {cameraHelpText}
+              </pre>
+              <div className="mt-3 flex gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => void handleCopyCameraHelp()}
+                  className="px-3 py-1.5 text-xs rounded border border-gray-300 hover:bg-gray-100"
+                >
+                  {cameraHelpCopied ? "Instruções copiadas" : "Copiar instruções"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenBrowserCameraSettings}
+                  className="px-3 py-1.5 text-xs rounded border border-gray-300 hover:bg-gray-100"
+                >
+                  Abrir config do Chrome
+                </button>
+              </div>
+            </div>
           </section>
 
           <section className="border border-gray-200 rounded-xl p-5 bg-white md:col-span-2">
