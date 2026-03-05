@@ -68,7 +68,12 @@ export default function Login() {
             const selectedRole = roleRef.current;
             setSignupRole(selectedRole);
             setSessionIdToken(response.credential);
-            await setMyRoleMutation.mutateAsync({ role: selectedRole });
+            try {
+              await setMyRoleMutation.mutateAsync({ role: selectedRole });
+            } catch {
+              // In some runtimes the first authenticated call may race with context creation.
+              // Keep login flow non-blocking; role will be reconciled by subsequent requests.
+            }
             await refreshSessionAndGo("/");
             trackEvent("google_login_success", { role: selectedRole });
           } catch (err) {

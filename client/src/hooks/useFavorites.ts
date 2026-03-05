@@ -11,7 +11,7 @@ export function useFavorites() {
   const [isLoading, setIsLoading] = useState(true);
   const hasAuthToken = Boolean(getSessionIdToken());
   const utils = trpc.useUtils();
-  const { data: remoteFavorites = [] } = trpc.favorites.list.useQuery(undefined, {
+  const remoteFavoritesQuery = trpc.favorites.list.useQuery(undefined, {
     enabled: hasAuthToken,
     retry: false,
     refetchOnWindowFocus: false,
@@ -50,26 +50,34 @@ export function useFavorites() {
 
   useEffect(() => {
     if (!hasAuthToken) return;
-    setFavorites(remoteFavorites.map((book: any) => normalizeId(book.id)));
-  }, [hasAuthToken, remoteFavorites]);
+    if (!remoteFavoritesQuery.isSuccess) return;
+    const remoteIds = (remoteFavoritesQuery.data ?? []).map((book: any) =>
+      normalizeId(book.id)
+    );
+    setFavorites(remoteIds);
+  }, [hasAuthToken, remoteFavoritesQuery.data, remoteFavoritesQuery.isSuccess]);
 
   const toggleFavorite = (bookId: number | string) => {
     const key = normalizeId(bookId);
     const numericId = Number.parseInt(key, 10);
-    if (hasAuthToken && Number.isFinite(numericId) && numericId > 0) {
-      void toggleRemoteFavorite.mutateAsync(numericId);
-      trackEvent("favorite_toggled", { bookId: key, action: "remote_toggle" });
-      return;
-    }
 
+    // Always update UI immediately (works for both guest and logged sessions).
     setFavorites((prev) => {
       const wasFavorite = prev.includes(key);
-      const next = wasFavorite
-        ? prev.filter((id) => id !== key)
-        : [...prev, key];
+      const next = wasFavorite ? prev.filter((id) => id !== key) : [...prev, key];
       trackEvent("favorite_toggled", { bookId: key, action: wasFavorite ? "remove" : "add" });
       return next;
     });
+
+    if (hasAuthToken && Number.isFinite(numericId) && numericId > 0) {
+      void toggleRemoteFavorite
+        .mutateAsync(numericId)
+        .then(() => utils.favorites.list.invalidate())
+        .catch(() => {
+          // Keep local state as fallback when API auth/session is unstable.
+        });
+      return;
+    }
   };
 
   const isFavorite = (bookId: number | string) => favorites.includes(normalizeId(bookId));
