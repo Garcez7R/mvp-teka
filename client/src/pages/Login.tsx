@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -12,6 +12,9 @@ export default function Login() {
   const [role, setRole] = useState<"livreiro" | "comprador">("livreiro");
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
+  const roleRef = useRef<"livreiro" | "comprador">("livreiro");
+  const googleContainerRef = useRef<HTMLDivElement | null>(null);
+  const googleInitializedRef = useRef(false);
   const googleClientId = useMemo(
     () => (import.meta.env.VITE_GOOGLE_CLIENT_ID || "").trim(),
     []
@@ -25,54 +28,75 @@ export default function Login() {
     navigate(destination);
   };
 
-  const handleGoogleLogin = async () => {
-    setError("");
+  useEffect(() => {
+    roleRef.current = role;
+  }, [role]);
+
+  useEffect(() => {
     if (!isGoogleConfigured) {
-      setError("Google Sign-In não configurado. Defina VITE_GOOGLE_CLIENT_ID.");
       return;
     }
 
-    if (typeof window === "undefined" || !(window as any).google?.accounts?.id) {
-      setError("SDK do Google não carregado. Recarregue a página e tente novamente.");
-      return;
-    }
-
-    setSignupRole(role);
-
-    (window as any).google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: async (response: { credential?: string }) => {
-        try {
-          setIsBusy(true);
-          if (!response?.credential) {
-            throw new Error("Não foi possível obter o token do Google.");
-          }
-          setSessionIdToken(response.credential);
-          await refreshSessionAndGo(role === "livreiro" ? "/sebo/novo" : "/");
-          trackEvent("google_login_success", { role });
-        } catch (err) {
-          const message = err instanceof Error ? err.message : "Falha no login com Google";
-          setError(message);
-          trackEvent("google_login_error", { message });
-        } finally {
-          setIsBusy(false);
-        }
-      },
-    });
-
-    (window as any).google.accounts.id.prompt((notification: any) => {
-      if (notification?.isNotDisplayed?.()) {
-        const reason = notification?.getNotDisplayedReason?.();
-        setError(
-          `Google Sign-In indisponível neste contexto${reason ? ` (${reason})` : ""}.`
-        );
-      } else if (notification?.isSkippedMoment?.()) {
-        setError("Login do Google foi ignorado. Tente novamente.");
-      } else if (notification?.isDismissedMoment?.()) {
-        setError("Login do Google foi fechado antes de concluir.");
+    let attempts = 0;
+    const maxAttempts = 20;
+    const timer = window.setInterval(() => {
+      if (googleInitializedRef.current) {
+        window.clearInterval(timer);
+        return;
       }
-    });
-  };
+
+      const googleApi = (window as any).google?.accounts?.id;
+      const container = googleContainerRef.current;
+      if (!googleApi || !container) {
+        attempts += 1;
+        if (attempts >= maxAttempts) {
+          setError("SDK do Google não carregado. Recarregue a página e tente novamente.");
+          window.clearInterval(timer);
+        }
+        return;
+      }
+
+      googleApi.initialize({
+        client_id: googleClientId,
+        callback: async (response: { credential?: string }) => {
+          try {
+            setError("");
+            setIsBusy(true);
+            if (!response?.credential) {
+              throw new Error("Não foi possível obter o token do Google.");
+            }
+            const selectedRole = roleRef.current;
+            setSignupRole(selectedRole);
+            setSessionIdToken(response.credential);
+            await refreshSessionAndGo(selectedRole === "livreiro" ? "/sebo/novo" : "/");
+            trackEvent("google_login_success", { role: selectedRole });
+          } catch (err) {
+            const message = err instanceof Error ? err.message : "Falha no login com Google";
+            setError(message);
+            trackEvent("google_login_error", { message });
+          } finally {
+            setIsBusy(false);
+          }
+        },
+      });
+
+      container.innerHTML = "";
+      googleApi.renderButton(container, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        width: 320,
+        text: "signin_with",
+        shape: "pill",
+      });
+      googleInitializedRef.current = true;
+      window.clearInterval(timer);
+    }, 250);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [googleClientId, isGoogleConfigured]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -101,13 +125,12 @@ export default function Login() {
               </select>
             </label>
 
-            <button
-              onClick={handleGoogleLogin}
-              disabled={isBusy}
-              className="w-full bg-[#262969] hover:bg-[#1e2157] text-white font-semibold py-3 rounded-lg disabled:opacity-60"
-            >
-              {isBusy ? "Conectando..." : "Entrar com Google"}
-            </button>
+            <div className="w-full flex justify-center">
+              <div ref={googleContainerRef} />
+            </div>
+            {isBusy && (
+              <p className="text-sm text-gray-600 text-center">Conectando...</p>
+            )}
 
             {!isGoogleConfigured && (
               <p className="text-xs text-red-600">

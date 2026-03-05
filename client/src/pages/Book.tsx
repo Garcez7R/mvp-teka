@@ -28,6 +28,10 @@ export default function Book() {
   const favorited = favoriteIdNumber !== null ? isFavorite(favoriteIdNumber) : false;
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [id]);
+
+  useEffect(() => {
     const selectedTitle = isDemoBook
       ? id?.replace("demo-", "Livro")
       : book?.title;
@@ -215,10 +219,21 @@ export default function Book() {
             </button>
           </Link>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          {/* Mobile Floating Cover */}
+          <div className="md:hidden fixed top-24 right-3 z-40 rounded-md overflow-hidden border border-gray-200 bg-white shadow-lg aspect-[2/3] w-20">
+            <BookCover
+              isbn={demoBook.isbn}
+              title={demoBook.title}
+              author={demoBook.author}
+              coverUrl={demoBook.coverUrl}
+              className="w-full h-full"
+            />
+          </div>
+
           {/* Book Image */}
           <div className="md:col-span-1">
-              <div className="rounded-lg overflow-hidden border border-gray-200 relative aspect-[2/3] w-1/2 sm:w-1/3 md:w-full max-w-xs mx-auto sticky top-20 md:top-24">
+              <div className="rounded-lg overflow-hidden border border-gray-200 relative aspect-[2/3] w-1/2 sm:w-1/3 md:w-full max-w-xs mx-auto md:sticky md:top-24">
                 <BookCover
                   isbn={demoBook.isbn}
                   title={demoBook.title}
@@ -416,9 +431,20 @@ export default function Book() {
         </Link>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          {/* Mobile Floating Cover */}
+          <div className="md:hidden fixed top-24 right-3 z-40 rounded-md overflow-hidden border border-gray-200 bg-white shadow-lg aspect-[2/3] w-20">
+            <BookCover
+              isbn={book.isbn}
+              title={book.title}
+              author={book.author}
+              coverUrl={book.coverUrl}
+              className="w-full h-full"
+            />
+          </div>
+
           {/* Book Image */}
           <div className="md:col-span-1">
-            <div className="rounded-lg overflow-hidden border border-gray-200 relative aspect-[2/3] w-1/2 sm:w-1/3 md:w-full max-w-xs mx-auto sticky top-20 md:top-24">
+            <div className="rounded-lg overflow-hidden border border-gray-200 relative aspect-[2/3] w-1/2 sm:w-1/3 md:w-full max-w-xs mx-auto md:sticky md:top-24">
               <BookCover
                 isbn={book.isbn}
                 title={book.title}
