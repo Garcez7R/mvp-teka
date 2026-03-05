@@ -9,6 +9,9 @@ import {
 } from "@/lib/session";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+
+let lastSessionExpiredToastAt = 0;
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
@@ -133,6 +136,20 @@ export function useAuth(options?: UseAuthOptions) {
       finish();
     };
   }, [state.user, utils]);
+
+  useEffect(() => {
+    const isUnauthorized =
+      meQuery.error instanceof TRPCClientError &&
+      meQuery.error.data?.code === "UNAUTHORIZED";
+    if (!isUnauthorized) return;
+    if (silentAuthRunning) return;
+    if (getSessionIdToken()) return;
+
+    const now = Date.now();
+    if (now - lastSessionExpiredToastAt < 5000) return;
+    lastSessionExpiredToastAt = now;
+    toast.error("Sessão expirada. Faça login novamente.");
+  }, [meQuery.error, silentAuthRunning]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;

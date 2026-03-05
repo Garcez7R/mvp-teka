@@ -40,6 +40,7 @@ export default function AddBook() {
   const [scannerBusy, setScannerBusy] = useState(false);
   const [scannerMode, setScannerMode] = useState<"barcode" | "cover">("barcode");
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const isbnInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scannerActiveRef = useRef(false);
   const scanFrameRef = useRef<number | null>(null);
@@ -285,21 +286,28 @@ export default function AddBook() {
     return "Não foi possível iniciar a câmera.";
   };
 
+  const fallbackToManualIsbn = (message: string) => {
+    setScannerError(`${message} Use o ISBN manualmente (ex: 9788535914849).`);
+    window.setTimeout(() => {
+      isbnInputRef.current?.focus();
+    }, 50);
+  };
+
   const startScanner = async (mode: "barcode" | "cover") => {
     if (typeof window === "undefined") return;
     if (!navigator.mediaDevices?.getUserMedia) {
-      setScannerError("Seu navegador não suporta acesso à câmera.");
+      fallbackToManualIsbn("Seu navegador não suporta acesso à câmera.");
       return;
     }
 
     const BarcodeDetectorCtor = (window as any).BarcodeDetector;
     const TextDetectorCtor = (window as any).TextDetector;
     if (mode === "barcode" && !BarcodeDetectorCtor) {
-      setScannerError("Leitura de código por câmera não suportada neste navegador.");
+      fallbackToManualIsbn("Leitura de código por câmera não suportada neste navegador.");
       return;
     }
     if (mode === "cover" && !TextDetectorCtor) {
-      setScannerError("OCR por câmera não suportado neste navegador.");
+      fallbackToManualIsbn("OCR por câmera não suportado neste navegador.");
       return;
     }
 
@@ -356,7 +364,7 @@ export default function AddBook() {
       void scanLoop();
     } catch (error) {
       stopScanner();
-      setScannerError(getCameraErrorMessage(error));
+      fallbackToManualIsbn(getCameraErrorMessage(error));
     } finally {
       setScannerBusy(false);
     }
@@ -583,6 +591,7 @@ export default function AddBook() {
                 <div className="flex flex-col gap-3">
                   <div className="relative">
                     <input
+                      ref={isbnInputRef}
                       type="text"
                       value={formData.isbn}
                       onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
@@ -602,7 +611,7 @@ export default function AddBook() {
                   </div>
                   <button
                     type="button"
-                    onClick={searchBookByISBN}
+                    onClick={() => void searchBookByISBN()}
                     disabled={searchingBook || !formData.isbn || isbnValid === false}
                     className="w-full py-3 bg-[#262969] text-white rounded-lg hover:bg-[#1a1a4d] disabled:bg-gray-300 transition-colors flex items-center justify-center gap-2 font-bold"
                   >

@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Menu, X, BookOpen, Info, LogIn, Shield, Library, PlusCircle, LogOut, Heart, Settings } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { getSessionIdToken } from "@/lib/session";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isAuthenticated, role, user, logout } = useAuth();
+  const hasToken = Boolean(getSessionIdToken());
   const displayName = user?.name?.trim() || user?.email?.trim() || "Usuário";
   const roleLabel =
     role === "admin" ? "Admin" : role === "livreiro" ? "Livreiro" : "Comprador";
@@ -86,6 +88,9 @@ export default function Header() {
                   {displayName}
                 </p>
               </div>
+              <span className="px-2 py-1 rounded bg-green-100 text-green-800 text-xs font-semibold">
+                {hasToken ? "Sessão ativa" : "Sincronizando"}
+              </span>
               <span className="px-2 py-1 rounded bg-white/70 text-[#262969] text-xs font-semibold">
                 {roleLabel}
               </span>
@@ -203,6 +208,9 @@ export default function Header() {
                   <p className="font-inter text-xs text-gray-500">Logado como</p>
                   <p className="font-inter text-sm font-semibold text-[#262969] truncate">
                     {displayName}
+                  </p>
+                  <p className="font-inter text-xs text-green-700 font-semibold mt-1">
+                    {hasToken ? "Sessão ativa" : "Sincronizando sessão"}
                   </p>
                   <p className="font-inter text-xs text-[#da4653] font-semibold mt-1">
                     Perfil: {roleLabel}
