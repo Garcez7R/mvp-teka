@@ -5,6 +5,31 @@ import App from "./App";
 import { trpc } from "./lib/trpc";
 import "./index.css";
 
+function cleanupLegacyServiceWorkers() {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+    return;
+  }
+
+  void (async () => {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+
+      if ("caches" in window) {
+        const cacheKeys = await caches.keys();
+        const legacyKeys = cacheKeys.filter(
+          (key) => key === "teka-v1" || key.startsWith("teka-")
+        );
+        await Promise.all(legacyKeys.map((key) => caches.delete(key)));
+      }
+    } catch (error) {
+      console.warn("Falha ao limpar service workers legados:", error);
+    }
+  })();
+}
+
+cleanupLegacyServiceWorkers();
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
