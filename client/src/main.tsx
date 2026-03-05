@@ -6,30 +6,43 @@ import { trpc } from "./lib/trpc";
 import { getSessionIdToken, getSignupRole } from "./lib/session";
 import "./index.css";
 
-function cleanupLegacyServiceWorkers() {
+type BeforeInstallPromptEventLike = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
+
+declare global {
+  interface Window {
+    __TEKA_BEFORE_INSTALL_PROMPT__?: BeforeInstallPromptEventLike;
+  }
+}
+
+function setupPwaRuntime() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
     return;
   }
 
   void (async () => {
     try {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map((registration) => registration.unregister()));
-
-      if ("caches" in window) {
-        const cacheKeys = await caches.keys();
-        const legacyKeys = cacheKeys.filter(
-          (key) => key === "teka-v1" || key.startsWith("teka-")
-        );
-        await Promise.all(legacyKeys.map((key) => caches.delete(key)));
-      }
+      await navigator.serviceWorker.register("/sw.js");
     } catch (error) {
-      console.warn("Falha ao limpar service workers legados:", error);
+      console.warn("Falha ao registrar Service Worker:", error);
     }
   })();
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    window.__TEKA_BEFORE_INSTALL_PROMPT__ = event as BeforeInstallPromptEventLike;
+    window.dispatchEvent(new CustomEvent("teka:pwa-install-available"));
+  });
+
+  window.addEventListener("appinstalled", () => {
+    window.__TEKA_BEFORE_INSTALL_PROMPT__ = undefined;
+    window.dispatchEvent(new CustomEvent("teka:pwa-installed"));
+  });
 }
 
-cleanupLegacyServiceWorkers();
+setupPwaRuntime();
 
 const queryClient = new QueryClient({
   defaultOptions: {

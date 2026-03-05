@@ -6,10 +6,12 @@ import BookCover from "@/components/BookCover";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ArrowLeft, Loader2, Heart } from "lucide-react";
+import { useFavorites } from "@/hooks/useFavorites";
 
 export default function MyInterests() {
   const [activeTab, setActiveTab] = useState<"interests" | "favorites">("interests");
   const { isAuthenticated, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { favorites: localFavoriteIds } = useFavorites();
   const {
     data: interests = [],
     isLoading: interestsLoading,
@@ -30,6 +32,14 @@ export default function MyInterests() {
     refetchOnWindowFocus: false,
     retry: false,
   });
+  const { data: allBooks = [] } = trpc.books.list.useQuery(
+    { limit: 300, offset: 0 },
+    {
+      enabled: isAuthenticated,
+      refetchOnWindowFocus: false,
+      retry: false,
+    }
+  );
 
   if (loading || interestsLoading || favoritesLoading) {
     return (
@@ -44,6 +54,10 @@ export default function MyInterests() {
   }
 
   const hasError = Boolean(interestsError || favoritesError);
+  const fallbackFavoriteBooks = allBooks.filter((book: any) =>
+    localFavoriteIds.includes(String(book.id))
+  );
+  const effectiveFavorites = favorites.length > 0 ? favorites : fallbackFavoriteBooks;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -75,18 +89,18 @@ export default function MyInterests() {
           >
             Interesses ({interests.length})
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("favorites")}
+            <button
+              type="button"
+              onClick={() => setActiveTab("favorites")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === "favorites"
                 ? "bg-[#262969] text-white"
                 : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
             }`}
-          >
-            Favoritos ({favorites.length})
-          </button>
-        </div>
+            >
+            Favoritos ({effectiveFavorites.length})
+            </button>
+          </div>
 
         {hasError ? (
           <div className="text-center py-10 border border-red-200 rounded-xl bg-red-50">
@@ -151,14 +165,14 @@ export default function MyInterests() {
               );
             })}
           </div>
-        ) : favorites.length === 0 ? (
+        ) : effectiveFavorites.length === 0 ? (
           <div className="text-center py-16 border border-gray-200 rounded-xl bg-gray-50">
             <Heart className="w-8 h-8 text-gray-400 mx-auto mb-3" />
             <p className="font-inter text-gray-700">Você ainda não favoritou nenhum livro.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {favorites.map((book: any) => (
+            {effectiveFavorites.map((book: any) => (
               <Link
                 key={book.id}
                 href={`/book/${book.id}`}

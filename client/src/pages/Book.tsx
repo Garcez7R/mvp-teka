@@ -10,6 +10,7 @@ import { BookOpen, MapPin, Calendar, FileText, MessageCircle, ArrowLeft, Heart, 
 import { useFavorites } from "@/hooks/useFavorites";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { getSessionIdToken } from "@/lib/session";
 
 export default function Book() {
   const { id } = useParams<{ id: string }>();
@@ -59,7 +60,8 @@ export default function Book() {
       toast.error("Não foi possível registrar interesse neste livro.");
       return;
     }
-    if (!isAuthenticated) {
+    const hasToken = Boolean(getSessionIdToken());
+    if (!isAuthenticated && !hasToken) {
       toast.error("Faça login para registrar interesse.");
       window.location.href = "/login";
       return;

@@ -14,6 +14,7 @@ const ManageBooks = lazy(() => import("./pages/ManageBooks"));
 const Login = lazy(() => import("./pages/Login"));
 const Admin = lazy(() => import("./pages/Admin"));
 const MyInterests = lazy(() => import("./pages/MyInterests"));
+const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/sebo/novo" component={CreateSebo} />
       <Route path="/login" component={Login} />
       <Route path="/my-interests" component={MyInterests} />
+      <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
       <Route path="/about" component={About} />
       <Route path="/404" component={NotFound} />
