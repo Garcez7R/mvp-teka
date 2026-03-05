@@ -22,6 +22,7 @@ export default function AddBook() {
     description: "",
     price: "",
     condition: "Bom estado" as const,
+    availabilityStatus: "ativo" as "ativo" | "reservado" | "vendido",
     pages: "",
     year: "",
   });
@@ -258,6 +259,7 @@ export default function AddBook() {
         description: formData.description || undefined,
         price: normalizedPrice,
         condition: formData.condition,
+        availabilityStatus: formData.availabilityStatus,
         pages: formData.pages ? parseInt(formData.pages) : undefined,
         year: formData.year ? parseInt(formData.year) : undefined,
         coverUrl: finalCoverUrl || undefined,
@@ -491,6 +493,24 @@ export default function AddBook() {
                 <option value="Bom estado">Bom estado</option>
                 <option value="Usado">Usado</option>
                 <option value="Desgastado">Desgastado</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status do Anúncio</label>
+              <select
+                value={formData.availabilityStatus}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    availabilityStatus: e.target.value as "ativo" | "reservado" | "vendido",
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
+              >
+                <option value="ativo">Disponível</option>
+                <option value="reservado">Reservado</option>
+                <option value="vendido">Vendido</option>
               </select>
             </div>
 

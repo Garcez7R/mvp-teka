@@ -1,8 +1,50 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, livreiroProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { books, sebos } from "../_schema.ts";
-import { eq, ilike, and, lte, gte } from "drizzle-orm";
+import { books, sebos, favorites } from "../_schema.ts";
+import { eq, ilike, and, lte, gte, inArray, sql } from "drizzle-orm";
+
+const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
+type AvailabilityStatus = "ativo" | "reservado" | "vendido";
+const interestKey = "__TEKA_BOOK_INTEREST_MAP__";
+
+function getInterestMap(): Map<number, Set<number>> {
+  const globalAny = globalThis as any;
+  if (!globalAny[interestKey]) {
+    globalAny[interestKey] = new Map<number, Set<number>>();
+  }
+  return globalAny[interestKey];
+}
+
+function normalizeBookDescription(raw?: string | null): {
+  availabilityStatus: AvailabilityStatus;
+  description: string | null;
+} {
+  const value = (raw ?? "").trim();
+  if (!value) {
+    return { availabilityStatus: "ativo", description: null };
+  }
+
+  const match = value.match(STATUS_MARKER);
+  const description = value.replace(STATUS_MARKER, "").trim() || null;
+  if (!match?.[1]) {
+    return { availabilityStatus: "ativo", description };
+  }
+  const status = match[1].toLowerCase() as AvailabilityStatus;
+  return { availabilityStatus: status, description };
+}
+
+function withStatusMarker(
+  availabilityStatus: AvailabilityStatus,
+  description?: string | null
+): string | null {
+  const clean = normalizeBookDescription(description).description;
+  if (availabilityStatus === "ativo") {
+    return clean;
+  }
+  const marker = availabilityStatus === "reservado" ? "RESERVADO" : "VENDIDO";
+  return clean ? `[STATUS:${marker}] ${clean}` : `[STATUS:${marker}]`;
+}
 
 export const booksRouter = router({
   // List all books with filters
@@ -12,11 +54,14 @@ export const booksRouter = router({
         search: z.string().optional(),
         category: z.string().optional(),
         seboId: z.number().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
         minPrice: z.number().optional(),
         maxPrice: z.number().optional(),
         condition: z
           .enum(["Excelente", "Bom estado", "Usado", "Desgastado"])
           .optional(),
+        availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
         limit: z.number().default(20),
         offset: z.number().default(0),
       })
@@ -37,6 +82,12 @@ export const booksRouter = router({
       if (input.seboId) {
         filters.push(eq(books.seboId, input.seboId));
       }
+      if (input.city) {
+        filters.push(ilike(sebos.city, `%${input.city}%`));
+      }
+      if (input.state) {
+        filters.push(eq(sebos.state, input.state.toUpperCase()));
+      }
 
       if (input.condition) {
         filters.push(eq(books.condition, input.condition));
@@ -52,7 +103,7 @@ export const booksRouter = router({
 
       const where = filters.length > 0 ? and(...filters) : undefined;
 
-      const data = await db
+      const dataRaw = await db
         .select()
         .from(books)
         .leftJoin(sebos, eq(books.seboId, sebos.id))
@@ -61,10 +112,22 @@ export const booksRouter = router({
         .offset(input.offset);
 
       // Format response to include sebo info
-      return data.map((row: { books: typeof books.$inferSelect; sebos: typeof sebos.$inferSelect | null }) => ({
-        ...row.books,
-        sebo: row.sebos ? { id: row.sebos.id, name: row.sebos.name } : null,
-      }));
+      const data = dataRaw
+        .map((row: { books: typeof books.$inferSelect; sebos: typeof sebos.$inferSelect | null }) => {
+          const normalized = normalizeBookDescription(row.books.description);
+          return {
+            ...row.books,
+            description: normalized.description,
+            availabilityStatus: normalized.availabilityStatus,
+            sebo: row.sebos
+              ? { id: row.sebos.id, name: row.sebos.name, city: row.sebos.city, state: row.sebos.state }
+              : null,
+          };
+        })
+        .filter((book) =>
+          input.availabilityStatus ? book.availabilityStatus === input.availabilityStatus : true
+        );
+      return data;
     }),
 
   // Get single book
@@ -88,7 +151,24 @@ export const booksRouter = router({
         .where(eq(sebos.id, book.seboId))
         .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
-      return { ...book, sebo };
+      const normalized = normalizeBookDescription(book.description);
+      const seboBooksCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(books)
+        .where(eq(books.seboId, book.seboId))
+        .then((res: Array<{ count: number }>) => Number(res[0]?.count ?? 0));
+
+      return {
+        ...book,
+        description: normalized.description,
+        availabilityStatus: normalized.availabilityStatus,
+        sebo,
+        seboStats: {
+          totalBooks: seboBooksCount,
+          score: sebo?.verified ? 4.8 : 4.3,
+          responseTime: "Responde em ate 1h",
+        },
+      };
     }),
 
   // List books by sebo (for seller/owner)
@@ -112,7 +192,14 @@ export const booksRouter = router({
         .from(books)
         .where(eq(books.seboId, input));
 
-      return data;
+      return data.map((book) => {
+        const normalized = normalizeBookDescription(book.description);
+        return {
+          ...book,
+          description: normalized.description,
+          availabilityStatus: normalized.availabilityStatus,
+        };
+      });
     }),
 
   // Create new book (livreiro/admin)
@@ -130,6 +217,7 @@ export const booksRouter = router({
         year: z.number().optional(),
         coverUrl: z.string().optional(),
         seboId: z.number(),
+        availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).default("ativo"),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -151,6 +239,7 @@ export const booksRouter = router({
         .insert(books)
         .values({
           ...input,
+          description: withStatusMarker(input.availabilityStatus, input.description),
           price: input.price.toString(),
         })
         .$returningId();
@@ -172,6 +261,7 @@ export const booksRouter = router({
         condition: z
           .enum(["Excelente", "Bom estado", "Usado", "Desgastado"])
           .optional(),
+        availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
         coverUrl: z.string().optional(),
       })
     )
@@ -197,9 +287,12 @@ export const booksRouter = router({
         throw new Error("Unauthorized");
       }
 
-      const { id, ...updateData } = input;
+      const { id, availabilityStatus, ...updateData } = input;
+      const targetStatus =
+        availabilityStatus ?? normalizeBookDescription(book.description).availabilityStatus;
       const updateDataWithStringPrice: any = {
         ...updateData,
+        description: withStatusMarker(targetStatus, updateData.description ?? book.description),
         ...(updateData.price !== undefined && { price: updateData.price.toString() }),
       };
       // cast to any because drizzle expects price string and our union could still
@@ -207,6 +300,98 @@ export const booksRouter = router({
       await db.update(books).set(updateDataWithStringPrice as any).where(eq(books.id, id));
 
       return { success: true };
+    }),
+
+  sellerMetrics: livreiroProcedure
+    .input(z.object({ seboId: z.number().optional() }).optional())
+    .query(async ({ input, ctx }) => {
+      const targetSeboId = input?.seboId;
+      const mySebo = await db
+        .select()
+        .from(sebos)
+        .where(eq(sebos.userId, ctx.userId!))
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0] ?? null);
+
+      const seboId = ctx.role === "admin" ? targetSeboId ?? mySebo?.id : mySebo?.id;
+      if (!seboId) {
+        return {
+          totalBooks: 0,
+          activeBooks: 0,
+          reservedBooks: 0,
+          soldBooks: 0,
+          totalFavorites: 0,
+          topBooks: [],
+        };
+      }
+
+      const myBooks = await db.select().from(books).where(eq(books.seboId, seboId));
+      const bookIds = myBooks.map((book) => book.id);
+
+      const statusCount = myBooks.reduce(
+        (acc, book) => {
+          const status = normalizeBookDescription(book.description).availabilityStatus;
+          if (status === "reservado") acc.reservedBooks += 1;
+          else if (status === "vendido") acc.soldBooks += 1;
+          else acc.activeBooks += 1;
+          return acc;
+        },
+        { activeBooks: 0, reservedBooks: 0, soldBooks: 0 }
+      );
+
+      if (bookIds.length === 0) {
+        return {
+          totalBooks: 0,
+          ...statusCount,
+          totalFavorites: 0,
+          topBooks: [],
+        };
+      }
+
+      const favoritesByBook = await db
+        .select({
+          bookId: favorites.bookId,
+          count: sql<number>`count(*)`,
+        })
+        .from(favorites)
+        .where(inArray(favorites.bookId, bookIds))
+        .groupBy(favorites.bookId);
+
+      const favoritesMap = new Map<number, number>(
+        favoritesByBook.map((row) => [row.bookId, Number(row.count ?? 0)])
+      );
+      const topBooks = myBooks
+        .map((book) => ({
+          id: book.id,
+          title: book.title,
+          favorites: favoritesMap.get(book.id) ?? 0,
+        }))
+        .sort((a, b) => b.favorites - a.favorites)
+        .slice(0, 5);
+
+      const totalFavorites = Array.from(favoritesMap.values()).reduce((sum, value) => sum + value, 0);
+      const interestMap = getInterestMap();
+      const totalInterests = bookIds.reduce(
+        (sum, id) => sum + (interestMap.get(id)?.size ?? 0),
+        0
+      );
+
+      return {
+        totalBooks: myBooks.length,
+        ...statusCount,
+        totalFavorites,
+        totalInterests,
+        topBooks,
+      };
+    }),
+
+  registerInterest: protectedProcedure
+    .input(z.object({ bookId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const map = getInterestMap();
+      const current = map.get(input.bookId) ?? new Set<number>();
+      current.add(ctx.userId!);
+      map.set(input.bookId, current);
+      return { success: true, totalInterests: current.size };
     }),
 
   // Delete book

@@ -11,13 +11,26 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSebo, setSelectedSebo] = useState<string | null>(null);
+  const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<"ativo" | "reservado" | "vendido">("ativo");
+  const [cityFilter, setCityFilter] = useState("");
+  const [stateFilter, setStateFilter] = useState("");
+  const [minPriceFilter, setMinPriceFilter] = useState("");
+  const [maxPriceFilter, setMaxPriceFilter] = useState("");
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const { getFavoriteCount } = useFavorites();
+  const { getFavoriteCount, isFavorite } = useFavorites();
 
   // Fetch books from API
   const { data: booksData = [] } = trpc.books.list.useQuery({
     search: searchQuery,
     category: selectedCategory || undefined,
+    condition: (selectedCondition as any) || undefined,
+    availabilityStatus: selectedStatus,
+    city: cityFilter || undefined,
+    state: stateFilter || undefined,
+    minPrice: minPriceFilter ? Number(minPriceFilter) : undefined,
+    maxPrice: maxPriceFilter ? Number(maxPriceFilter) : undefined,
     limit: 100,
   });
 
@@ -35,6 +48,7 @@ export default function Home() {
           condition: 'Bom estado',
           isbn: undefined,
           coverUrl: '/covers/dom-casmurro.svg',
+          availabilityStatus: 'ativo',
           sebo: {
             name: 'Sebo do Porto',
             city: 'Porto Alegre',
@@ -50,6 +64,7 @@ export default function Home() {
           condition: 'Excelente',
           isbn: '9788535914849',
           coverUrl: 'https://covers.openlibrary.org/b/isbn/9788535914849-L.jpg',
+          availabilityStatus: 'ativo',
           sebo: {
             name: 'Sebo do Porto',
             city: 'Porto Alegre',
@@ -65,6 +80,7 @@ export default function Home() {
           condition: 'Bom estado',
           isbn: '9780007218011',
           coverUrl: 'https://covers.openlibrary.org/b/isbn/9780007218011-L.jpg',
+          availabilityStatus: 'ativo',
           sebo: {
             name: 'Livraria Releitura',
             city: 'São Paulo',
@@ -80,6 +96,7 @@ export default function Home() {
           condition: 'Excelente',
           isbn: '9788595084759',
           coverUrl: '/covers/as-duas-torres.svg',
+          availabilityStatus: 'ativo',
           sebo: {
             name: 'Livraria Releitura',
             city: 'São Paulo',
@@ -95,6 +112,7 @@ export default function Home() {
           condition: 'Bom estado',
           isbn: '9781649374042',
           coverUrl: 'https://covers.openlibrary.org/b/isbn/9781649374042-L.jpg',
+          availabilityStatus: 'ativo',
           sebo: {
             name: 'Sebo do Porto',
             city: 'Porto Alegre',
@@ -110,6 +128,7 @@ export default function Home() {
           condition: 'Bom estado',
           isbn: '9788532511010',
           coverUrl: 'https://covers.openlibrary.org/b/isbn/9788532511010-L.jpg',
+          availabilityStatus: 'ativo',
           sebo: {
             name: 'Livraria Releitura',
             city: 'São Paulo',
@@ -136,9 +155,42 @@ export default function Home() {
     return displayBooks.filter((book: any) => {
       const matchesCategory = !selectedCategory || book.category === selectedCategory;
       const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
-      return matchesCategory && matchesSebo;
+      const matchesCondition = !selectedCondition || book.condition === selectedCondition;
+      const matchesStatus = !selectedStatus || (book.availabilityStatus || "ativo") === selectedStatus;
+      const price = Number(book.price);
+      const matchesMin = !minPriceFilter || price >= Number(minPriceFilter);
+      const matchesMax = !maxPriceFilter || price <= Number(maxPriceFilter);
+      const city = (book.sebo?.city || "").toLowerCase();
+      const state = (book.sebo?.state || "").toLowerCase();
+      const matchesCity = !cityFilter || city.includes(cityFilter.toLowerCase());
+      const matchesState = !stateFilter || state === stateFilter.toLowerCase();
+      const favoriteKey = String(book.id);
+      const matchesFavorites = !onlyFavorites || isFavorite(favoriteKey);
+      return (
+        matchesCategory &&
+        matchesSebo &&
+        matchesCondition &&
+        matchesStatus &&
+        matchesMin &&
+        matchesMax &&
+        matchesCity &&
+        matchesState &&
+        matchesFavorites
+      );
     });
-  }, [displayBooks, selectedCategory, selectedSebo]);
+  }, [
+    cityFilter,
+    displayBooks,
+    maxPriceFilter,
+    minPriceFilter,
+    selectedCategory,
+    selectedCondition,
+    selectedSebo,
+    selectedStatus,
+    stateFilter,
+    isFavorite,
+    onlyFavorites,
+  ]);
 
   useEffect(() => {
     document.title = "TEKA - Catálogo de Livros Usados";
@@ -188,17 +240,18 @@ export default function Home() {
             Filtros
           </button>
           <button
+            onClick={() => setOnlyFavorites((prev) => !prev)}
             className="flex items-center gap-2 px-4 py-2 border-2 border-[#262969] rounded-lg hover:bg-[#262969] hover:text-white transition-colors font-inter text-sm font-medium text-[#262969]"
             title="Ver livros favoritos"
           >
             <Heart className="w-4 h-4" />
-            Favoritos ({getFavoriteCount()})
+            {onlyFavorites ? "Favoritos: ON" : "Favoritos"} ({getFavoriteCount()})
           </button>
         </div>
 
         {showFilters && (
             <div className="mt-4 p-6 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Category Filter */}
                 <div>
                   <h3 className="font-outfit font-semibold text-[#262969] mb-3">Categoria</h3>
@@ -258,6 +311,60 @@ export default function Home() {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <h3 className="font-outfit font-semibold text-[#262969] mb-3">Condição e Status</h3>
+                  <select
+                    value={selectedCondition || ""}
+                    onChange={(e) => setSelectedCondition(e.target.value || null)}
+                    className="w-full mb-2 px-3 py-2 border border-gray-300 rounded bg-white"
+                  >
+                    <option value="">Todas condições</option>
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bom estado">Bom estado</option>
+                    <option value="Usado">Usado</option>
+                    <option value="Desgastado">Desgastado</option>
+                  </select>
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value as "ativo" | "reservado" | "vendido")}
+                    className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
+                  >
+                    <option value="ativo">Disponiveis</option>
+                    <option value="reservado">Reservados</option>
+                    <option value="vendido">Vendidos</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                <input
+                  value={cityFilter}
+                  onChange={(e) => setCityFilter(e.target.value)}
+                  placeholder="Cidade"
+                  className="px-3 py-2 border border-gray-300 rounded bg-white"
+                />
+                <input
+                  value={stateFilter}
+                  onChange={(e) => setStateFilter(e.target.value.toUpperCase())}
+                  placeholder="Estado (UF)"
+                  maxLength={2}
+                  className="px-3 py-2 border border-gray-300 rounded bg-white"
+                />
+                <input
+                  value={minPriceFilter}
+                  onChange={(e) => setMinPriceFilter(e.target.value)}
+                  placeholder="Preco min"
+                  type="number"
+                  min="0"
+                  className="px-3 py-2 border border-gray-300 rounded bg-white"
+                />
+                <input
+                  value={maxPriceFilter}
+                  onChange={(e) => setMaxPriceFilter(e.target.value)}
+                  placeholder="Preco max"
+                  type="number"
+                  min="0"
+                  className="px-3 py-2 border border-gray-300 rounded bg-white"
+                />
               </div>
             </div>
           )}
@@ -284,6 +391,7 @@ export default function Home() {
                 condition={book.condition ?? ""}
                 isbn={book.isbn ?? undefined}
                 coverUrl={book.coverUrl ?? undefined}
+                availabilityStatus={book.availabilityStatus ?? "ativo"}
               />
             ))}
           </div>

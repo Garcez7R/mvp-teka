@@ -4,7 +4,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import BookCover from "./BookCover";
 
 interface BookCardProps {
-  id: number;
+  id: number | string;
   title: string;
   author?: string;
   category: string;
@@ -13,9 +13,21 @@ interface BookCardProps {
   condition: string;
   isbn?: string;
   coverUrl?: string;
+  availabilityStatus?: "ativo" | "reservado" | "vendido";
 }
 
-export default function BookCard({ id, title, author, category, price, sebo, condition, isbn, coverUrl }: BookCardProps) {
+export default function BookCard({
+  id,
+  title,
+  author,
+  category,
+  price,
+  sebo,
+  condition,
+  isbn,
+  coverUrl,
+  availabilityStatus = "ativo",
+}: BookCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = isFavorite(id);
 
@@ -27,6 +39,12 @@ export default function BookCard({ id, title, author, category, price, sebo, con
 
   const priceNumber = typeof price === "string" ? parseFloat(price) : price;
   const seboName = typeof sebo === "string" ? sebo : sebo?.name || "Sebo";
+  const statusLabel =
+    availabilityStatus === "reservado"
+      ? "Reservado"
+      : availabilityStatus === "vendido"
+      ? "Vendido"
+      : "Disponivel";
 
   return (
     <div className="group cursor-pointer relative">
@@ -44,7 +62,11 @@ export default function BookCard({ id, title, author, category, price, sebo, con
       </button>
 
       <Link href={`/book/${id}`}>
-        <div className="rounded-lg overflow-hidden border border-gray-200 group-hover:border-[#da4653] group-hover:shadow-lg transition-all duration-300 aspect-[2/3] w-1/3 mx-auto">
+        <div
+          className={`rounded-lg overflow-hidden border group-hover:border-[#da4653] group-hover:shadow-lg transition-all duration-300 aspect-[2/3] w-1/3 mx-auto ${
+            availabilityStatus === "vendido" ? "border-gray-300 opacity-80" : "border-gray-200"
+          }`}
+        >
           <BookCover isbn={isbn} title={title} author={author} coverUrl={coverUrl} className="w-full h-full" />
         </div>
 
@@ -62,6 +84,17 @@ export default function BookCard({ id, title, author, category, price, sebo, con
           <div className="flex items-center gap-2 text-gray-600">
             <span className="text-xs font-inter bg-gray-100 px-2 py-1 rounded">{category}</span>
             <span className="text-xs font-inter px-2 py-1 rounded bg-[#da4653] text-white font-semibold">{condition}</span>
+            <span
+              className={`text-xs font-inter px-2 py-1 rounded font-semibold ${
+                availabilityStatus === "vendido"
+                  ? "bg-gray-800 text-white"
+                  : availabilityStatus === "reservado"
+                  ? "bg-amber-500 text-white"
+                  : "bg-emerald-600 text-white"
+              }`}
+            >
+              {statusLabel}
+            </span>
           </div>
 
           <div className="flex items-center gap-1 text-gray-700 text-sm font-inter">

@@ -13,19 +13,15 @@ export default function Book() {
   const { id } = useParams<{ id: string }>();
   const isDemoBook = Boolean(id?.startsWith("demo-"));
   const parsedBookId = Number.parseInt(id || "", 10);
-  const demoFavoriteId = isDemoBook ? Number.parseInt((id || "").replace("demo-", ""), 10) : null;
-  const favoriteId = isDemoBook ? demoFavoriteId : parsedBookId;
+  const favoriteId = isDemoBook ? (id || null) : Number.isFinite(parsedBookId) ? parsedBookId : null;
 
   // Fetch book from API only for real IDs
   const { data: book, isLoading, error } = trpc.books.getById.useQuery(parsedBookId, {
     enabled: !isDemoBook && Number.isFinite(parsedBookId) && parsedBookId > 0,
   });
+  const registerInterestMutation = trpc.books.registerInterest.useMutation();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const favoriteIdNumber =
-    typeof favoriteId === "number" && Number.isFinite(favoriteId) && favoriteId > 0
-      ? favoriteId
-      : null;
-  const favorited = favoriteIdNumber !== null ? isFavorite(favoriteIdNumber) : false;
+  const favorited = favoriteId ? isFavorite(favoriteId) : false;
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -53,6 +49,16 @@ export default function Book() {
     }
   }, [book?.title, id, isDemoBook]);
 
+  const handleInterest = async (bookId: number | null, title: string) => {
+    trackEvent("book_interest_click", { bookId: bookId ?? -1, title });
+    if (!bookId) return;
+    try {
+      await registerInterestMutation.mutateAsync({ bookId });
+    } catch {
+      // ignore if user is not authenticated
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
@@ -75,6 +81,7 @@ export default function Book() {
         category: 'Literatura Brasileira',
         price: 25.00,
         condition: 'Bom estado',
+        availabilityStatus: 'ativo' as const,
         isbn: undefined,
         coverUrl: '/covers/dom-casmurro.svg',
         description: 'Clássico da literatura brasileira, narra a história de Bentinho e Capitu.',
@@ -94,6 +101,7 @@ export default function Book() {
         category: 'Ficção Científica',
         price: 32.50,
         condition: 'Excelente',
+        availabilityStatus: 'ativo' as const,
         isbn: '9788535914849',
         coverUrl: 'https://covers.openlibrary.org/b/isbn/9788535914849-L.jpg',
         description: 'Distopia sobre um futuro totalitário e vigilância constante.',
@@ -113,6 +121,7 @@ export default function Book() {
         category: 'História',
         price: 35.00,
         condition: 'Bom estado',
+        availabilityStatus: 'ativo' as const,
         isbn: '9780007218011',
         coverUrl: 'https://covers.openlibrary.org/b/isbn/9780007218011-L.jpg',
         description: 'Série de romances históricos que acompanham a formação da Inglaterra nos séculos IX e X.',
@@ -132,6 +141,7 @@ export default function Book() {
         category: 'Fantasia',
         price: 42.00,
         condition: 'Excelente',
+        availabilityStatus: 'ativo' as const,
         isbn: '9788595084759',
         coverUrl: '/covers/as-duas-torres.svg',
         description: 'Segundo volume da trilogia O Senhor dos Anéis, onde a sociedade do anel se divide.',
@@ -151,6 +161,7 @@ export default function Book() {
         category: 'Fantasia',
         price: 38.00,
         condition: 'Bom estado',
+        availabilityStatus: 'ativo' as const,
         isbn: '9781649374042',
         coverUrl: 'https://covers.openlibrary.org/b/isbn/9781649374042-L.jpg',
         description: 'Romance de fantasia com dragões e treinamento militar em uma academia de cavaleiros.',
@@ -170,6 +181,7 @@ export default function Book() {
         category: 'Fantasia',
         price: 35.00,
         condition: 'Bom estado',
+        availabilityStatus: 'ativo' as const,
         isbn: '9788532511010',
         coverUrl: 'https://covers.openlibrary.org/b/isbn/9788532511010-L.jpg',
         description: 'Primeiro livro da saga Harry Potter, sobre um jovem bruxo que descobre seu destino.',
@@ -245,8 +257,8 @@ export default function Book() {
                 {/* Botão de favorito na imagem */}
                 <button
                   onClick={() => {
-                    if (demoFavoriteId && Number.isFinite(demoFavoriteId)) {
-                      toggleFavorite(demoFavoriteId);
+                    if (favoriteId) {
+                      toggleFavorite(favoriteId);
                     }
                   }}
                   className="absolute top-4 right-4 p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all z-10"
@@ -281,6 +293,13 @@ export default function Book() {
                 </span>
                 <span className="text-xs font-inter bg-[#da4653] px-3 py-1 rounded text-white font-semibold">
                   {demoBook.condition}
+                </span>
+                <span className="text-xs font-inter bg-emerald-600 px-3 py-1 rounded text-white font-semibold">
+                  {demoBook.availabilityStatus === "vendido"
+                    ? "Vendido"
+                    : demoBook.availabilityStatus === "reservado"
+                    ? "Reservado"
+                    : "Disponivel"}
                 </span>
               </div>
 
@@ -348,6 +367,20 @@ export default function Book() {
                       <p className="font-inter font-semibold text-base">{demoBook.sebo.name}</p>
                     </div>
                   </div>
+                  <div className="grid grid-cols-3 gap-3 mb-4 text-center">
+                    <div className="bg-white/20 rounded p-2">
+                      <p className="text-xs opacity-90">Nota</p>
+                      <p className="font-bold">4.7</p>
+                    </div>
+                    <div className="bg-white/20 rounded p-2">
+                      <p className="text-xs opacity-90">Resposta</p>
+                      <p className="font-bold">~1h</p>
+                    </div>
+                    <div className="bg-white/20 rounded p-2">
+                      <p className="text-xs opacity-90">Catalogo</p>
+                      <p className="font-bold">+20</p>
+                    </div>
+                  </div>
                   <p className="font-inter text-sm opacity-90">
                     Entre em contato diretamente via WhatsApp para confirmar disponibilidade e negociar o melhor preço.
                   </p>
@@ -356,6 +389,17 @@ export default function Book() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col gap-3 mb-8">
+                <button
+                  onClick={() => {
+                    const demoNumericId = Number.parseInt((id || "").replace("demo-", ""), 10);
+                    if (Number.isFinite(demoNumericId) && demoNumericId > 0) {
+                      void handleInterest(demoNumericId, demoBook.title);
+                    }
+                  }}
+                  className="flex items-center justify-center gap-2 w-full bg-[#262969] hover:bg-[#1e2157] text-white font-outfit font-bold py-3 px-6 rounded-lg transition-colors"
+                >
+                  Tenho Interesse
+                </button>
                 <a
                   href={whatsappUrl}
                   target="_blank"
@@ -367,8 +411,8 @@ export default function Book() {
                 </a>
                 <button
                   onClick={() => {
-                    if (demoFavoriteId && Number.isFinite(demoFavoriteId)) {
-                      toggleFavorite(demoFavoriteId);
+                    if (favoriteId) {
+                      toggleFavorite(favoriteId);
                     }
                   }}
                   className={`flex items-center justify-center gap-2 w-full font-outfit font-bold py-3 px-6 rounded-lg transition-all border-2 ${
@@ -489,6 +533,21 @@ export default function Book() {
               <span className="text-xs font-inter bg-[#da4653] px-3 py-1 rounded text-white font-semibold">
                 {book.condition}
               </span>
+              <span
+                className={`text-xs font-inter px-3 py-1 rounded text-white font-semibold ${
+                  book.availabilityStatus === "vendido"
+                    ? "bg-gray-800"
+                    : book.availabilityStatus === "reservado"
+                    ? "bg-amber-500"
+                    : "bg-emerald-600"
+                }`}
+              >
+                {book.availabilityStatus === "vendido"
+                  ? "Vendido"
+                  : book.availabilityStatus === "reservado"
+                  ? "Reservado"
+                  : "Disponivel"}
+              </span>
             </div>
 
             {/* Price */}
@@ -555,6 +614,20 @@ export default function Book() {
                     <p className="font-inter font-semibold text-base">{book.sebo.name}</p>
                   </div>
                 </div>
+                <div className="grid grid-cols-3 gap-3 mb-4 text-center">
+                  <div className="bg-white/20 rounded p-2">
+                    <p className="text-xs opacity-90">Nota</p>
+                    <p className="font-bold">{book.seboStats?.score?.toFixed?.(1) ?? "4.5"}</p>
+                  </div>
+                  <div className="bg-white/20 rounded p-2">
+                    <p className="text-xs opacity-90">Resposta</p>
+                    <p className="font-bold">{book.seboStats?.responseTime ?? "~2h"}</p>
+                  </div>
+                  <div className="bg-white/20 rounded p-2">
+                    <p className="text-xs opacity-90">Catalogo</p>
+                    <p className="font-bold">{book.seboStats?.totalBooks ?? "-"}</p>
+                  </div>
+                </div>
                 <p className="font-inter text-sm opacity-90">
                   Entre em contato diretamente via WhatsApp para confirmar disponibilidade e negociar o melhor preço.
                 </p>
@@ -562,15 +635,27 @@ export default function Book() {
             )}
 
             {/* CTA Buttons */}
-            <div className="flex flex-col gap-3 mb-8">
+              <div className="flex flex-col gap-3 mb-8">
+              <button
+                onClick={() => void handleInterest(book.id, book.title)}
+                className="flex items-center justify-center gap-2 w-full bg-[#262969] hover:bg-[#1e2157] text-white font-outfit font-bold py-3 px-6 rounded-lg transition-colors"
+              >
+                Tenho Interesse
+              </button>
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-[#da4653] hover:bg-[#c23a45] text-white font-outfit font-bold py-4 px-6 rounded-lg transition-colors shadow-md hover:shadow-lg"
+                className={`flex items-center justify-center gap-2 w-full text-white font-outfit font-bold py-4 px-6 rounded-lg transition-colors shadow-md ${
+                  book.availabilityStatus === "vendido"
+                    ? "bg-gray-400 pointer-events-none"
+                    : "bg-[#da4653] hover:bg-[#c23a45] hover:shadow-lg"
+                }`}
               >
                 <MessageCircle className="w-5 h-5" />
-                Contatar via WhatsApp
+                {book.availabilityStatus === "vendido"
+                  ? "Livro Vendido"
+                  : "Contatar via WhatsApp"}
               </a>
               <button
                 onClick={() => toggleFavorite(book.id)}

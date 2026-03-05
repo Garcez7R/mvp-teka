@@ -12,6 +12,7 @@ interface EditingBook {
   author?: string;
   isbn?: string;
   price: number;
+  availabilityStatus?: "ativo" | "reservado" | "vendido";
   coverUrl?: string;
   newCoverFile?: File;
 }
@@ -31,6 +32,10 @@ export default function ManageBooks() {
   });
   const { data: myBooks = [] } = trpc.books.listBySebo.useQuery(
     mySebo?.id || 0,
+    { enabled: !!mySebo }
+  );
+  const { data: metrics } = trpc.books.sellerMetrics.useQuery(
+    { seboId: mySebo?.id },
     { enabled: !!mySebo }
   );
 
@@ -111,6 +116,7 @@ export default function ManageBooks() {
       author: book.author || undefined,
       isbn: book.isbn || undefined,
       price: Number(book.price),
+      availabilityStatus: book.availabilityStatus || "ativo",
       coverUrl: book.coverUrl || undefined,
     });
   };
@@ -146,6 +152,7 @@ export default function ManageBooks() {
         title: editingBook.title,
         author: editingBook.author || undefined,
         price: editingBook.price,
+        availabilityStatus: editingBook.availabilityStatus || "ativo",
         coverUrl: coverUrl || undefined,
       };
       if (editingBook.isbn) {
@@ -178,6 +185,18 @@ export default function ManageBooks() {
     }
   };
 
+  const updateStatusQuick = async (
+    bookId: number,
+    availabilityStatus: "ativo" | "reservado" | "vendido"
+  ) => {
+    try {
+      await updateBookMutation.mutateAsync({ id: bookId, availabilityStatus });
+      toast.success("Status atualizado");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar status");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -196,6 +215,31 @@ export default function ManageBooks() {
 
       {/* Content */}
       <div className="container py-12">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <div className="p-4 border rounded-lg bg-white">
+            <p className="text-xs text-gray-500">Livros</p>
+            <p className="text-xl font-bold text-[#262969]">{metrics?.totalBooks ?? myBooks.length}</p>
+          </div>
+          <div className="p-4 border rounded-lg bg-white">
+            <p className="text-xs text-gray-500">Ativos</p>
+            <p className="text-xl font-bold text-emerald-700">{metrics?.activeBooks ?? 0}</p>
+          </div>
+          <div className="p-4 border rounded-lg bg-white">
+            <p className="text-xs text-gray-500">Reservados</p>
+            <p className="text-xl font-bold text-amber-600">{metrics?.reservedBooks ?? 0}</p>
+          </div>
+          <div className="p-4 border rounded-lg bg-white">
+            <p className="text-xs text-gray-500">Vendidos</p>
+            <p className="text-xl font-bold text-gray-800">{metrics?.soldBooks ?? 0}</p>
+          </div>
+          <div className="p-4 border rounded-lg bg-white">
+            <p className="text-xs text-gray-500">Interesse (fav+lead)</p>
+            <p className="text-xl font-bold text-[#da4653]">
+              {(metrics?.totalFavorites ?? 0) + (metrics?.totalInterests ?? 0)}
+            </p>
+          </div>
+        </div>
+
         <div className="flex justify-between items-start mb-8">
           <div>
             <p className="text-gray-600 text-lg">
@@ -287,6 +331,20 @@ export default function ManageBooks() {
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
                       />
+                      <select
+                        value={editingBook?.availabilityStatus || "ativo"}
+                        onChange={(e) =>
+                          setEditingBook({
+                            ...editingBook!,
+                            availabilityStatus: e.target.value as "ativo" | "reservado" | "vendido",
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                      >
+                        <option value="ativo">Disponivel</option>
+                        <option value="reservado">Reservado</option>
+                        <option value="vendido">Vendido</option>
+                      </select>
 
                       {/* Cover Upload */}
                       <div>
@@ -338,9 +396,46 @@ export default function ManageBooks() {
                         <span className="text-xl font-bold text-[#da4653]">
                           R$ {Number(book.price).toFixed(2)}
                         </span>
-                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                          {book.condition}
-                        </span>
+                        <div className="flex gap-2">
+                          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                            {book.condition}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-1 rounded text-white ${
+                              book.availabilityStatus === "vendido"
+                                ? "bg-gray-800"
+                                : book.availabilityStatus === "reservado"
+                                ? "bg-amber-500"
+                                : "bg-emerald-600"
+                            }`}
+                          >
+                            {book.availabilityStatus === "vendido"
+                              ? "Vendido"
+                              : book.availabilityStatus === "reservado"
+                              ? "Reservado"
+                              : "Disponivel"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mb-3">
+                        <button
+                          onClick={() => void updateStatusQuick(book.id, "ativo")}
+                          className="px-2 py-1 text-xs rounded border border-emerald-600 text-emerald-700"
+                        >
+                          Ativo
+                        </button>
+                        <button
+                          onClick={() => void updateStatusQuick(book.id, "reservado")}
+                          className="px-2 py-1 text-xs rounded border border-amber-500 text-amber-700"
+                        >
+                          Reservar
+                        </button>
+                        <button
+                          onClick={() => void updateStatusQuick(book.id, "vendido")}
+                          className="px-2 py-1 text-xs rounded border border-gray-700 text-gray-700"
+                        >
+                          Marcar vendido
+                        </button>
                       </div>
 
                       {/* Action Buttons */}
