@@ -61,7 +61,7 @@ export default function Header() {
               </Link>
             </>
           )}
-          {isAuthenticated && (
+          {isAuthenticated && role !== "livreiro" && (
             <Link href="/my-interests" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
               Meus Interesses
             </Link>
@@ -163,7 +163,7 @@ export default function Header() {
                 </Link>
               </>
             )}
-            {isAuthenticated && (
+            {isAuthenticated && role !== "livreiro" && (
               <Link
                 href="/my-interests"
                 onClick={closeMenu}

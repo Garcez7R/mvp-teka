@@ -14,7 +14,7 @@ import { getSessionIdToken } from "@/lib/session";
 
 export default function Book() {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated, refresh } = useAuth();
+  const { isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
   const isDemoBook = Boolean(id?.startsWith("demo-"));
   const parsedBookId = Number.parseInt(id || "", 10);
@@ -85,8 +85,14 @@ export default function Book() {
 
         const trySyncAndRetry = async () => {
           for (let attempt = 1; attempt <= 3; attempt += 1) {
-            await refresh();
-            await utils.auth.me.invalidate();
+            const tokenNow = getSessionIdToken();
+            if (!tokenNow) {
+              if (attempt < 3) {
+                await wait(350 * attempt);
+                continue;
+              }
+              break;
+            }
             try {
               const retry = await registerInterestMutation.mutateAsync({ bookId });
               await utils.books.myInterests.invalidate();
@@ -120,7 +126,7 @@ export default function Book() {
           toast.error("Não foi possível validar sua sessão agora. Aguarde e tente novamente.");
           return;
         }
-        toast.error("Não foi possível validar sua sessão agora. Aguarde e tente novamente.");
+        toast.error("Sessão ainda não sincronizada. Aguarde alguns segundos e tente novamente.");
         return;
       }
 
