@@ -362,6 +362,30 @@ export default function AddBook() {
     }
   };
 
+  const handlePasteLensText = async () => {
+    if (!navigator.clipboard?.readText) {
+      setScannerError("Seu navegador não permite ler a área de transferência automaticamente.");
+      return;
+    }
+
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      const isbnFound = extractISBNFromRaw(clipboardText || "");
+      if (!isbnFound) {
+        setScannerError("Não encontrei ISBN no texto copiado do Lens.");
+        return;
+      }
+      setScannerError("");
+      setFormData((prev) => ({ ...prev, isbn: isbnFound }));
+      toast.success(`ISBN detectado no texto: ${isbnFound}`);
+      await searchBookByISBN(isbnFound);
+    } catch {
+      setScannerError(
+        "Não foi possível acessar a área de transferência. Copie o texto do Lens e tente novamente."
+      );
+    }
+  };
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (autoScanTriggeredRef.current) return;
@@ -608,6 +632,13 @@ export default function AddBook() {
                     {scannerBusy && scannerMode === "cover"
                       ? "Abrindo câmera..."
                       : "Escanear capa (OCR)"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handlePasteLensText()}
+                    className="w-full py-3 border-2 border-[#4b5563] text-[#4b5563] rounded-lg hover:bg-[#4b5563] hover:text-white transition-colors font-bold"
+                  >
+                    Colar texto (Google Lens)
                   </button>
                 </div>
                 {scannerOpen && (
