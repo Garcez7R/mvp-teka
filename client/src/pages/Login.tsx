@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
-import { clearSignupRole, setSessionIdToken, setSignupRole } from "@/lib/session";
+import { setSessionIdToken, setSignupRole } from "@/lib/session";
 import { trackEvent } from "@/lib/analytics";
 
 export default function Login() {
@@ -24,7 +24,6 @@ export default function Login() {
 
   const refreshSessionAndGo = async (destination = "/") => {
     await utils.auth.me.invalidate();
-    clearSignupRole();
     navigate(destination);
   };
 
@@ -68,7 +67,7 @@ export default function Login() {
             const selectedRole = roleRef.current;
             setSignupRole(selectedRole);
             setSessionIdToken(response.credential);
-            await refreshSessionAndGo(selectedRole === "livreiro" ? "/sebo/novo" : "/");
+            await refreshSessionAndGo("/");
             trackEvent("google_login_success", { role: selectedRole });
           } catch (err) {
             const message = err instanceof Error ? err.message : "Falha no login com Google";

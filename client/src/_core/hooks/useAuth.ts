@@ -1,5 +1,10 @@
 import { trpc } from "@/lib/trpc";
-import { clearSessionIdToken, getGoogleTokenClaims, getSignupRole } from "@/lib/session";
+import {
+  clearSessionIdToken,
+  clearSignupRole,
+  getGoogleTokenClaims,
+  getSignupRole,
+} from "@/lib/session";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
@@ -37,6 +42,7 @@ export function useAuth(options?: UseAuthOptions) {
       throw error;
     } finally {
       clearSessionIdToken();
+      clearSignupRole();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }

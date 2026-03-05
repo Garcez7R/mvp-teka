@@ -79,11 +79,17 @@ export async function createTRPCContext(
           .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
 
         if (existing) {
+          const shouldPromoteToLivreiro =
+            requestedRole === "livreiro" &&
+            (existing.role === "comprador" || existing.role === "user");
+          const effectiveRole = shouldPromoteToLivreiro ? "livreiro" : existing.role;
+
           await db
             .update(users)
             .set({
               name: name ?? existing.name,
               email: email ?? existing.email,
+              role: effectiveRole,
               loginMethod: "google",
               lastSignedIn: new Date(),
             })
@@ -94,9 +100,10 @@ export async function createTRPCContext(
               ...existing,
               name: name ?? existing.name,
               email: email ?? existing.email,
+              role: effectiveRole,
             },
             userId: existing.id,
-            role: existing.role,
+            role: effectiveRole,
           };
         }
 
