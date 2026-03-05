@@ -7,7 +7,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ArrowLeft, Upload, Search, Loader2, BookOpen, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { put } from "@vercel/blob";
 import { trackEvent } from "@/lib/analytics";
 
 export default function AddBook() {
@@ -238,21 +237,9 @@ export default function AddBook() {
 
       let finalCoverUrl = coverUrl;
       if (coverFile) {
-        try {
-          if (import.meta.env.PROD) {
-            const blob = await put(coverFile.name, coverFile, {
-              access: "public",
-              multipart: true,
-            });
-            finalCoverUrl = blob.url;
-          } else {
-            finalCoverUrl = URL.createObjectURL(coverFile);
-          }
-        } catch (error: any) {
-          toast.error("Erro ao fazer upload da capa: " + error.message);
-          setIsUploading(false);
-          return;
-        }
+        toast.error("Upload manual de capa desativado nesta versão Cloudflare-only. Use ISBN para preencher automaticamente.");
+        setIsUploading(false);
+        return;
       }
 
       let seboIdToUse: number;

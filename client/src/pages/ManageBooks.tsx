@@ -5,7 +5,6 @@ import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { ArrowLeft, Upload, Edit2, Trash2, Search as SearchIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { put } from "@vercel/blob";
 
 interface EditingBook {
   id: number;
@@ -136,22 +135,9 @@ export default function ManageBooks() {
 
       // Upload new cover if file selected
       if (editingBook.newCoverFile) {
-        try {
-          if (import.meta.env.PROD) {
-            const blob = await put(editingBook.newCoverFile.name, editingBook.newCoverFile, {
-              access: "public",
-              multipart: true,
-            });
-            coverUrl = blob.url;
-          } else {
-            console.warn("Using local URL in development");
-            coverUrl = URL.createObjectURL(editingBook.newCoverFile);
-          }
-        } catch (error: any) {
-          toast.error("Erro ao fazer upload: " + error.message);
-          setIsUploading(false);
-          return;
-        }
+        toast.error("Upload manual de capa desativado na estratégia Cloudflare-only.");
+        setIsUploading(false);
+        return;
       }
 
       // build payload separately so we can conditionally include optional fields
