@@ -25,7 +25,7 @@ app.use((req: Request, res: Response, next) => {
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, trpc-batch"
+    "Content-Type, Authorization, trpc-batch, x-teka-id-token, x-teka-role"
   );
 
   if (req.method === "OPTIONS") {

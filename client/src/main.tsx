@@ -71,6 +71,7 @@ const trpcClient = trpc.createClient({
         const mergedHeaders = new Headers(options?.headers ?? {});
         if (idToken) {
           mergedHeaders.set("authorization", `Bearer ${idToken}`);
+          mergedHeaders.set("x-teka-id-token", idToken);
         }
         if (signupRole) {
           mergedHeaders.set("x-teka-role", signupRole);

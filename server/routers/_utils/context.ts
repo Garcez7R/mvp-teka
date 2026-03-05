@@ -42,10 +42,13 @@ export async function createTRPCContext(
   const authHeader =
     readFirstValue(req?.headers?.authorization) ??
     readFirstValue(req?.headers?.Authorization);
+  const idTokenHeader =
+    readFirstValue(req?.headers?.["x-teka-id-token"]) ??
+    readFirstValue(req?.headers?.["X-Teka-Id-Token"]);
   const bearerToken =
     authHeader && authHeader.startsWith("Bearer ")
       ? authHeader.slice("Bearer ".length).trim()
-      : null;
+      : idTokenHeader;
 
   if (bearerToken) {
     try {
