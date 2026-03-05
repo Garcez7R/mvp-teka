@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean } from "drizzle-orm/mysql-core";
+import { int, sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -6,71 +6,91 @@ import { relations } from "drizzle-orm";
  * Extend this file with additional tables as your product grows.
  * Columns use camelCase to match both database fields and generated types.
  */
-export const users = mysqlTable("users", {
+export const users = sqliteTable("users", {
   /**
    * Surrogate primary key. Auto-incremented numeric value managed by the database.
    * Use this for relations between tables.
    */
-  id: int("id").autoincrement().primaryKey(),
+  id: int("id").primaryKey({ autoIncrement: true }),
   /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+  openId: text("openId").notNull().unique(),
   name: text("name"),
-  email: varchar("email", { length: 320 }),
-  whatsapp: varchar("whatsapp", { length: 20 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin", "livreiro", "comprador"]).default("comprador").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  email: text("email"),
+  whatsapp: text("whatsapp"),
+  loginMethod: text("loginMethod"),
+  role: text("role", { enum: ["user", "admin", "livreiro", "comprador"] })
+    .default("comprador")
+    .notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  lastSignedIn: integer("lastSignedIn", { mode: "timestamp_ms" })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 // Tabela de sebos (livrarias/vendedores)
-export const sebos = mysqlTable("sebos", {
-  id: int("id").autoincrement().primaryKey(),
+export const sebos = sqliteTable("sebos", {
+  id: int("id").primaryKey({ autoIncrement: true }),
   userId: int("userId").notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  whatsapp: varchar("whatsapp", { length: 20 }).notNull(),
-  city: varchar("city", { length: 100 }),
-  state: varchar("state", { length: 2 }),
-  verified: boolean("verified").default(false),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  whatsapp: text("whatsapp").notNull(),
+  city: text("city"),
+  state: text("state"),
+  verified: integer("verified", { mode: "boolean" }).default(false),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
 export type Sebo = typeof sebos.$inferSelect;
 export type InsertSebo = typeof sebos.$inferInsert;
 
 // Tabela de livros
-export const books = mysqlTable("books", {
-  id: int("id").autoincrement().primaryKey(),
+export const books = sqliteTable("books", {
+  id: int("id").primaryKey({ autoIncrement: true }),
   seboId: int("seboId").notNull(),
   title: text("title").notNull(),
   author: text("author"),
-  isbn: varchar("isbn", { length: 20 }),
-  category: varchar("category", { length: 100 }),
+  isbn: text("isbn"),
+  category: text("category"),
   description: text("description"),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  condition: mysqlEnum("condition", ["Excelente", "Bom estado", "Usado", "Desgastado"]).default("Bom estado"),
+  price: real("price").notNull(),
+  condition: text("condition", {
+    enum: ["Excelente", "Bom estado", "Usado", "Desgastado"],
+  }).default("Bom estado"),
   pages: int("pages"),
   year: int("year"),
   coverUrl: text("coverUrl"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
 export type Book = typeof books.$inferSelect;
 export type InsertBook = typeof books.$inferInsert;
 
 // Tabela de favoritos
-export const favorites = mysqlTable("favorites", {
-  id: int("id").autoincrement().primaryKey(),
+export const favorites = sqliteTable("favorites", {
+  id: int("id").primaryKey({ autoIncrement: true }),
   userId: int("userId").notNull(),
   bookId: int("bookId").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
 export type Favorite = typeof favorites.$inferSelect;

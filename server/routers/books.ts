@@ -2,7 +2,7 @@ import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, livreiroProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
 import { books, sebos, favorites } from "../_schema.ts";
-import { eq, ilike, and, lte, gte, inArray, sql } from "drizzle-orm";
+import { eq, like, and, lte, gte, inArray, sql } from "drizzle-orm";
 
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
 type AvailabilityStatus = "ativo" | "reservado" | "vendido";
@@ -70,8 +70,9 @@ export const booksRouter = router({
       const filters: any[] = [];
 
       if (input.search) {
+        const pattern = `%${input.search.toLowerCase()}%`;
         filters.push(
-          ilike(books.title, `%${input.search}%`)
+          like(sql`lower(${books.title})`, pattern)
         );
       }
 
@@ -83,7 +84,7 @@ export const booksRouter = router({
         filters.push(eq(books.seboId, input.seboId));
       }
       if (input.city) {
-        filters.push(ilike(sebos.city, `%${input.city}%`));
+        filters.push(like(sql`lower(${sebos.city})`, `%${input.city.toLowerCase()}%`));
       }
       if (input.state) {
         filters.push(eq(sebos.state, input.state.toUpperCase()));
@@ -94,11 +95,11 @@ export const booksRouter = router({
       }
 
       if (input.minPrice !== undefined) {
-        filters.push(gte(books.price, input.minPrice.toString()));
+        filters.push(gte(books.price, input.minPrice));
       }
 
       if (input.maxPrice !== undefined) {
-        filters.push(lte(books.price, input.maxPrice.toString()));
+        filters.push(lte(books.price, input.maxPrice));
       }
 
       const where = filters.length > 0 ? and(...filters) : undefined;
@@ -124,7 +125,7 @@ export const booksRouter = router({
               : null,
           };
         })
-        .filter((book) =>
+        .filter((book: any) =>
           input.availabilityStatus ? book.availabilityStatus === input.availabilityStatus : true
         );
       return data;
@@ -240,9 +241,9 @@ export const booksRouter = router({
         .values({
           ...input,
           description: withStatusMarker(input.availabilityStatus, input.description),
-          price: input.price.toString(),
+          price: input.price,
         })
-        .$returningId();
+        .returning({ id: books.id });
 
       return newBook;
     }),
@@ -293,7 +294,7 @@ export const booksRouter = router({
       const updateDataWithStringPrice: any = {
         ...updateData,
         description: withStatusMarker(targetStatus, updateData.description ?? book.description),
-        ...(updateData.price !== undefined && { price: updateData.price.toString() }),
+        ...(updateData.price !== undefined && { price: updateData.price }),
       };
       // cast to any because drizzle expects price string and our union could still
       // include number otherwise
@@ -320,15 +321,19 @@ export const booksRouter = router({
           reservedBooks: 0,
           soldBooks: 0,
           totalFavorites: 0,
+          totalInterests: 0,
           topBooks: [],
         };
       }
 
       const myBooks = await db.select().from(books).where(eq(books.seboId, seboId));
-      const bookIds = myBooks.map((book) => book.id);
+      const bookIds = myBooks.map((book: typeof books.$inferSelect) => book.id);
 
       const statusCount = myBooks.reduce(
-        (acc, book) => {
+        (
+          acc: { activeBooks: number; reservedBooks: number; soldBooks: number },
+          book: typeof books.$inferSelect
+        ) => {
           const status = normalizeBookDescription(book.description).availabilityStatus;
           if (status === "reservado") acc.reservedBooks += 1;
           else if (status === "vendido") acc.soldBooks += 1;
@@ -343,6 +348,7 @@ export const booksRouter = router({
           totalBooks: 0,
           ...statusCount,
           totalFavorites: 0,
+          totalInterests: 0,
           topBooks: [],
         };
       }
@@ -357,21 +363,21 @@ export const booksRouter = router({
         .groupBy(favorites.bookId);
 
       const favoritesMap = new Map<number, number>(
-        favoritesByBook.map((row) => [row.bookId, Number(row.count ?? 0)])
+        favoritesByBook.map((row: { bookId: number; count: number }) => [row.bookId, Number(row.count ?? 0)])
       );
       const topBooks = myBooks
-        .map((book) => ({
+        .map((book: typeof books.$inferSelect) => ({
           id: book.id,
           title: book.title,
           favorites: favoritesMap.get(book.id) ?? 0,
         }))
-        .sort((a, b) => b.favorites - a.favorites)
+        .sort((a: { favorites: number }, b: { favorites: number }) => b.favorites - a.favorites)
         .slice(0, 5);
 
       const totalFavorites = Array.from(favoritesMap.values()).reduce((sum, value) => sum + value, 0);
       const interestMap = getInterestMap();
       const totalInterests = bookIds.reduce(
-        (sum, id) => sum + (interestMap.get(id)?.size ?? 0),
+        (sum: number, id: number) => sum + (interestMap.get(id)?.size ?? 0),
         0
       );
 

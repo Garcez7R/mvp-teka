@@ -59,7 +59,7 @@ export const sebosRouter = router({
         userId: ctx.userId!,
         ...input,
       })
-      .$returningId();
+      .returning({ id: sebos.id });
 
       return newSebo;
     }),

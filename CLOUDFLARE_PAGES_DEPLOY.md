@@ -55,9 +55,15 @@ Fase A (ja pronta no codigo):
 
 Fase B (virada de backend):
 
-1. Configurar banco compativel com runtime Cloudflare (`Hyperdrive` para MySQL ou migracao para `D1`).
-2. Definir `DATABASE_URL` no ambiente Pages/Workers para o backend local.
-3. Trocar `TRPC_EXECUTION_MODE=local`.
+1. Criar banco `D1` no Cloudflare.
+2. Em `Pages > Settings > Bindings`, adicionar binding:
+   - Nome: `DB`
+   - Tipo: `D1`
+   - Banco: seu banco criado no passo 1
+3. Em `Variables and Secrets`, definir:
+   - `TRPC_EXECUTION_MODE=local`
+   - manter `GOOGLE_CLIENT_ID` e `VITE_GOOGLE_CLIENT_ID`
+   - `API_UPSTREAM_URL` e `TRPC_UPSTREAM_URL` podem permanecer como fallback, mas nao sao usados em `local`.
 4. Testar fluxo completo: login, criar sebo, cadastrar/editar/deletar livro, favoritos.
 
 Se ocorrer erro, voltar imediatamente para `TRPC_EXECUTION_MODE=proxy` sem downtime.

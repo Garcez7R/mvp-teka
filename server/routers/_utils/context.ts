@@ -116,7 +116,7 @@ export async function createTRPCContext(
             role: initialRole,
             loginMethod: "google",
           })
-          .$returningId();
+          .returning({ id: users.id });
 
         const createdUser = await db
           .select()

@@ -51,48 +51,41 @@ async function handleProxy(context) {
   });
 }
 
-async function handleLocal(context) {
-  const [{ fetchRequestHandler }, { appRouter }, { createTRPCContext }, { setRuntimeEnv }] =
-    await Promise.all([
-      import("@trpc/server/adapters/fetch"),
-      import("../../server/routers/index.ts"),
-      import("../../server/routers/_utils/context.ts"),
-      import("../../server/_core/runtime-env.ts"),
-    ]);
-
-  setRuntimeEnv(context.env);
-
-  const response = await fetchRequestHandler({
-    endpoint: "/trpc",
-    req: context.request,
-    router: appRouter,
-    createContext: async () =>
-      createTRPCContext({
-        req: {
-          headers: Object.fromEntries(context.request.headers.entries()),
-        },
-      }),
-    onError({ error, path }) {
-      console.error("tRPC local error", path, error);
-    },
-  });
-
-  const headers = new Headers(response.headers);
-  headers.set("x-teka-trpc-mode", "local");
-  headers.set("cache-control", "no-store");
-
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
-}
-
 export async function onRequest(context) {
   const mode = (context.env.TRPC_EXECUTION_MODE || "proxy").toLowerCase();
   if (mode === "local") {
-    return handleLocal(context);
+    const { setRuntimeEnv } = await import("../../server/_core/runtime-env.ts");
+    setRuntimeEnv(context.env);
+    const [{ fetchRequestHandler }, { appRouter }, { createTRPCContext }] = await Promise.all([
+      import("@trpc/server/adapters/fetch"),
+      import("../../server/routers/index.ts"),
+      import("../../server/routers/_utils/context.ts"),
+    ]);
+
+    const response = await fetchRequestHandler({
+      endpoint: "/trpc",
+      req: context.request,
+      router: appRouter,
+      createContext: async () =>
+        createTRPCContext({
+          req: {
+            headers: Object.fromEntries(context.request.headers.entries()),
+          },
+        }),
+      onError({ error, path }) {
+        console.error("tRPC local error", path, error);
+      },
+    });
+
+    const headers = new Headers(response.headers);
+    headers.set("x-teka-trpc-mode", "local");
+    headers.set("cache-control", "no-store");
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   }
   return handleProxy(context);
 }
-

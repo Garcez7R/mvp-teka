@@ -57,11 +57,11 @@ export const usersRouter = router({
             role: input.role,
             loginMethod: "email",
           })
-          .$returningId();
+          .returning({ id: users.id });
 
         return newUser;
       } catch (error: any) {
-        if (error.code === "ER_DUP_ENTRY") {
+        if (error?.code === "ER_DUP_ENTRY" || error?.code === "SQLITE_CONSTRAINT") {
           throw new Error("User already exists");
         }
         throw error;

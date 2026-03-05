@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as dotenv from "dotenv";
 import { join } from "path";
 

@@ -24,3 +24,12 @@ export function getRuntimeEnvValue(name: string): string | undefined {
   return undefined;
 }
 
+export function getRuntimeEnvBinding(name: string): unknown {
+  const runtimeEnv = (globalThis as any)[RUNTIME_ENV_KEY] as
+    | Record<string, unknown>
+    | undefined;
+  if (runtimeEnv && name in runtimeEnv) {
+    return runtimeEnv[name];
+  }
+  return undefined;
+}

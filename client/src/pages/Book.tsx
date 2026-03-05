@@ -217,6 +217,10 @@ export default function Book() {
 
     const whatsappNumber = demoBook.sebo?.whatsapp || WHATSAPP_DEFAULT;
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=Olá! Tenho interesse no livro "${demoBook.title}". Ainda está disponível?`;
+    const demoAvailabilityStatus = demoBook.availabilityStatus as
+      | "ativo"
+      | "reservado"
+      | "vendido";
 
     return (
       <div className="min-h-screen flex flex-col bg-white">
@@ -295,9 +299,9 @@ export default function Book() {
                   {demoBook.condition}
                 </span>
                 <span className="text-xs font-inter bg-emerald-600 px-3 py-1 rounded text-white font-semibold">
-                  {demoBook.availabilityStatus === "vendido"
+                  {demoAvailabilityStatus === "vendido"
                     ? "Vendido"
-                    : demoBook.availabilityStatus === "reservado"
+                    : demoAvailabilityStatus === "reservado"
                     ? "Reservado"
                     : "Disponivel"}
                 </span>
