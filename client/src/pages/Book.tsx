@@ -14,6 +14,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 export default function Book() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, refresh } = useAuth();
+  const utils = trpc.useUtils();
   const isDemoBook = Boolean(id?.startsWith("demo-"));
   const parsedBookId = Number.parseInt(id || "", 10);
   const favoriteId = isDemoBook ? (id || null) : Number.isFinite(parsedBookId) ? parsedBookId : null;
@@ -65,6 +66,7 @@ export default function Book() {
     }
     try {
       const result = await registerInterestMutation.mutateAsync({ bookId });
+      await utils.books.myInterests.invalidate();
       const total = result?.totalInterests;
       toast.success(
         total && Number.isFinite(total)
@@ -80,6 +82,7 @@ export default function Book() {
         try {
           await refresh();
           const retry = await registerInterestMutation.mutateAsync({ bookId });
+          await utils.books.myInterests.invalidate();
           const retryTotal = retry?.totalInterests;
           toast.success(
             retryTotal && Number.isFinite(retryTotal)
