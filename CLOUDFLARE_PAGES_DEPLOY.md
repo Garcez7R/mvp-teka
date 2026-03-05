@@ -1,9 +1,10 @@
-# Deploy no Cloudflare Pages (frontend) + API separada
+# Deploy no Cloudflare Pages com migracao segura (sem quebrar legado)
 
 ## Resumo da arquitetura recomendada hoje
 
 - Frontend React/Vite: **Cloudflare Pages**
-- API tRPC + MySQL atual: **manter fora do Cloudflare Pages** (Netlify Function ou outro host Node)
+- API tRPC + MySQL atual: **manter ativa enquanto migra**
+- Bridge Cloudflare: Pages Functions em `/trpc` para proxy do backend legado
 
 Motivo: o backend atual usa `mysql2` com pool TCP e isso nao e migracao direta para Pages Functions sem adaptar banco (ex.: Hyperdrive/D1).
 
@@ -18,23 +19,29 @@ No projeto Pages:
 
 ## 2) Configurar variaveis de ambiente no Pages
 
-Adicione a variavel:
-
-- `VITE_PUBLIC_API_URL`
+Adicione:
 
 Valor:
 
-- URL base publica da API (sem `/trpc` no final), exemplo:
-  - `https://mvp-teka.netlify.app`
-  - ou `https://api.seudominio.com`
+- `TRPC_UPSTREAM_URL`: URL do backend legado (com ou sem `/trpc`)
+  - exemplo: `https://api.seudominio.com/trpc`
+  - exemplo: `https://mvp-teka.netlify.app/trpc`
+- `API_UPSTREAM_URL`: URL base do backend legado
+  - exemplo: `https://api.seudominio.com`
 
-## 3) Deploy e teste
+Opcional para transicao sem downtime:
+
+- manter `VITE_PUBLIC_API_URL` apontando para API antiga no primeiro deploy
+- depois remover `VITE_PUBLIC_API_URL` para usar same-origin `/trpc` via proxy Cloudflare
+
+## 3) Deploy e teste sem downtime
 
 Depois do deploy, valide:
 
 1. Home abre normalmente.
 2. Cadastro de sebo envia sem `Failed to fetch`.
 3. Cadastro de livro (ISBN e criar livro) funciona.
+4. `GET /health` responde via proxy Cloudflare.
 
 ## 4) Migracao futura para full Cloudflare (opcional)
 
