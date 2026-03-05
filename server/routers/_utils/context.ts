@@ -3,6 +3,7 @@ import { db } from "./db.js";
 import { users } from "../../_schema.ts";
 import { eq } from "drizzle-orm";
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { getRuntimeEnvValue } from "../../_core/runtime-env.ts";
 
 export type Context = {
   user: User | null;
@@ -36,7 +37,7 @@ export async function createTRPCContext(
   opts?: ContextOptionsLike
 ): Promise<Context> {
   const req = opts?.req;
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction = getRuntimeEnvValue("NODE_ENV") === "production";
 
   const authHeader =
     readFirstValue(req?.headers?.authorization) ??
@@ -49,7 +50,8 @@ export async function createTRPCContext(
   if (bearerToken) {
     try {
       const audience =
-        process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+        getRuntimeEnvValue("GOOGLE_CLIENT_ID") ||
+        getRuntimeEnvValue("VITE_GOOGLE_CLIENT_ID");
       if (!audience) {
         throw new Error("GOOGLE_CLIENT_ID is required");
       }

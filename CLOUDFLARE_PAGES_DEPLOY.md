@@ -23,6 +23,8 @@ Adicione:
 
 Valor:
 
+- `TRPC_EXECUTION_MODE`: `proxy` (padrao seguro) ou `local` (Cloudflare-only backend)
+
 - `TRPC_UPSTREAM_URL`: URL do backend legado (com ou sem `/trpc`)
   - exemplo: `https://api.seudominio.com/trpc`
   - exemplo: `https://mvp-teka.netlify.app/trpc`
@@ -41,15 +43,24 @@ Depois do deploy, valide:
 1. Home abre normalmente.
 2. Cadastro de sebo envia sem `Failed to fetch`.
 3. Cadastro de livro (ISBN e criar livro) funciona.
-4. `GET /health` responde via proxy Cloudflare.
+4. `GET /health` responde (em `proxy` ou `local`).
+5. Conferir header `x-teka-trpc-mode` nas respostas de `/trpc` (`proxy` ou `local`).
 
-## 4) Migracao futura para full Cloudflare (opcional)
+## 4) Virada para Cloudflare-only (faseada)
 
-Para ter tudo dentro do ecossistema Cloudflare:
+Fase A (ja pronta no codigo):
 
-1. Migrar acesso a MySQL para Hyperdrive (ou migrar para D1).
-2. Trocar entrypoint Node/Express por handler `fetch` no runtime Workers.
-3. Publicar API como Worker e manter frontend em Pages/Assets.
+1. Manter `TRPC_EXECUTION_MODE=proxy` (estado atual seguro).
+2. Frontend usa same-origin `/trpc` via Cloudflare Function.
+
+Fase B (virada de backend):
+
+1. Configurar banco compativel com runtime Cloudflare (`Hyperdrive` para MySQL ou migracao para `D1`).
+2. Definir `DATABASE_URL` no ambiente Pages/Workers para o backend local.
+3. Trocar `TRPC_EXECUTION_MODE=local`.
+4. Testar fluxo completo: login, criar sebo, cadastrar/editar/deletar livro, favoritos.
+
+Se ocorrer erro, voltar imediatamente para `TRPC_EXECUTION_MODE=proxy` sem downtime.
 
 ## 5) Hardening recomendado (Cloudflare)
 

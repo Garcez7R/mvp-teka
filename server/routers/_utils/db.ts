@@ -3,10 +3,13 @@ import mysql from "mysql2/promise";
 import * as schema from "../../_schema.ts";
 import * as dotenv from "dotenv";
 import { join } from "path";
+import { getRuntimeEnvValue } from "../../_core/runtime-env.ts";
 
 // Tenta carregar o .env e o .env.local de forma absoluta
-dotenv.config({ path: join(process.cwd(), ".env") });
-dotenv.config({ path: join(process.cwd(), ".env.local") });
+if (typeof process !== "undefined" && process?.cwd) {
+  dotenv.config({ path: join(process.cwd(), ".env") });
+  dotenv.config({ path: join(process.cwd(), ".env.local") });
+}
 
 let pool: ReturnType<typeof mysql.createPool> | null = null;
 let dbInstance: any = null;
@@ -26,8 +29,9 @@ function getConnectionString() {
   ];
 
   for (const name of possibleNames) {
-    if (process.env[name]) {
-      return process.env[name];
+    const value = getRuntimeEnvValue(name);
+    if (value) {
+      return value;
     }
   }
   return null;

@@ -5,6 +5,18 @@ function normalizeUpstream(raw) {
 }
 
 export async function onRequest(context) {
+  const mode = (context.env.TRPC_EXECUTION_MODE || "proxy").toLowerCase();
+  if (mode === "local") {
+    return Response.json(
+      {
+        status: "ok",
+        mode: "local",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 200 }
+    );
+  }
+
   const base = normalizeUpstream(
     context.env.API_UPSTREAM_URL || context.env.TRPC_UPSTREAM_URL || ""
   );
@@ -22,9 +34,13 @@ export async function onRequest(context) {
   const healthUrl = `${base.replace(/\/trpc$/i, "")}/health`;
   const res = await fetch(healthUrl, { method: "GET" });
   const text = await res.text();
+  const headers = {
+    "content-type": res.headers.get("content-type") || "application/json",
+    "x-teka-trpc-mode": "proxy",
+  };
 
   return new Response(text, {
     status: res.status,
-    headers: { "content-type": res.headers.get("content-type") || "application/json" },
+    headers,
   });
 }
