@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "./_utils/trpc.js";
+import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
 import { users } from "../_schema.ts";
 import { eq } from "drizzle-orm";
@@ -39,22 +39,23 @@ export const usersRouter = router({
   register: publicProcedure
     .input(
       z.object({
-        openId: z.string(),
+        openId: z.string().optional(),
         name: z.string(),
-        email: z.string().email().optional(),
-        role: z.enum(["user", "admin", "livreiro", "comprador"]).default("comprador"),
+        email: z.string().email(),
+        role: z.enum(["livreiro", "comprador"]).default("comprador"),
       })
     )
     .mutation(async ({ input }) => {
       try {
+        const generatedOpenId = input.openId || `email:${input.email.toLowerCase()}`;
         const newUser = await db
           .insert(users)
           .values({
-            openId: input.openId,
+            openId: generatedOpenId,
             name: input.name,
             email: input.email,
             role: input.role,
-            loginMethod: "manus",
+            loginMethod: "email",
           })
           .$returningId();
 
@@ -65,6 +66,26 @@ export const usersRouter = router({
         }
         throw error;
       }
+    }),
+
+  loginByEmail: publicProcedure
+    .input(
+      z.object({
+        email: z.string().email(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, input.email))
+        .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
+
+      if (!user) {
+        throw new Error("Usuário não encontrado para este e-mail");
+      }
+
+      return user;
     }),
 
   // Update user
@@ -80,6 +101,26 @@ export const usersRouter = router({
         .update(users)
         .set(input)
         .where(eq(users.id, ctx.userId!));
+
+      return { success: true };
+    }),
+
+  adminList: adminProcedure.query(async () => {
+    return db.select().from(users);
+  }),
+
+  adminUpdateRole: adminProcedure
+    .input(
+      z.object({
+        userId: z.number(),
+        role: z.enum(["admin", "livreiro", "comprador", "user"]),
+      })
+    )
+    .mutation(async ({ input }) => {
+      await db
+        .update(users)
+        .set({ role: input.role })
+        .where(eq(users.id, input.userId));
 
       return { success: true };
     }),

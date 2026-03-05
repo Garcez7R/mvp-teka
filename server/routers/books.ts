@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "./_utils/trpc.js";
+import { router, publicProcedure, protectedProcedure, livreiroProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
 import { books, sebos } from "../_schema.ts";
 import { eq, ilike, and, lte, gte } from "drizzle-orm";
@@ -102,7 +102,8 @@ export const booksRouter = router({
         .where(eq(sebos.id, input))
         .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
-      if (!sebo || sebo.userId !== ctx.userId) {
+      const canRead = Boolean(sebo && (sebo.userId === ctx.userId || ctx.role === "admin"));
+      if (!canRead) {
         throw new Error("Unauthorized");
       }
 
@@ -114,8 +115,8 @@ export const booksRouter = router({
       return data;
     }),
 
-  // Create new book (public for MVP)
-  create: publicProcedure
+  // Create new book (livreiro/admin)
+  create: livreiroProcedure
     .input(
       z.object({
         title: z.string(),
@@ -131,7 +132,7 @@ export const booksRouter = router({
         seboId: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // Verify sebo exists
       const sebo = await db
         .select()
@@ -141,6 +142,9 @@ export const booksRouter = router({
 
       if (!sebo) {
         throw new Error("Sebo not found");
+      }
+      if (sebo.userId !== ctx.userId && ctx.role !== "admin") {
+        throw new Error("Unauthorized");
       }
 
       const newBook = await db
@@ -188,7 +192,8 @@ export const booksRouter = router({
         .where(eq(sebos.id, book.seboId))
         .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
-      if (!sebo || sebo.userId !== ctx.userId) {
+      const canEdit = Boolean(sebo && (sebo.userId === ctx.userId || ctx.role === "admin"));
+      if (!canEdit) {
         throw new Error("Unauthorized");
       }
 
@@ -224,7 +229,8 @@ export const booksRouter = router({
         .where(eq(sebos.id, book.seboId))
         .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
-      if (!sebo || sebo.userId !== ctx.userId) {
+      const canDelete = Boolean(sebo && (sebo.userId === ctx.userId || ctx.role === "admin"));
+      if (!canDelete) {
         throw new Error("Unauthorized");
       }
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ArrowLeft, Upload, Search, Loader2, BookOpen, CheckCircle, XCircle } from "lucide-react";
@@ -11,6 +12,7 @@ import { trackEvent } from "@/lib/analytics";
 
 export default function AddBook() {
   const [, navigate] = useLocation();
+  const { isAuthenticated, role, loading } = useAuth({ redirectOnUnauthenticated: true });
 
   const [formData, setFormData] = useState({
     seboId: "",
@@ -284,6 +286,18 @@ export default function AddBook() {
       setIsUploading(false);
     }
   };
+
+  const canManageBooks = role === "livreiro" || role === "admin";
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
+  }
+  if (!isAuthenticated || !canManageBooks) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <p className="text-gray-700">Apenas livreiros e admins podem cadastrar livros.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

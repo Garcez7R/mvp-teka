@@ -1,5 +1,5 @@
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { clearSessionUserId } from "@/lib/session";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
@@ -9,7 +9,7 @@ type UseAuthOptions = {
 };
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
+  const { redirectOnUnauthenticated = false, redirectPath = "/login" } =
     options ?? {};
   const utils = trpc.useUtils();
 
@@ -36,6 +36,7 @@ export function useAuth(options?: UseAuthOptions) {
       }
       throw error;
     } finally {
+      clearSessionUserId();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }
@@ -51,6 +52,7 @@ export function useAuth(options?: UseAuthOptions) {
       loading: meQuery.isLoading || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
       isAuthenticated: Boolean(meQuery.data),
+      role: meQuery.data?.role ?? null,
     };
   }, [
     meQuery.data,

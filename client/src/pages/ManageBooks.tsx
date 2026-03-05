@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { ArrowLeft, Upload, Edit2, Trash2, Search as SearchIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,7 +19,7 @@ interface EditingBook {
 
 export default function ManageBooks() {
   const [, navigate] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth({ redirectOnUnauthenticated: true });
   const utils = trpc.useUtils();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -55,13 +54,21 @@ export default function ManageBooks() {
             Acesso Restrito
           </h1>
           <p className="text-gray-600 mb-6">Você precisa fazer login.</p>
-          <a
-            href={getLoginUrl()}
+          <Link
+            href="/login"
             className="inline-block bg-[#da4653] text-white font-outfit font-bold py-2 px-6 rounded-lg"
           >
             Fazer Login
-          </a>
+          </Link>
         </div>
+      </div>
+    );
+  }
+
+  if (role !== "livreiro" && role !== "admin") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <p className="text-gray-700">Apenas livreiros e admins podem gerenciar livros.</p>
       </div>
     );
   }

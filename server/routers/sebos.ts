@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "./_utils/trpc.js";
+import { router, publicProcedure, protectedProcedure, livreiroProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { sebos, users, books } from "../_schema.ts";
+import { sebos, books } from "../_schema.ts";
 import { eq } from "drizzle-orm";
 
 export const sebosRouter = router({
@@ -43,8 +43,8 @@ export const sebosRouter = router({
     return mySebo || null;
   }),
 
-  // Create sebo (public)
-  create: publicProcedure
+  // Create sebo (livreiro/admin)
+  create: livreiroProcedure
     .input(
       z.object({
         name: z.string(),
@@ -54,34 +54,9 @@ export const sebosRouter = router({
         state: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
-      // MVP fallback: allow public creation by assigning a technical owner user.
-      let ownerUserId: number;
-      const fallbackOpenId = "public-sebo-owner";
-
-      const existingOwner = await db
-        .select()
-        .from(users)
-        .where(eq(users.openId, fallbackOpenId))
-        .then((res: Array<typeof users.$inferSelect>) => res[0]);
-
-      if (existingOwner) {
-        ownerUserId = existingOwner.id;
-      } else {
-        const insertedOwner = await db
-          .insert(users)
-          .values({
-            openId: fallbackOpenId,
-            name: "Public Sebo Owner",
-            role: "livreiro",
-            loginMethod: "public",
-          })
-          .$returningId();
-        ownerUserId = insertedOwner[0].id;
-      }
-
+    .mutation(async ({ input, ctx }) => {
       const newSebo = await db.insert(sebos).values({
-        userId: ownerUserId,
+        userId: ctx.userId!,
         ...input,
       })
       .$returningId();
@@ -110,7 +85,8 @@ export const sebosRouter = router({
         .where(eq(sebos.id, id))
         .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
-      if (!sebo || sebo.userId !== ctx.userId) {
+      const canEdit = Boolean(sebo && (sebo.userId === ctx.userId || ctx.role === "admin"));
+      if (!canEdit) {
         throw new Error("Unauthorized");
       }
 

@@ -4,10 +4,12 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import { trackEvent } from "@/lib/analytics";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
 export default function CreateSebo() {
   const [, navigate] = useLocation();
+  const { isAuthenticated, role, loading } = useAuth({ redirectOnUnauthenticated: true });
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -65,6 +67,18 @@ export default function CreateSebo() {
       setIsLoading(false);
     }
   };
+
+  const canCreateSebo = role === "livreiro" || role === "admin";
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
+  }
+  if (!isAuthenticated || !canCreateSebo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <p className="text-gray-700">Apenas livreiros e admins podem criar sebos.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

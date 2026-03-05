@@ -1,8 +1,12 @@
 import type { User } from "../../_schema.ts";
+import { db } from "./db.js";
+import { users } from "../../_schema.ts";
+import { eq } from "drizzle-orm";
 
 export type Context = {
   user: User | null;
   userId: number | null;
+  role: User["role"] | null;
 };
 
 type RequestLike = {
@@ -37,8 +41,31 @@ export async function createTRPCContext(
   const parsedUserId = rawUserId ? Number.parseInt(rawUserId, 10) : NaN;
   const userId = Number.isFinite(parsedUserId) && parsedUserId > 0 ? parsedUserId : null;
 
+  if (!userId) {
+    return {
+      user: null,
+      userId: null,
+      role: null,
+    };
+  }
+
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
+
+  if (!user) {
+    return {
+      user: null,
+      userId: null,
+      role: null,
+    };
+  }
+
   return {
-    user: null, // Will be populated with actual auth
-    userId,
+    user,
+    userId: user.id,
+    role: user.role,
   };
 }

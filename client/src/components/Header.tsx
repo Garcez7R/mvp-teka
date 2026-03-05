@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Menu, X, PlusCircle, BookOpen, Info, User } from "lucide-react";
+import { Menu, X, BookOpen, Info, LogIn, Shield, Library, PlusCircle, LogOut } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, role, logout } = useAuth();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
@@ -26,6 +28,33 @@ export default function Header() {
           <Link href="/about" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
             Sobre
           </Link>
+          {isAuthenticated && (role === "livreiro" || role === "admin") && (
+            <>
+              <Link href="/add-book" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+                Cadastrar Livro
+              </Link>
+              <Link href="/manage-books" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+                Meus Livros
+              </Link>
+            </>
+          )}
+          {isAuthenticated && role === "admin" && (
+            <Link href="/admin" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+              Admin
+            </Link>
+          )}
+          {!isAuthenticated ? (
+            <Link href="/login" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+              Entrar
+            </Link>
+          ) : (
+            <button
+              onClick={() => logout()}
+              className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium"
+            >
+              Sair
+            </button>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -61,6 +90,57 @@ export default function Header() {
               <Info className="w-5 h-5 text-[#da4653]" />
               Sobre
             </Link>
+            {isAuthenticated && (role === "livreiro" || role === "admin") && (
+              <>
+                <Link
+                  href="/add-book"
+                  onClick={closeMenu}
+                  className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+                >
+                  <PlusCircle className="w-5 h-5 text-[#da4653]" />
+                  Cadastrar Livro
+                </Link>
+                <Link
+                  href="/manage-books"
+                  onClick={closeMenu}
+                  className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+                >
+                  <Library className="w-5 h-5 text-[#da4653]" />
+                  Meus Livros
+                </Link>
+              </>
+            )}
+            {isAuthenticated && role === "admin" && (
+              <Link
+                href="/admin"
+                onClick={closeMenu}
+                className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+              >
+                <Shield className="w-5 h-5 text-[#da4653]" />
+                Admin
+              </Link>
+            )}
+            {!isAuthenticated ? (
+              <Link
+                href="/login"
+                onClick={closeMenu}
+                className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+              >
+                <LogIn className="w-5 h-5 text-[#da4653]" />
+                Entrar
+              </Link>
+            ) : (
+              <button
+                onClick={() => {
+                  closeMenu();
+                  void logout();
+                }}
+                className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+              >
+                <LogOut className="w-5 h-5 text-[#da4653]" />
+                Sair
+              </button>
+            )}
           </nav>
         </div>
       )}
