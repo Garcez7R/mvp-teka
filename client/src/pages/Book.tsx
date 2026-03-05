@@ -80,21 +80,48 @@ export default function Book() {
         error?.data?.code === "UNAUTHORIZED" || /not authenticated/i.test(message);
 
       if (unauthenticated) {
+        const wait = (ms: number) =>
+          new Promise((resolve) => window.setTimeout(resolve, ms));
+
+        const trySyncAndRetry = async () => {
+          for (let attempt = 1; attempt <= 3; attempt += 1) {
+            await refresh();
+            await utils.auth.me.invalidate();
+            try {
+              const retry = await registerInterestMutation.mutateAsync({ bookId });
+              await utils.books.myInterests.invalidate();
+              const retryTotal = retry?.totalInterests;
+              toast.success(
+                retryTotal && Number.isFinite(retryTotal)
+                  ? `Interesse registrado. ${retryTotal} pessoa(s) interessada(s).`
+                  : "Interesse registrado com sucesso."
+              );
+              return true;
+            } catch (retryError: any) {
+              const retryMessage = String(retryError?.message || "");
+              const retryUnauthenticated =
+                retryError?.data?.code === "UNAUTHORIZED" ||
+                /not authenticated/i.test(retryMessage);
+              if (!retryUnauthenticated) {
+                throw retryError;
+              }
+              if (attempt < 3) {
+                await wait(350 * attempt);
+              }
+            }
+          }
+          return false;
+        };
+
         try {
-          await refresh();
-          const retry = await registerInterestMutation.mutateAsync({ bookId });
-          await utils.books.myInterests.invalidate();
-          const retryTotal = retry?.totalInterests;
-          toast.success(
-            retryTotal && Number.isFinite(retryTotal)
-              ? `Interesse registrado. ${retryTotal} pessoa(s) interessada(s).`
-              : "Interesse registrado com sucesso."
-          );
-          return;
+          const success = await trySyncAndRetry();
+          if (success) return;
         } catch {
-          toast.error("Não foi possível validar sua sessão agora. Tente novamente em instantes.");
+          toast.error("Não foi possível validar sua sessão agora. Aguarde e tente novamente.");
           return;
         }
+        toast.error("Não foi possível validar sua sessão agora. Aguarde e tente novamente.");
+        return;
       }
 
       const fallbackMessage =
