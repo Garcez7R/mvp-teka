@@ -19,7 +19,23 @@ export default function Home() {
   const [maxPriceFilter, setMaxPriceFilter] = useState("");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [searchBarKey, setSearchBarKey] = useState(0);
   const { getFavoriteCount, isFavorite } = useFavorites();
+
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory(null);
+    setSelectedSebo(null);
+    setSelectedCondition(null);
+    setSelectedStatus("ativo");
+    setCityFilter("");
+    setStateFilter("");
+    setMinPriceFilter("");
+    setMaxPriceFilter("");
+    setOnlyFavorites(false);
+    setShowFilters(false);
+    setSearchBarKey((prev) => prev + 1);
+  };
 
   // Fetch books from API
   const { data: booksData = [] } = trpc.books.list.useQuery({
@@ -208,6 +224,12 @@ export default function Home() {
     canonical.setAttribute("href", `${window.location.origin}/`);
   }, []);
 
+  useEffect(() => {
+    const handler = () => clearAllFilters();
+    window.addEventListener("teka:reset-catalog", handler);
+    return () => window.removeEventListener("teka:reset-catalog", handler);
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
@@ -223,7 +245,7 @@ export default function Home() {
           </p>
           
           <div className="max-w-2xl">
-            <SearchBar onSearch={setSearchQuery} />
+            <SearchBar key={searchBarKey} onSearch={setSearchQuery} />
           </div>
         </div>
       </section>
@@ -399,6 +421,12 @@ export default function Home() {
           <div className="text-center py-12">
             <p className="font-inter text-gray-600 mb-2">Nenhum livro encontrado</p>
             <p className="font-inter text-sm text-gray-500">Tente ajustar seus filtros ou busca</p>
+            <button
+              onClick={clearAllFilters}
+              className="mt-4 px-4 py-2 border-2 border-[#da4653] text-[#da4653] rounded-lg font-medium hover:bg-[#da4653] hover:text-white transition-colors"
+            >
+              Limpar filtros
+            </button>
           </div>
         )}
       </main>

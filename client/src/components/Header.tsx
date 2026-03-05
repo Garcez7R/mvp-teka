@@ -12,19 +12,35 @@ export default function Header() {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
+  const resetCatalog = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("teka:reset-catalog"));
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-[#da4653] border-b border-gray-200 shadow-sm">
       <div className="container flex items-center justify-between h-16">
         {/* Logo */}
-        <Link href="/" onClick={closeMenu} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link
+          href="/"
+          onClick={() => {
+            resetCatalog();
+            closeMenu();
+          }}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
           <img src="/teka-logo.png" alt="TEKA" className="w-10 h-10 object-contain" />
           <span className="font-outfit font-bold text-xl text-[#262969]">TEKA</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="/" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+          <Link
+            href="/"
+            onClick={resetCatalog}
+            className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium"
+          >
             Catálogo
           </Link>
           
@@ -89,7 +105,10 @@ export default function Header() {
           <nav className="container py-6 flex flex-col gap-4">
             <Link 
               href="/" 
-              onClick={closeMenu}
+              onClick={() => {
+                resetCatalog();
+                closeMenu();
+              }}
               className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
             >
               <BookOpen className="w-5 h-5 text-[#da4653]" />

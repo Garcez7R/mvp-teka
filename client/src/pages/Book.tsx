@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { trackEvent } from "@/lib/analytics";
 import { BookOpen, MapPin, Calendar, FileText, MessageCircle, ArrowLeft, Heart, Loader2 } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
+import { toast } from "sonner";
 
 export default function Book() {
   const { id } = useParams<{ id: string }>();
@@ -51,11 +52,24 @@ export default function Book() {
 
   const handleInterest = async (bookId: number | null, title: string) => {
     trackEvent("book_interest_click", { bookId: bookId ?? -1, title });
-    if (!bookId) return;
+    if (!bookId) {
+      toast.error("Não foi possível registrar interesse neste livro.");
+      return;
+    }
     try {
-      await registerInterestMutation.mutateAsync({ bookId });
-    } catch {
-      // ignore if user is not authenticated
+      const result = await registerInterestMutation.mutateAsync({ bookId });
+      const total = result?.totalInterests;
+      toast.success(
+        total && Number.isFinite(total)
+          ? `Interesse registrado. ${total} pessoa(s) interessada(s).`
+          : "Interesse registrado com sucesso."
+      );
+    } catch (error: any) {
+      const message =
+        typeof error?.message === "string" && error.message.length > 0
+          ? error.message
+          : "Faça login para registrar interesse.";
+      toast.error(message);
     }
   };
 

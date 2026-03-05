@@ -5,6 +5,27 @@ import { getSessionIdToken } from "@/lib/session";
 
 const FAVORITES_KEY = "teka_favorites";
 const normalizeId = (bookId: number | string) => String(bookId);
+const FAVORITES_EVENT = "teka:favorites-updated";
+
+function sameIds(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function readFavoritesFromStorage(): string[] {
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem(FAVORITES_KEY);
+  if (!stored) return [];
+  try {
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed.map((id) => String(id)) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function useFavorites() {
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -25,27 +46,29 @@ export function useFavorites() {
 
   // Carregar favoritos do localStorage ao montar
   useEffect(() => {
-    const stored = localStorage.getItem(FAVORITES_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setFavorites(parsed.map((id) => String(id)));
-        } else {
-          setFavorites([]);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar favoritos:", error);
-        setFavorites([]);
-      }
-    }
+    setFavorites(readFavoritesFromStorage());
     setIsLoading(false);
+  }, []);
+
+  // Sync between multiple hook instances in the same tab and across tabs.
+  useEffect(() => {
+    const sync = () => {
+      const next = readFavoritesFromStorage();
+      setFavorites((prev) => (sameIds(prev, next) ? prev : next));
+    };
+    window.addEventListener("storage", sync);
+    window.addEventListener(FAVORITES_EVENT, sync as EventListener);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener(FAVORITES_EVENT, sync as EventListener);
+    };
   }, []);
 
   // Salvar favoritos no localStorage sempre que mudar
   useEffect(() => {
     if (!isLoading) {
       localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+      window.dispatchEvent(new CustomEvent(FAVORITES_EVENT));
     }
   }, [favorites, isLoading]);
 
