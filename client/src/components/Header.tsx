@@ -17,6 +17,12 @@ export default function Header() {
       window.dispatchEvent(new CustomEvent("teka:reset-catalog"));
     }
   };
+  const handleLogout = async () => {
+    await logout();
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-[#da4653] border-b border-gray-200 shadow-sm">
@@ -84,7 +90,7 @@ export default function Header() {
                 {roleLabel}
               </span>
               <button
-                onClick={() => logout()}
+                onClick={() => void handleLogout()}
                 className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium"
               >
                 Sair
@@ -205,7 +211,7 @@ export default function Header() {
                 <button
                   onClick={() => {
                     closeMenu();
-                    void logout();
+                    void handleLogout();
                   }}
                   className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
                 >
