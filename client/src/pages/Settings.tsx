@@ -19,12 +19,14 @@ export default function SettingsPage() {
   const [cameraStatus, setCameraStatus] = useState("Não verificado");
   const [cameraHelpText, setCameraHelpText] = useState("");
   const [cameraHelpCopied, setCameraHelpCopied] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
     const standalone =
       window.matchMedia?.("(display-mode: standalone)")?.matches ||
       (window.navigator as any).standalone === true;
     setIsStandalone(Boolean(standalone));
+    setIsAndroid(/Android/i.test(navigator.userAgent || ""));
 
     const refreshInstallAvailability = () => {
       const available = Boolean((window as any).__TEKA_BEFORE_INSTALL_PROMPT__);
@@ -211,6 +213,15 @@ export default function SettingsPage() {
             </button>
             {installStatus ? (
               <p className="mt-3 text-sm text-gray-700">{installStatus}</p>
+            ) : null}
+            {isAndroid && !isStandalone && !installAvailable ? (
+              <div className="mt-3 p-3 rounded-lg border border-amber-200 bg-amber-50">
+                <p className="text-xs text-amber-800 font-medium">
+                  No Android, se o botão estiver indisponível, instale pelo menu do Chrome:
+                  <span className="font-semibold"> ⋮ &gt; Instalar app</span> ou
+                  <span className="font-semibold"> Adicionar à tela inicial</span>.
+                </p>
+              </div>
             ) : null}
           </section>
 
