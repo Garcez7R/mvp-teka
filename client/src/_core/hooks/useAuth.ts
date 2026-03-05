@@ -52,7 +52,7 @@ export function useAuth(options?: UseAuthOptions) {
     const claims = getGoogleTokenClaims();
     const fallbackRole = getSignupRole();
     const fallbackUser =
-      !meQuery.data && claims?.sub
+      !meQuery.data && !meQuery.error && claims?.sub
         ? {
             id: 0,
             openId: `google:${claims.sub}`,

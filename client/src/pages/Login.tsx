@@ -23,8 +23,32 @@ export default function Login() {
 
   const isGoogleConfigured = Boolean(googleClientId);
 
+  const sleep = (ms: number) =>
+    new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
+
+  const ensureServerSession = async () => {
+    const maxAttempts = 5;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        await utils.auth.me.invalidate();
+        const me = await utils.auth.me.fetch();
+        if (me) {
+          return me;
+        }
+      } catch {
+        // Retry below.
+      }
+      if (attempt < maxAttempts) {
+        await sleep(350);
+      }
+    }
+    throw new Error("Not authenticated");
+  };
+
   const refreshSessionAndGo = async (destination = "/") => {
-    await utils.auth.me.invalidate();
+    await ensureServerSession();
     navigate(destination);
   };
 
