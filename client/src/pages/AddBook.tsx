@@ -266,7 +266,7 @@ export default function AddBook() {
         error.name === "NotAllowedError" ||
         error.name === "PermissionDeniedError"
       ) {
-        return "Permissão de câmera negada. Libere o acesso à câmera no navegador e tente novamente.";
+        return "Permissão de câmera negada. Se o app estiver instalado, libere em Configurações do sistema > Apps > Permissões > Câmera.";
       }
       if (error.name === "NotFoundError") {
         return "Nenhuma câmera foi encontrada neste dispositivo.";

@@ -14,10 +14,16 @@ type BeforeInstallPromptEventLike = Event & {
 export default function SettingsPage() {
   useAuth({ redirectOnUnauthenticated: true });
   const [installAvailable, setInstallAvailable] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
   const [installStatus, setInstallStatus] = useState("");
   const [cameraStatus, setCameraStatus] = useState("Não verificado");
 
   useEffect(() => {
+    const standalone =
+      window.matchMedia?.("(display-mode: standalone)")?.matches ||
+      (window.navigator as any).standalone === true;
+    setIsStandalone(Boolean(standalone));
+
     const refreshInstallAvailability = () => {
       const available = Boolean((window as any).__TEKA_BEFORE_INSTALL_PROMPT__);
       setInstallAvailable(available);
@@ -31,6 +37,30 @@ export default function SettingsPage() {
       window.removeEventListener("teka:pwa-install-available", refreshInstallAvailability);
       window.removeEventListener("teka:pwa-installed", refreshInstallAvailability);
     };
+  }, []);
+
+  useEffect(() => {
+    if (!window.isSecureContext) {
+      setCameraStatus("A câmera só funciona em contexto seguro (HTTPS ou localhost).");
+      return;
+    }
+    if (!navigator.permissions?.query) return;
+    void navigator.permissions
+      .query({ name: "camera" as PermissionName })
+      .then((result) => {
+        if (result.state === "granted") {
+          setCameraStatus("Permissão já concedida.");
+          return;
+        }
+        if (result.state === "denied") {
+          setCameraStatus(
+            "Permissão negada. No app instalado, libere em Configurações do sistema > Apps > Permissões > Câmera."
+          );
+          return;
+        }
+        setCameraStatus("Permissão pendente. Clique em Verificar câmera para solicitar acesso.");
+      })
+      .catch(() => {});
   }, []);
 
   const handleInstall = async () => {
@@ -54,6 +84,10 @@ export default function SettingsPage() {
   };
 
   const handleCheckCamera = async () => {
+    if (!window.isSecureContext) {
+      setCameraStatus("A câmera só funciona em HTTPS (ou localhost no modo local).");
+      return;
+    }
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraStatus("Este dispositivo/navegador não suporta câmera.");
       return;
@@ -66,7 +100,9 @@ export default function SettingsPage() {
     } catch (error: any) {
       const name = error?.name || "";
       if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        setCameraStatus("Permissão negada. Libere a câmera nas configurações do navegador.");
+        setCameraStatus(
+          "Permissão negada. No app instalado, libere em Configurações do sistema > Apps > Permissões > Câmera."
+        );
         return;
       }
       if (name === "NotFoundError") {
@@ -99,11 +135,15 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => void handleInstall()}
-              disabled={!installAvailable}
+              disabled={!installAvailable || isStandalone}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#262969] text-white hover:bg-[#1e2157] disabled:opacity-50"
             >
               <Download className="w-4 h-4" />
-              {installAvailable ? "Instalar aplicativo" : "Instalação indisponível"}
+              {isStandalone
+                ? "App já instalado"
+                : installAvailable
+                ? "Instalar aplicativo"
+                : "Instalação indisponível"}
             </button>
             {installStatus ? (
               <p className="mt-3 text-sm text-gray-700">{installStatus}</p>

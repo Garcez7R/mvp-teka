@@ -41,6 +41,62 @@ export default function MyInterests() {
     }
   );
 
+  const demoBooks = [
+    {
+      id: "demo-1",
+      title: "Dom Casmurro",
+      author: "Machado de Assis",
+      category: "Literatura Brasileira",
+      price: 25.0,
+      coverUrl: "/covers/dom-casmurro.svg",
+    },
+    {
+      id: "demo-2",
+      title: "1984",
+      author: "George Orwell",
+      category: "Ficção Científica",
+      price: 32.5,
+      coverUrl: "https://covers.openlibrary.org/b/isbn/9788535914849-L.jpg",
+      isbn: "9788535914849",
+    },
+    {
+      id: "demo-3",
+      title: "Crônicas Saxônicas",
+      author: "Bernard Cornwell",
+      category: "História",
+      price: 35.0,
+      coverUrl: "https://covers.openlibrary.org/b/isbn/9780007218011-L.jpg",
+      isbn: "9780007218011",
+    },
+    {
+      id: "demo-4",
+      title: "As Duas Torres",
+      author: "J.R.R. Tolkien",
+      category: "Fantasia",
+      price: 42.0,
+      coverUrl: "/covers/as-duas-torres.svg",
+      isbn: "9788595084759",
+    },
+    {
+      id: "demo-5",
+      title: "A Quarta Asa",
+      author: "Rebecca Yarros",
+      category: "Fantasia",
+      price: 38.0,
+      coverUrl: "https://covers.openlibrary.org/b/isbn/9781649374042-L.jpg",
+      isbn: "9781649374042",
+    },
+    {
+      id: "demo-6",
+      title: "Harry Potter e a Pedra Filosofal",
+      author: "J.K. Rowling",
+      category: "Fantasia",
+      price: 35.0,
+      coverUrl: "https://covers.openlibrary.org/b/isbn/9788532511010-L.jpg",
+      isbn: "9788532511010",
+    },
+  ];
+
   if (loading || interestsLoading || favoritesLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
@@ -53,10 +109,21 @@ export default function MyInterests() {
     );
   }
 
-  const fallbackFavoriteBooks = allBooks.filter((book: any) =>
-    localFavoriteIds.includes(String(book.id))
+  const localFavoriteSet = new Set(localFavoriteIds.map((id) => String(id)));
+  const fallbackFavoriteBooks = localFavoriteIds
+    .map((favoriteId) => {
+      const key = String(favoriteId);
+      const dbBook = allBooks.find((book: any) => String(book.id) === key);
+      if (dbBook) return dbBook;
+      return demoBooks.find((book) => String(book.id) === key) ?? null;
+    })
+    .filter(Boolean) as any[];
+
+  const effectiveFavorites = Array.from(
+    new Map(
+      [...favorites, ...fallbackFavoriteBooks].map((book: any) => [String(book.id), book])
+    ).values()
   );
-  const effectiveFavorites = favorites.length > 0 ? favorites : fallbackFavoriteBooks;
   const interestsTabError = Boolean(interestsError) && interests.length === 0;
   const favoritesTabError = Boolean(favoritesError) && effectiveFavorites.length === 0;
 
@@ -99,7 +166,7 @@ export default function MyInterests() {
                 : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
             }`}
             >
-            Favoritos ({effectiveFavorites.length})
+            Favoritos ({effectiveFavorites.length || localFavoriteSet.size})
             </button>
           </div>
 

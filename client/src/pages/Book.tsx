@@ -63,7 +63,6 @@ export default function Book() {
     const hasToken = Boolean(getSessionIdToken());
     if (!isAuthenticated && !hasToken) {
       toast.error("Faça login para registrar interesse.");
-      window.location.href = "/login";
       return;
     }
     try {
@@ -93,8 +92,7 @@ export default function Book() {
           );
           return;
         } catch {
-          toast.error("Sessão expirada. Faça login novamente.");
-          window.location.href = "/login";
+          toast.error("Não foi possível validar sua sessão agora. Tente novamente em instantes.");
           return;
         }
       }
