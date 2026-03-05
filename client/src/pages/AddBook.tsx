@@ -38,6 +38,7 @@ export default function AddBook() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerError, setScannerError] = useState("");
   const [scannerBusy, setScannerBusy] = useState(false);
+  const [scannerMode, setScannerMode] = useState<"barcode" | "cover">("barcode");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scannerActiveRef = useRef(false);
@@ -248,7 +249,42 @@ export default function AddBook() {
     return null;
   };
 
-  const startScanner = async () => {
+  const extractISBNFromDetectedItems = (items: any[]): string | null => {
+    for (const item of items) {
+      const rawValue = String(item?.rawValue || item?.text || "");
+      const isbnFound = extractISBNFromRaw(rawValue);
+      if (isbnFound) {
+        return isbnFound;
+      }
+    }
+    return null;
+  };
+
+  const getCameraErrorMessage = (error: unknown): string => {
+    if (error instanceof DOMException) {
+      if (
+        error.name === "NotAllowedError" ||
+        error.name === "PermissionDeniedError"
+      ) {
+        return "Permissão de câmera negada. Libere o acesso à câmera no navegador e tente novamente.";
+      }
+      if (error.name === "NotFoundError") {
+        return "Nenhuma câmera foi encontrada neste dispositivo.";
+      }
+      if (error.name === "NotReadableError" || error.name === "TrackStartError") {
+        return "Não foi possível acessar a câmera. Feche outros apps que possam estar usando a câmera.";
+      }
+      if (error.name === "SecurityError") {
+        return "Acesso à câmera bloqueado por segurança. Use HTTPS (ou localhost) para escanear.";
+      }
+    }
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return "Não foi possível iniciar a câmera.";
+  };
+
+  const startScanner = async (mode: "barcode" | "cover") => {
     if (typeof window === "undefined") return;
     if (!navigator.mediaDevices?.getUserMedia) {
       setScannerError("Seu navegador não suporta acesso à câmera.");
@@ -256,12 +292,18 @@ export default function AddBook() {
     }
 
     const BarcodeDetectorCtor = (window as any).BarcodeDetector;
-    if (!BarcodeDetectorCtor) {
+    const TextDetectorCtor = (window as any).TextDetector;
+    if (mode === "barcode" && !BarcodeDetectorCtor) {
       setScannerError("Leitura de código por câmera não suportada neste navegador.");
+      return;
+    }
+    if (mode === "cover" && !TextDetectorCtor) {
+      setScannerError("OCR por câmera não suportado neste navegador.");
       return;
     }
 
     try {
+      setScannerMode(mode);
       setScannerError("");
       setScannerOpen(true);
       setScannerBusy(true);
@@ -279,26 +321,26 @@ export default function AddBook() {
       video.srcObject = stream;
       await video.play();
 
-      const detector = new BarcodeDetectorCtor({
-        formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"],
-      });
+      const detector =
+        mode === "barcode"
+          ? new BarcodeDetectorCtor({
+              formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"],
+            })
+          : new TextDetectorCtor();
       scannerActiveRef.current = true;
 
       const scanLoop = async () => {
         if (!scannerActiveRef.current || !videoRef.current) return;
         try {
-          const barcodes = await detector.detect(videoRef.current);
-          if (barcodes?.length) {
-            for (const barcode of barcodes) {
-              const rawValue = String(barcode.rawValue || "");
-              const isbnFound = extractISBNFromRaw(rawValue);
-              if (isbnFound) {
-                setFormData((prev) => ({ ...prev, isbn: isbnFound }));
-                toast.success(`ISBN detectado: ${isbnFound}`);
-                stopScanner();
-                await searchBookByISBN(isbnFound);
-                return;
-              }
+          const detectedItems = await detector.detect(videoRef.current);
+          if (detectedItems?.length) {
+            const isbnFound = extractISBNFromDetectedItems(detectedItems);
+            if (isbnFound) {
+              setFormData((prev) => ({ ...prev, isbn: isbnFound }));
+              toast.success(`ISBN detectado: ${isbnFound}`);
+              stopScanner();
+              await searchBookByISBN(isbnFound);
+              return;
             }
           }
         } catch {
@@ -313,9 +355,7 @@ export default function AddBook() {
       void scanLoop();
     } catch (error) {
       stopScanner();
-      setScannerError(
-        error instanceof Error ? error.message : "Não foi possível iniciar a câmera."
-      );
+      setScannerError(getCameraErrorMessage(error));
     } finally {
       setScannerBusy(false);
     }
@@ -537,17 +577,31 @@ export default function AddBook() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void startScanner()}
+                    onClick={() => void startScanner("barcode")}
                     disabled={scannerBusy}
                     className="w-full py-3 border-2 border-[#1f7a8c] text-[#1f7a8c] rounded-lg hover:bg-[#1f7a8c] hover:text-white disabled:opacity-50 transition-colors font-bold"
                   >
-                    {scannerBusy ? "Abrindo câmera..." : "Escanear ISBN com câmera"}
+                    {scannerBusy && scannerMode === "barcode"
+                      ? "Abrindo câmera..."
+                      : "Escanear código de barras"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void startScanner("cover")}
+                    disabled={scannerBusy}
+                    className="w-full py-3 border-2 border-[#262969] text-[#262969] rounded-lg hover:bg-[#262969] hover:text-white disabled:opacity-50 transition-colors font-bold"
+                  >
+                    {scannerBusy && scannerMode === "cover"
+                      ? "Abrindo câmera..."
+                      : "Escanear capa (OCR)"}
                   </button>
                 </div>
                 {scannerOpen && (
                   <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
                     <p className="text-sm text-gray-700 mb-2">
-                      Aponte a câmera para o código de barras do livro.
+                      {scannerMode === "cover"
+                        ? "Aponte a câmera para capa/lombada para capturar texto e extrair ISBN."
+                        : "Aponte a câmera para o código de barras do livro."}
                     </p>
                     <video
                       ref={videoRef}
