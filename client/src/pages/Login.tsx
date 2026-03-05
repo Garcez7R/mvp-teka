@@ -37,13 +37,13 @@ export default function Login() {
       return;
     }
 
-    setIsBusy(true);
     setSignupRole(role);
 
     (window as any).google.accounts.id.initialize({
       client_id: googleClientId,
       callback: async (response: { credential?: string }) => {
         try {
+          setIsBusy(true);
           if (!response?.credential) {
             throw new Error("Não foi possível obter o token do Google.");
           }
@@ -60,7 +60,18 @@ export default function Login() {
       },
     });
 
-    (window as any).google.accounts.id.prompt();
+    (window as any).google.accounts.id.prompt((notification: any) => {
+      if (notification?.isNotDisplayed?.()) {
+        const reason = notification?.getNotDisplayedReason?.();
+        setError(
+          `Google Sign-In indisponível neste contexto${reason ? ` (${reason})` : ""}.`
+        );
+      } else if (notification?.isSkippedMoment?.()) {
+        setError("Login do Google foi ignorado. Tente novamente.");
+      } else if (notification?.isDismissedMoment?.()) {
+        setError("Login do Google foi fechado antes de concluir.");
+      }
+    });
   };
 
   return (
