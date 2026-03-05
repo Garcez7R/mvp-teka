@@ -21,10 +21,12 @@ interface EditingBook {
 export default function ManageBooks() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
+  const utils = trpc.useUtils();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingBook, setEditingBook] = useState<EditingBook | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
     enabled: isAuthenticated
@@ -34,8 +36,16 @@ export default function ManageBooks() {
     { enabled: !!mySebo }
   );
 
-  const updateBookMutation = trpc.books.update.useMutation();
-  const deleteBookMutation = trpc.books.delete.useMutation();
+  const updateBookMutation = trpc.books.update.useMutation({
+    onSuccess: async () => {
+      await utils.books.listBySebo.invalidate();
+    },
+  });
+  const deleteBookMutation = trpc.books.delete.useMutation({
+    onSuccess: async () => {
+      await utils.books.listBySebo.invalidate();
+    },
+  });
 
   if (!isAuthenticated) {
     return (
@@ -161,14 +171,17 @@ export default function ManageBooks() {
     }
   };
 
-  const handleDelete = async (bookId: number) => {
-    if (!confirm("Tem certeza que deseja deletar este livro?")) return;
+  const handleDelete = async (bookId: number, title: string) => {
+    if (!confirm(`Deseja excluir "${title}"? Esta ação não pode ser desfeita.`)) return;
 
     try {
+      setDeletingId(bookId);
       await deleteBookMutation.mutateAsync(bookId);
       toast.success("Livro deletado com sucesso!");
     } catch (error: any) {
       toast.error(error.message || "Erro ao deletar livro");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -347,11 +360,12 @@ export default function ManageBooks() {
                           Editar
                         </button>
                         <button
-                          onClick={() => handleDelete(book.id)}
+                          onClick={() => handleDelete(book.id, book.title)}
+                          disabled={deletingId === book.id}
                           className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-2 rounded font-medium text-sm"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Deletar
+                          {deletingId === book.id ? "Deletando..." : "Deletar"}
                         </button>
                       </div>
                     </>

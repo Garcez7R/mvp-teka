@@ -10,6 +10,14 @@ interface BookCoverProps {
 }
 
 export default function BookCover({ isbn, title, author, coverUrl, className = "" }: BookCoverProps) {
+  const curatedByIsbn: Record<string, string> = {
+    "9788595084759": "/covers/as-duas-torres.svg",
+  };
+  const curatedByTitle: Record<string, string> = {
+    "dom casmurro": "/covers/dom-casmurro.svg",
+    "as duas torres": "/covers/as-duas-torres.svg",
+  };
+
   const [imageUrl, setImageUrl] = useState<string | null>(coverUrl || null);
   const [isLoading, setIsLoading] = useState(!coverUrl);
   const [hasError, setHasError] = useState(false);
@@ -25,9 +33,24 @@ export default function BookCover({ isbn, title, author, coverUrl, className = "
 
     const resolveImage = async () => {
       try {
+        const normalizedIsbn = isbn?.replace(/[^0-9X]/gi, "") ?? "";
+        const normalizedTitle = title.trim().toLowerCase();
+
+        if (normalizedIsbn && curatedByIsbn[normalizedIsbn]) {
+          setImageUrl(curatedByIsbn[normalizedIsbn]);
+          setHasError(false);
+          return;
+        }
+
+        if (curatedByTitle[normalizedTitle]) {
+          setImageUrl(curatedByTitle[normalizedTitle]);
+          setHasError(false);
+          return;
+        }
+
         if (isbn) {
           // 1) Open Library por ISBN
-          const openLibraryCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbn.replace(/-/g, "")}-L.jpg`;
+          const openLibraryCoverUrl = `https://covers.openlibrary.org/b/isbn/${normalizedIsbn}-L.jpg`;
           const openLibraryResponse = await fetch(openLibraryCoverUrl, { method: "HEAD" });
           if (openLibraryResponse.ok && !openLibraryResponse.url.includes("blank")) {
             setImageUrl(openLibraryCoverUrl);
@@ -37,7 +60,7 @@ export default function BookCover({ isbn, title, author, coverUrl, className = "
 
           // 2) Google Books por ISBN
           const googleByIsbn = await fetch(
-            `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn.replace(/-/g, "")}&maxResults=1`
+            `https://www.googleapis.com/books/v1/volumes?q=isbn:${normalizedIsbn}&maxResults=1`
           );
           if (googleByIsbn.ok) {
             const data = await googleByIsbn.json();

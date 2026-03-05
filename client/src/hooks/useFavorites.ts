@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 const FAVORITES_KEY = "teka_favorites";
 
@@ -28,11 +29,14 @@ export function useFavorites() {
   }, [favorites, isLoading]);
 
   const toggleFavorite = (bookId: number) => {
-    setFavorites((prev) =>
-      prev.includes(bookId)
+    setFavorites((prev) => {
+      const wasFavorite = prev.includes(bookId);
+      const next = wasFavorite
         ? prev.filter((id) => id !== bookId)
-        : [...prev, bookId]
-    );
+        : [...prev, bookId];
+      trackEvent("favorite_toggled", { bookId, action: wasFavorite ? "remove" : "add" });
+      return next;
+    });
   };
 
   const isFavorite = (bookId: number) => favorites.includes(bookId);

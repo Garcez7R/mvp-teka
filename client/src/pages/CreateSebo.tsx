@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
+import { trackEvent } from "@/lib/analytics";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
 export default function CreateSebo() {
@@ -20,6 +21,7 @@ export default function CreateSebo() {
   const createSeboMutation = trpc.sebos.create.useMutation({
     onError: (error) => {
       console.error("Erro ao criar sebo:", error);
+      trackEvent("sebo_create_error", { message: error.message });
       setError(error.message || "Erro ao criar sebo");
     }
   });
@@ -54,8 +56,8 @@ export default function CreateSebo() {
         state: formData.state || undefined,
       });
 
-      // Success - redirect to home
-      navigate("/");
+      trackEvent("sebo_create_success", { city: formData.city || "na" });
+      navigate("/add-book?sebo_created=1");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao criar sebo";
       setError(message);
@@ -189,7 +191,7 @@ export default function CreateSebo() {
               disabled={isLoading}
               className="w-full px-6 py-3 bg-[#da4653] text-white font-inter font-semibold rounded-lg hover:bg-[#c93d45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Criando sebo..." : "Criar Sebo"}
+              {isLoading ? "Criando sebo..." : "Criar Sebo e Cadastrar Primeiro Livro"}
             </button>
           </form>
 

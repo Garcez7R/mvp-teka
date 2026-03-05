@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import { ArrowLeft, Upload, Search, Loader2, BookOpen, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { put } from "@vercel/blob";
+import { trackEvent } from "@/lib/analytics";
 
 export default function AddBook() {
   const [, navigate] = useLocation();
@@ -31,6 +32,7 @@ export default function AddBook() {
   const [coverError, setCoverError] = useState("");
   const [isbnValid, setIsbnValid] = useState<boolean | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showSeboCreatedBanner, setShowSeboCreatedBanner] = useState(false);
 
   const createBookMutation = trpc.books.create.useMutation();
   const { data: sebosList = [], isLoading: sebosLoading } = trpc.sebos.list.useQuery(undefined, {
@@ -50,6 +52,13 @@ export default function AddBook() {
 
   const normalizeISBN = (isbn: string): string =>
     isbn.toUpperCase().replace(/[^0-9X]/g, "");
+  const curatedCoverByIsbn: Record<string, string> = {
+    "9788595084759": "/covers/as-duas-torres.svg",
+  };
+  const curatedCoverByTitle: Record<string, string> = {
+    "dom casmurro": "/covers/dom-casmurro.svg",
+    "as duas torres": "/covers/as-duas-torres.svg",
+  };
 
   // Validar ISBN
   const validateISBN = (isbn: string): boolean => {
@@ -75,6 +84,15 @@ export default function AddBook() {
     }
   }, [formData.isbn]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("sebo_created") === "1") {
+      setShowSeboCreatedBanner(true);
+      trackEvent("funnel_sebo_to_add_book");
+    }
+  }, []);
+
   const searchBookByISBN = async () => {
     if (!formData.isbn) {
       setCoverError("Digite um ISBN para buscar o livro");
@@ -88,9 +106,14 @@ export default function AddBook() {
 
     setSearchingBook(true);
     setCoverError("");
+    trackEvent("isbn_lookup_started");
 
     try {
       const isbnClean = normalizeISBN(formData.isbn);
+      if (curatedCoverByIsbn[isbnClean]) {
+        setCoverUrl(curatedCoverByIsbn[isbnClean]);
+        setCoverFile(null);
+      }
       let found = false;
       let foundCover = false;
 
@@ -165,11 +188,20 @@ export default function AddBook() {
       }
 
       if (found) {
+        const normalizedTitle = (formData.title || "").trim().toLowerCase();
+        if (!foundCover && normalizedTitle && curatedCoverByTitle[normalizedTitle]) {
+          setCoverUrl(curatedCoverByTitle[normalizedTitle]);
+          setCoverFile(null);
+          foundCover = true;
+        }
+        trackEvent("isbn_lookup_success", { isbn: isbnClean, cover: foundCover });
         toast.success("Dados do livro encontrados!");
       } else {
+        trackEvent("isbn_lookup_not_found", { isbn: isbnClean });
         setCoverError("Livro não encontrado nas bases. Preencha manualmente.");
       }
     } catch (error) {
+      trackEvent("isbn_lookup_error");
       setCoverError("Erro de conexão. Tente novamente em alguns minutos.");
     } finally {
       setSearchingBook(false);
@@ -242,9 +274,11 @@ export default function AddBook() {
         coverUrl: finalCoverUrl || undefined,
       });
 
+      trackEvent("book_create_success", { category: formData.category || "Outros" });
       toast.success("Livro cadastrado com sucesso! 📚");
       setTimeout(() => navigate("/"), 1500);
     } catch (error: any) {
+      trackEvent("book_create_error", { message: error?.message ?? "unknown" });
       toast.error(error.message || "Erro ao cadastrar livro");
     } finally {
       setIsUploading(false);
@@ -269,6 +303,13 @@ export default function AddBook() {
       </div>
 
       <main className="container flex-1 py-12">
+        {showSeboCreatedBanner && (
+          <div className="max-w-2xl mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-800 font-inter text-sm">
+              Sebo criado com sucesso. Agora adicione seu primeiro livro para começar a vender.
+            </p>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="max-w-2xl">
           <div className="grid grid-cols-1 gap-6 mb-8">
             {/* Seção do Sebo */}

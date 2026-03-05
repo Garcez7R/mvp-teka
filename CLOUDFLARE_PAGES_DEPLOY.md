@@ -43,3 +43,11 @@ Para ter tudo dentro do ecossistema Cloudflare:
 1. Migrar acesso a MySQL para Hyperdrive (ou migrar para D1).
 2. Trocar entrypoint Node/Express por handler `fetch` no runtime Workers.
 3. Publicar API como Worker e manter frontend em Pages/Assets.
+
+## 5) Hardening recomendado (Cloudflare)
+
+No dashboard da Cloudflare:
+
+1. Security -> Bots -> ativar Bot Fight Mode.
+2. Security -> WAF -> criar regra para challenge em paths sensiveis quando necessario.
+3. Caching -> respeitar headers para assets estaticos (o projeto publica `/_headers` com cache imutavel para bundles).

@@ -1,9 +1,11 @@
 import { useParams, Link } from "wouter";
+import { useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
 import { WHATSAPP_DEFAULT } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { trackEvent } from "@/lib/analytics";
 import { BookOpen, MapPin, Calendar, FileText, MessageCircle, ArrowLeft, Heart, Loader2 } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 
@@ -24,6 +26,28 @@ export default function Book() {
       ? favoriteId
       : null;
   const favorited = favoriteIdNumber !== null ? isFavorite(favoriteIdNumber) : false;
+
+  useEffect(() => {
+    const selectedTitle = isDemoBook
+      ? id?.replace("demo-", "Livro")
+      : book?.title;
+    if (selectedTitle) {
+      document.title = `TEKA - ${selectedTitle}`;
+      const description = `Confira detalhes e disponibilidade de ${selectedTitle} na TEKA.`;
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute("content", description);
+      }
+      let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+      if (!canonical) {
+        canonical = document.createElement("link");
+        canonical.setAttribute("rel", "canonical");
+        document.head.appendChild(canonical);
+      }
+      canonical.setAttribute("href", window.location.href);
+      trackEvent("book_view", { title: selectedTitle, demo: isDemoBook });
+    }
+  }, [book?.title, id, isDemoBook]);
 
   if (isLoading) {
     return (
@@ -105,7 +129,7 @@ export default function Book() {
         price: 42.00,
         condition: 'Excelente',
         isbn: '9788595084759',
-        coverUrl: undefined,
+        coverUrl: '/covers/as-duas-torres.svg',
         description: 'Segundo volume da trilogia O Senhor dos Anéis, onde a sociedade do anel se divide.',
         pages: 464,
         year: 2001,

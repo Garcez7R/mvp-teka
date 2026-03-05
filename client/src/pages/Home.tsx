@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Header from "@/components/Header";
 import SearchBar from "@/components/SearchBar";
 import BookCard from "@/components/BookCard";
@@ -79,7 +79,7 @@ export default function Home() {
           price: 42.00,
           condition: 'Excelente',
           isbn: '9788595084759',
-          coverUrl: undefined,
+          coverUrl: '/covers/as-duas-torres.svg',
           sebo: {
             name: 'Livraria Releitura',
             city: 'São Paulo',
@@ -139,6 +139,22 @@ export default function Home() {
       return matchesCategory && matchesSebo;
     });
   }, [displayBooks, selectedCategory, selectedSebo]);
+
+  useEffect(() => {
+    document.title = "TEKA - Catálogo de Livros Usados";
+    const description = "Busque livros usados por título, categoria e sebo parceiro na TEKA.";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute("content", description);
+    }
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", `${window.location.origin}/`);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
