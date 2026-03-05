@@ -43,6 +43,7 @@ export default function AddBook() {
   const streamRef = useRef<MediaStream | null>(null);
   const scannerActiveRef = useRef(false);
   const scanFrameRef = useRef<number | null>(null);
+  const autoScanTriggeredRef = useRef(false);
 
   const createBookMutation = trpc.books.create.useMutation();
   const { data: sebosList = [], isLoading: sebosLoading } = trpc.sebos.list.useQuery(undefined, {
@@ -360,6 +361,19 @@ export default function AddBook() {
       setScannerBusy(false);
     }
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (autoScanTriggeredRef.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const scanParam = params.get("scan");
+    if (scanParam !== "barcode" && scanParam !== "cover") return;
+
+    autoScanTriggeredRef.current = true;
+    window.history.replaceState({}, "", "/add-book");
+    void startScanner(scanParam);
+  }, []);
 
   useEffect(() => {
     return () => {

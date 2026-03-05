@@ -248,6 +248,12 @@ export default function SettingsPage() {
                 >
                   Abrir config do Chrome
                 </button>
+                <Link
+                  href="/add-book?scan=barcode"
+                  className="px-3 py-1.5 text-xs rounded border border-[#1f7a8c] text-[#1f7a8c] hover:bg-[#1f7a8c] hover:text-white"
+                >
+                  Testar câmera no cadastro
+                </Link>
               </div>
             </div>
           </section>
