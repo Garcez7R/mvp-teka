@@ -288,8 +288,15 @@ export default function Book() {
       );
     }
 
-    const whatsappNumber = demoBook.sebo?.whatsapp || WHATSAPP_DEFAULT;
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=Olá! Tenho interesse no livro "${demoBook.title}". Ainda está disponível?`;
+    const whatsappNumber = (demoBook.sebo?.whatsapp || WHATSAPP_DEFAULT).replace(/\D/g, "");
+    const demoWhatsappMessage = encodeURIComponent(
+      `Olá! Tenho interesse no livro "${demoBook.title}" (${demoBook.author}).\n` +
+        `Preço anunciado: R$ ${Number(demoBook.price).toFixed(2)}.\n` +
+        `Condição: ${demoBook.condition}.\n` +
+        `Sebo: ${demoBook.sebo?.name || "TEKA"}.\n` +
+        `Pode confirmar disponibilidade?`
+    );
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${demoWhatsappMessage}`;
     const demoAvailabilityStatus = demoBook.availabilityStatus as
       | "ativo"
       | "reservado"
@@ -535,8 +542,16 @@ export default function Book() {
     );
   }
 
-  const whatsappNumber = book.sebo?.whatsapp || WHATSAPP_DEFAULT;
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=Olá! Tenho interesse no livro "${book.title}". Ainda está disponível?`;
+  const whatsappNumber = (book.sebo?.whatsapp || WHATSAPP_DEFAULT).replace(/\D/g, "");
+  const liveWhatsappMessage = encodeURIComponent(
+    `Olá! Tenho interesse no livro "${book.title}" (${book.author || "Autor desconhecido"}).\n` +
+      `Preço anunciado: R$ ${Number(book.price).toFixed(2)}.\n` +
+      `Condição: ${book.condition || "Não informada"}.\n` +
+      `Sebo: ${book.sebo?.name || "TEKA"}.\n` +
+      `Link: ${typeof window !== "undefined" ? window.location.href : ""}\n` +
+      `Pode confirmar disponibilidade?`
+  );
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${liveWhatsappMessage}`;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

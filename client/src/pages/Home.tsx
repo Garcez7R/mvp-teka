@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import SearchBar from "@/components/SearchBar";
 import BookCard from "@/components/BookCard";
@@ -8,9 +8,10 @@ import { Filter, Heart, Bell, Plus, Trash2 } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
+import { Link } from "wouter";
 
 export default function Home() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSebo, setSelectedSebo] = useState<string | null>(null);
@@ -28,6 +29,26 @@ export default function Home() {
   const [onlyWishlistMatches, setOnlyWishlistMatches] = useState(false);
   const { getFavoriteCount, isFavorite } = useFavorites();
   const utils = trpc.useUtils();
+  const previousMatchesCountRef = useRef(0);
+
+  const normalizeText = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+
+  const includesAllTerms = (haystack: string, query: string) => {
+    const h = normalizeText(haystack);
+    const words = h.split(/[^a-z0-9]+/).filter(Boolean);
+    const terms = normalizeText(query).split(/\s+/).filter(Boolean);
+    return terms.every((term) => {
+      if (h.includes(term)) return true;
+      if (term.length < 4) return false;
+      const fuzzyPrefix = term.slice(0, term.length - 1);
+      return words.some((word) => word.startsWith(fuzzyPrefix));
+    });
+  };
 
   const { data: wishlistItems = [] } = trpc.wishlist.list.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -36,6 +57,16 @@ export default function Home() {
   });
   const { data: wishlistMatches = [] } = trpc.wishlist.matches.useQuery(undefined, {
     enabled: isAuthenticated,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
+    enabled: isAuthenticated && (role === "livreiro" || role === "admin"),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const { data: mySeboBooks = [] } = trpc.books.listBySebo.useQuery(mySebo?.id || 0, {
+    enabled: Boolean(mySebo?.id),
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -98,7 +129,7 @@ export default function Home() {
 
   // Fetch books from API
   const { data: booksData = [] } = trpc.books.list.useQuery({
-    search: searchQuery,
+    search: undefined,
     category: selectedCategory || undefined,
     condition: (selectedCondition as any) || undefined,
     availabilityStatus: selectedStatus,
@@ -233,6 +264,12 @@ export default function Home() {
         .filter((id: number) => Number.isFinite(id))
     );
     return displayBooks.filter((book: any) => {
+      const matchesSearch =
+        !searchQuery ||
+        includesAllTerms(
+          `${book.title || ""} ${book.author || ""} ${book.category || ""} ${book.sebo?.name || ""}`,
+          searchQuery
+        );
       const matchesCategory = !selectedCategory || book.category === selectedCategory;
       const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
       const matchesCondition = !selectedCondition || book.condition === selectedCondition;
@@ -249,6 +286,7 @@ export default function Home() {
       const numericId = Number(book.id);
       const matchesWishlist = !onlyWishlistMatches || matchBookIds.has(numericId);
       return (
+        matchesSearch &&
         matchesCategory &&
         matchesSebo &&
         matchesCondition &&
@@ -266,6 +304,7 @@ export default function Home() {
     displayBooks,
     maxPriceFilter,
     minPriceFilter,
+    searchQuery,
     selectedCategory,
     selectedCondition,
     selectedSebo,
@@ -292,6 +331,16 @@ export default function Home() {
     }
     canonical.setAttribute("href", `${window.location.origin}/`);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const previous = previousMatchesCountRef.current;
+    const current = wishlistMatches.length;
+    if (current > previous && previous > 0) {
+      toast.success(`Boa notícia: ${current - previous} novo(s) livro(s) da sua lista de procura apareceu(ram).`);
+    }
+    previousMatchesCountRef.current = current;
+  }, [isAuthenticated, wishlistMatches.length]);
 
   useEffect(() => {
     const handler = () => clearAllFilters();
@@ -321,6 +370,41 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="container flex-1 py-12">
+        {(role === "livreiro" || role === "admin") && (
+          <div className="mb-8 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+            <h3 className="font-outfit font-semibold text-[#262969] mb-2">Onboarding do Livreiro</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <div className={`p-3 rounded border ${mySebo ? "bg-green-50 border-green-200" : "bg-white border-gray-200"}`}>
+                <p className="font-semibold">1. Criar Sebo</p>
+                <p>{mySebo ? "Concluído" : "Pendente"}</p>
+                {!mySebo && (
+                  <Link href="/sebo/novo" className="text-[#da4653] hover:underline mt-1 inline-block">
+                    Criar agora
+                  </Link>
+                )}
+              </div>
+              <div className={`p-3 rounded border ${mySeboBooks.length > 0 ? "bg-green-50 border-green-200" : "bg-white border-gray-200"}`}>
+                <p className="font-semibold">2. Cadastrar 1º Livro</p>
+                <p>{mySeboBooks.length > 0 ? "Concluído" : "Pendente"}</p>
+                {mySebo && mySeboBooks.length === 0 && (
+                  <Link href="/add-book" className="text-[#da4653] hover:underline mt-1 inline-block">
+                    Cadastrar livro
+                  </Link>
+                )}
+              </div>
+              <div className={`p-3 rounded border ${mySeboBooks.length > 0 ? "bg-green-50 border-green-200" : "bg-white border-gray-200"}`}>
+                <p className="font-semibold">3. Gerenciar Catálogo</p>
+                <p>{mySeboBooks.length > 0 ? "Pronto para usar" : "Aguardando livro"}</p>
+                {mySeboBooks.length > 0 && (
+                  <Link href="/manage-books" className="text-[#da4653] hover:underline mt-1 inline-block">
+                    Abrir painel
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Filters Section */}
         <div className="mb-8 flex gap-3 flex-wrap">
           <button

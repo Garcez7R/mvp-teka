@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -17,6 +17,12 @@ interface EditingBook {
   newCoverFile?: File;
 }
 
+type StatusHistoryEntry = {
+  status: "ativo" | "reservado" | "vendido";
+  at: number;
+  reason?: string;
+};
+
 export default function ManageBooks() {
   const [, navigate] = useLocation();
   const { isAuthenticated, role } = useAuth({ redirectOnUnauthenticated: true });
@@ -26,6 +32,7 @@ export default function ManageBooks() {
   const [editingBook, setEditingBook] = useState<EditingBook | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [statusHistoryByBook, setStatusHistoryByBook] = useState<Record<number, StatusHistoryEntry[]>>({});
 
   const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
     enabled: isAuthenticated
@@ -38,6 +45,29 @@ export default function ManageBooks() {
     { seboId: mySebo?.id },
     { enabled: !!mySebo }
   );
+
+  const statusHistoryStorageKey = useMemo(
+    () => (mySebo?.id ? `teka_status_history_${mySebo.id}` : "teka_status_history_unknown"),
+    [mySebo?.id]
+  );
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(statusHistoryStorageKey);
+      if (!raw) {
+        setStatusHistoryByBook({});
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      setStatusHistoryByBook(parsed && typeof parsed === "object" ? parsed : {});
+    } catch {
+      setStatusHistoryByBook({});
+    }
+  }, [statusHistoryStorageKey]);
+
+  useEffect(() => {
+    localStorage.setItem(statusHistoryStorageKey, JSON.stringify(statusHistoryByBook));
+  }, [statusHistoryByBook, statusHistoryStorageKey]);
 
   const updateBookMutation = trpc.books.update.useMutation({
     onSuccess: async () => {
@@ -161,6 +191,18 @@ export default function ManageBooks() {
 
       await updateBookMutation.mutateAsync(payload);
 
+      if (editingBook.availabilityStatus) {
+        const nextEntry: StatusHistoryEntry = {
+          status: editingBook.availabilityStatus,
+          at: Date.now(),
+          reason: "Atualização manual no painel",
+        };
+        setStatusHistoryByBook((prev) => ({
+          ...prev,
+          [editingBook.id]: [nextEntry, ...(prev[editingBook.id] || [])].slice(0, 10),
+        }));
+      }
+
       toast.success("Livro atualizado com sucesso!");
       setEditingId(null);
       setEditingBook(null);
@@ -191,10 +233,62 @@ export default function ManageBooks() {
   ) => {
     try {
       await updateBookMutation.mutateAsync({ id: bookId, availabilityStatus });
+      const nextEntry: StatusHistoryEntry = {
+        status: availabilityStatus,
+        at: Date.now(),
+        reason: "Ação rápida no card",
+      };
+      setStatusHistoryByBook((prev) => ({
+        ...prev,
+        [bookId]: [nextEntry, ...(prev[bookId] || [])].slice(0, 10),
+      }));
       toast.success("Status atualizado");
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar status");
     }
+  };
+
+  const handleExportCsv = () => {
+    const header = [
+      "id",
+      "titulo",
+      "autor",
+      "isbn",
+      "categoria",
+      "preco",
+      "condicao",
+      "status",
+      "ultima_atualizacao",
+    ];
+    const rows = filteredBooks.map((book: any) => [
+      book.id,
+      book.title || "",
+      book.author || "",
+      book.isbn || "",
+      book.category || "",
+      Number(book.price).toFixed(2),
+      book.condition || "",
+      book.availabilityStatus || "ativo",
+      new Date(Number(book.updatedAt || Date.now())).toLocaleString("pt-BR"),
+    ]);
+    const csv = [header, ...rows]
+      .map((row) =>
+        row
+          .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+          .join(",")
+      )
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `teka-catalogo-${mySebo?.name?.replace(/\s+/g, "-").toLowerCase() || "sebo"}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("CSV exportado com sucesso.");
   };
 
   return (
@@ -239,6 +333,19 @@ export default function ManageBooks() {
             </p>
           </div>
         </div>
+        {metrics?.topBooks?.length ? (
+          <div className="mb-8 p-4 border rounded-lg bg-white">
+            <h3 className="font-semibold text-[#262969] mb-2">Top livros por favoritos</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+              {metrics.topBooks.map((item: any) => (
+                <div key={item.id} className="flex items-center justify-between border rounded px-3 py-2">
+                  <span className="truncate pr-3">{item.title}</span>
+                  <span className="font-semibold text-[#da4653]">{item.favorites}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="flex justify-between items-start mb-8">
           <div>
@@ -246,11 +353,19 @@ export default function ManageBooks() {
               Total de livros: <span className="font-bold text-[#262969]">{myBooks.length}</span>
             </p>
           </div>
-          <Link href="/add-book">
-            <button className="bg-[#da4653] hover:bg-[#c23a45] text-white font-inter font-medium py-2 px-6 rounded-lg">
-              + Novo Livro
+          <div className="flex gap-2">
+            <button
+              onClick={handleExportCsv}
+              className="border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white font-inter font-medium py-2 px-4 rounded-lg"
+            >
+              Exportar CSV
             </button>
-          </Link>
+            <Link href="/add-book">
+              <button className="bg-[#da4653] hover:bg-[#c23a45] text-white font-inter font-medium py-2 px-6 rounded-lg">
+                + Novo Livro
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* Search */}
@@ -437,6 +552,20 @@ export default function ManageBooks() {
                           Marcar vendido
                         </button>
                       </div>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Última atualização: {new Date(Number(book.updatedAt || Date.now())).toLocaleString("pt-BR")}
+                      </p>
+                      {statusHistoryByBook[book.id]?.length ? (
+                        <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded">
+                          <p className="text-xs font-semibold text-gray-700 mb-1">Histórico de status</p>
+                          {statusHistoryByBook[book.id].slice(0, 3).map((entry, idx) => (
+                            <p key={`${book.id}-${idx}-${entry.at}`} className="text-xs text-gray-600">
+                              {new Date(entry.at).toLocaleString("pt-BR")} • {entry.status}
+                              {entry.reason ? ` • ${entry.reason}` : ""}
+                            </p>
+                          ))}
+                        </div>
+                      ) : null}
 
                       {/* Action Buttons */}
                       <div className="flex gap-2">
