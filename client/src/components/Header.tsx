@@ -5,7 +5,10 @@ import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isAuthenticated, role, logout } = useAuth();
+  const { isAuthenticated, role, user, logout } = useAuth();
+  const displayName = user?.name?.trim() || user?.email?.trim() || "Usuário";
+  const roleLabel =
+    role === "admin" ? "Admin" : role === "livreiro" ? "Livreiro" : "Comprador";
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
@@ -48,12 +51,23 @@ export default function Header() {
               Entrar
             </Link>
           ) : (
-            <button
-              onClick={() => logout()}
-              className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium"
-            >
-              Sair
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="text-right leading-tight">
+                <p className="font-inter text-xs text-[#262969]">Logado como</p>
+                <p className="font-inter text-sm font-semibold text-[#262969] max-w-[180px] truncate">
+                  {displayName}
+                </p>
+              </div>
+              <span className="px-2 py-1 rounded bg-white/70 text-[#262969] text-xs font-semibold">
+                {roleLabel}
+              </span>
+              <button
+                onClick={() => logout()}
+                className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium"
+              >
+                Sair
+              </button>
+            </div>
           )}
         </nav>
 
@@ -130,16 +144,27 @@ export default function Header() {
                 Entrar
               </Link>
             ) : (
-              <button
-                onClick={() => {
-                  closeMenu();
-                  void logout();
-                }}
-                className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
-              >
-                <LogOut className="w-5 h-5 text-[#da4653]" />
-                Sair
-              </button>
+              <>
+                <div className="px-3 py-2 rounded-lg bg-gray-50 border border-gray-200">
+                  <p className="font-inter text-xs text-gray-500">Logado como</p>
+                  <p className="font-inter text-sm font-semibold text-[#262969] truncate">
+                    {displayName}
+                  </p>
+                  <p className="font-inter text-xs text-[#da4653] font-semibold mt-1">
+                    Perfil: {roleLabel}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    closeMenu();
+                    void logout();
+                  }}
+                  className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+                >
+                  <LogOut className="w-5 h-5 text-[#da4653]" />
+                  Sair
+                </button>
+              </>
             )}
           </nav>
         </div>
