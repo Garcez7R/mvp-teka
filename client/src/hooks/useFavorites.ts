@@ -9,6 +9,7 @@ const normalizeId = (bookId: number | string) => String(bookId);
 export function useFavorites() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [preferLocalFallback, setPreferLocalFallback] = useState(false);
   const hasAuthToken = Boolean(getSessionIdToken());
   const utils = trpc.useUtils();
   const remoteFavoritesQuery = trpc.favorites.list.useQuery(undefined, {
@@ -50,12 +51,24 @@ export function useFavorites() {
 
   useEffect(() => {
     if (!hasAuthToken) return;
+    if (preferLocalFallback) return;
     if (!remoteFavoritesQuery.isSuccess) return;
     const remoteIds = (remoteFavoritesQuery.data ?? []).map((book: any) =>
       normalizeId(book.id)
     );
-    setFavorites(remoteIds);
-  }, [hasAuthToken, remoteFavoritesQuery.data, remoteFavoritesQuery.isSuccess]);
+    setFavorites((prev) => {
+      if (remoteIds.length === 0 && prev.length > 0) {
+        return prev;
+      }
+      return remoteIds;
+    });
+  }, [hasAuthToken, preferLocalFallback, remoteFavoritesQuery.data, remoteFavoritesQuery.isSuccess]);
+
+  useEffect(() => {
+    if (remoteFavoritesQuery.isError) {
+      setPreferLocalFallback(true);
+    }
+  }, [remoteFavoritesQuery.isError]);
 
   const toggleFavorite = (bookId: number | string) => {
     const key = normalizeId(bookId);
@@ -70,11 +83,13 @@ export function useFavorites() {
     });
 
     if (hasAuthToken && Number.isFinite(numericId) && numericId > 0) {
+      setPreferLocalFallback(false);
       void toggleRemoteFavorite
         .mutateAsync(numericId)
         .then(() => utils.favorites.list.invalidate())
         .catch(() => {
           // Keep local state as fallback when API auth/session is unstable.
+          setPreferLocalFallback(true);
         });
       return;
     }
