@@ -2,6 +2,7 @@ import type { User } from "../../_schema.ts";
 import { db } from "./db.js";
 import { users } from "../../_schema.ts";
 import { eq } from "drizzle-orm";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 export type Context = {
   user: User | null;
@@ -19,6 +20,10 @@ type ContextOptionsLike = {
   req?: RequestLike;
 };
 
+const googleJwks = createRemoteJWKSet(
+  new URL("https://www.googleapis.com/oauth2/v3/certs")
+);
+
 function readFirstValue(value: unknown): string | null {
   if (typeof value === "string") return value;
   if (Array.isArray(value) && value.length > 0) {
@@ -32,6 +37,96 @@ export async function createTRPCContext(
 ): Promise<Context> {
   const req = opts?.req;
   const isProduction = process.env.NODE_ENV === "production";
+
+  const authHeader =
+    readFirstValue(req?.headers?.authorization) ??
+    readFirstValue(req?.headers?.Authorization);
+  const bearerToken =
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.slice("Bearer ".length).trim()
+      : null;
+
+  if (bearerToken) {
+    try {
+      const audience =
+        process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+      if (!audience) {
+        throw new Error("GOOGLE_CLIENT_ID is required");
+      }
+
+      const { payload } = await jwtVerify(bearerToken, googleJwks, {
+        audience,
+        issuer: ["https://accounts.google.com", "accounts.google.com"],
+      });
+
+      const googleSub = payload.sub;
+      const email = typeof payload.email === "string" ? payload.email : null;
+      const name = typeof payload.name === "string" ? payload.name : null;
+      const requestedRole = readFirstValue(req?.headers?.["x-teka-role"]);
+      const initialRole =
+        requestedRole === "livreiro" || requestedRole === "comprador"
+          ? requestedRole
+          : "comprador";
+
+      if (googleSub && email) {
+        const openId = `google:${googleSub}`;
+        const existing = await db
+          .select()
+          .from(users)
+          .where(eq(users.openId, openId))
+          .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
+
+        if (existing) {
+          await db
+            .update(users)
+            .set({
+              name: name ?? existing.name,
+              email: email ?? existing.email,
+              loginMethod: "google",
+              lastSignedIn: new Date(),
+            })
+            .where(eq(users.id, existing.id));
+
+          return {
+            user: {
+              ...existing,
+              name: name ?? existing.name,
+              email: email ?? existing.email,
+            },
+            userId: existing.id,
+            role: existing.role,
+          };
+        }
+
+        const created = await db
+          .insert(users)
+          .values({
+            openId,
+            name,
+            email,
+            role: initialRole,
+            loginMethod: "google",
+          })
+          .$returningId();
+
+        const createdUser = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, created[0].id))
+          .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
+
+        if (createdUser) {
+          return {
+            user: createdUser,
+            userId: createdUser.id,
+            role: createdUser.role,
+          };
+        }
+      }
+    } catch {
+      // Invalid or expired Google token: fallback to anonymous context.
+    }
+  }
 
   // Prefer explicit headers/cookies. In production, do not trust query params.
   const fromHeader = readFirstValue(req?.headers?.["x-user-id"]);

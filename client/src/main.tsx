@@ -3,7 +3,7 @@ import { httpBatchLink } from "@trpc/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { trpc } from "./lib/trpc";
-import { getSessionUserId } from "./lib/session";
+import { getSessionIdToken, getSignupRole } from "./lib/session";
 import "./index.css";
 
 function cleanupLegacyServiceWorkers() {
@@ -66,10 +66,14 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: trpcUrl,
       fetch(url, options) {
-        const sessionUserId = getSessionUserId();
+        const idToken = getSessionIdToken();
+        const signupRole = getSignupRole();
         const mergedHeaders = new Headers(options?.headers ?? {});
-        if (sessionUserId) {
-          mergedHeaders.set("x-user-id", String(sessionUserId));
+        if (idToken) {
+          mergedHeaders.set("authorization", `Bearer ${idToken}`);
+        }
+        if (signupRole) {
+          mergedHeaders.set("x-teka-role", signupRole);
         }
         return fetch(url, {
           ...options,

@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { clearSessionUserId } from "@/lib/session";
+import { clearSessionIdToken } from "@/lib/session";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
@@ -36,7 +36,7 @@ export function useAuth(options?: UseAuthOptions) {
       }
       throw error;
     } finally {
-      clearSessionUserId();
+      clearSessionIdToken();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }

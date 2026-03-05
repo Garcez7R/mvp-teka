@@ -1,58 +1,66 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
-import { setSessionUserId } from "@/lib/session";
+import { clearSignupRole, setSessionIdToken, setSignupRole } from "@/lib/session";
 import { trackEvent } from "@/lib/analytics";
 
 export default function Login() {
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
   const [role, setRole] = useState<"livreiro" | "comprador">("livreiro");
   const [error, setError] = useState("");
+  const [isBusy, setIsBusy] = useState(false);
+  const googleClientId = useMemo(
+    () => (import.meta.env.VITE_GOOGLE_CLIENT_ID || "").trim(),
+    []
+  );
 
-  const loginMutation = trpc.users.loginByEmail.useMutation();
-  const registerMutation = trpc.users.register.useMutation();
+  const isGoogleConfigured = Boolean(googleClientId);
 
-  const refreshSessionAndGo = async (userId: number, destination = "/") => {
-    setSessionUserId(userId);
+  const refreshSessionAndGo = async (destination = "/") => {
     await utils.auth.me.invalidate();
+    clearSignupRole();
     navigate(destination);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleLogin = async () => {
     setError("");
-    try {
-      const user = await loginMutation.mutateAsync({ email });
-      trackEvent("login_success", { role: user.role });
-      await refreshSessionAndGo(user.id, user.role === "admin" ? "/admin" : "/");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Falha no login";
-      setError(message);
-      trackEvent("login_error", { message });
+    if (!isGoogleConfigured) {
+      setError("Google Sign-In não configurado. Defina VITE_GOOGLE_CLIENT_ID.");
+      return;
     }
-  };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    try {
-      const created = await registerMutation.mutateAsync({
-        name,
-        email,
-        role,
-      });
-      trackEvent("register_success", { role });
-      await refreshSessionAndGo(created[0].id, role === "livreiro" ? "/sebo/novo" : "/");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Falha no cadastro";
-      setError(message);
-      trackEvent("register_error", { message });
+    if (typeof window === "undefined" || !(window as any).google?.accounts?.id) {
+      setError("SDK do Google não carregado. Recarregue a página e tente novamente.");
+      return;
     }
+
+    setIsBusy(true);
+    setSignupRole(role);
+
+    (window as any).google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: async (response: { credential?: string }) => {
+        try {
+          if (!response?.credential) {
+            throw new Error("Não foi possível obter o token do Google.");
+          }
+          setSessionIdToken(response.credential);
+          await refreshSessionAndGo(role === "livreiro" ? "/sebo/novo" : "/");
+          trackEvent("google_login_success", { role });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Falha no login com Google";
+          setError(message);
+          trackEvent("google_login_error", { message });
+        } finally {
+          setIsBusy(false);
+        }
+      },
+    });
+
+    (window as any).google.accounts.id.prompt();
   };
 
   return (
@@ -69,57 +77,32 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4 mb-8">
+          <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700">
-              E-mail
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+              Tipo de conta no primeiro acesso
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as "livreiro" | "comprador")}
                 className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
-              />
+              >
+                <option value="livreiro">Livreiro</option>
+                <option value="comprador">Comprador</option>
+              </select>
             </label>
+
             <button
-              type="submit"
-              disabled={loginMutation.isPending}
+              onClick={handleGoogleLogin}
+              disabled={isBusy}
               className="w-full bg-[#262969] hover:bg-[#1e2157] text-white font-semibold py-3 rounded-lg disabled:opacity-60"
             >
-              {loginMutation.isPending ? "Entrando..." : "Entrar"}
+              {isBusy ? "Conectando..." : "Entrar com Google"}
             </button>
-          </form>
 
-          <div className="border-t border-gray-200 pt-6">
-            <h2 className="font-semibold text-[#262969] mb-3">Primeiro acesso</h2>
-            <form onSubmit={handleRegister} className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700">
-                Nome
-                <input
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
-                />
-              </label>
-              <label className="block text-sm font-medium text-gray-700">
-                Tipo de conta
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as "livreiro" | "comprador")}
-                  className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
-                >
-                  <option value="livreiro">Livreiro</option>
-                  <option value="comprador">Comprador</option>
-                </select>
-              </label>
-              <button
-                type="submit"
-                disabled={registerMutation.isPending}
-                className="w-full bg-[#da4653] hover:bg-[#c23a45] text-white font-semibold py-3 rounded-lg disabled:opacity-60"
-              >
-                {registerMutation.isPending ? "Criando conta..." : "Criar conta"}
-              </button>
-            </form>
+            {!isGoogleConfigured && (
+              <p className="text-xs text-red-600">
+                Defina <code>VITE_GOOGLE_CLIENT_ID</code> no ambiente para habilitar o login.
+              </p>
+            )}
           </div>
         </div>
       </main>
