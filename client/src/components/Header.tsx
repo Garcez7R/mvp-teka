@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Menu, X, BookOpen, Info, LogIn, Shield, Library, PlusCircle, LogOut } from "lucide-react";
+import { Menu, X, BookOpen, Info, LogIn, Shield, Library, PlusCircle, LogOut, Heart } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function Header() {
@@ -56,6 +56,11 @@ export default function Header() {
                 Meus Livros
               </Link>
             </>
+          )}
+          {isAuthenticated && (
+            <Link href="/my-interests" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+              Meus Interesses
+            </Link>
           )}
           {isAuthenticated && role === "admin" && (
             <Link href="/admin" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
@@ -142,6 +147,16 @@ export default function Header() {
                   Meus Livros
                 </Link>
               </>
+            )}
+            {isAuthenticated && (
+              <Link
+                href="/my-interests"
+                onClick={closeMenu}
+                className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+              >
+                <Heart className="w-5 h-5 text-[#da4653]" />
+                Meus Interesses
+              </Link>
             )}
             {isAuthenticated && role === "admin" && (
               <Link

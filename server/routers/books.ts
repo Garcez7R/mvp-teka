@@ -1,20 +1,11 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, livreiroProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { books, sebos, favorites } from "../_schema.ts";
+import { books, sebos, favorites, bookInterests } from "../_schema.ts";
 import { eq, like, and, lte, gte, inArray, sql } from "drizzle-orm";
 
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
 type AvailabilityStatus = "ativo" | "reservado" | "vendido";
-const interestKey = "__TEKA_BOOK_INTEREST_MAP__";
-
-function getInterestMap(): Map<number, Set<number>> {
-  const globalAny = globalThis as any;
-  if (!globalAny[interestKey]) {
-    globalAny[interestKey] = new Map<number, Set<number>>();
-  }
-  return globalAny[interestKey];
-}
 
 function normalizeBookDescription(raw?: string | null): {
   availabilityStatus: AvailabilityStatus;
@@ -375,9 +366,16 @@ export const booksRouter = router({
         .slice(0, 5);
 
       const totalFavorites = Array.from(favoritesMap.values()).reduce((sum, value) => sum + value, 0);
-      const interestMap = getInterestMap();
-      const totalInterests = bookIds.reduce(
-        (sum: number, id: number) => sum + (interestMap.get(id)?.size ?? 0),
+      const interestsByBook = await db
+        .select({
+          bookId: bookInterests.bookId,
+          count: sql<number>`count(*)`,
+        })
+        .from(bookInterests)
+        .where(inArray(bookInterests.bookId, bookIds))
+        .groupBy(bookInterests.bookId);
+      const totalInterests = interestsByBook.reduce(
+        (sum, row) => sum + Number(row.count ?? 0),
         0
       );
 
@@ -393,12 +391,71 @@ export const booksRouter = router({
   registerInterest: protectedProcedure
     .input(z.object({ bookId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const map = getInterestMap();
-      const current = map.get(input.bookId) ?? new Set<number>();
-      current.add(ctx.userId!);
-      map.set(input.bookId, current);
-      return { success: true, totalInterests: current.size };
+      const book = await db
+        .select({ id: books.id })
+        .from(books)
+        .where(eq(books.id, input.bookId))
+        .limit(1)
+        .then((res) => res[0] ?? null);
+      if (!book) {
+        throw new Error("Book not found");
+      }
+
+      await db
+        .insert(bookInterests)
+        .values({
+          userId: ctx.userId!,
+          bookId: input.bookId,
+        })
+        .onConflictDoNothing({
+          target: [bookInterests.userId, bookInterests.bookId],
+        });
+
+      const totalInterests = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(bookInterests)
+        .where(eq(bookInterests.bookId, input.bookId))
+        .then((res) => Number(res[0]?.count ?? 0));
+
+      return { success: true, totalInterests };
     }),
+
+  myInterests: protectedProcedure.query(async ({ ctx }) => {
+    const data = await db
+      .select({
+        interestId: bookInterests.id,
+        interestedAt: bookInterests.createdAt,
+        book: books,
+        sebo: sebos,
+      })
+      .from(bookInterests)
+      .innerJoin(books, eq(bookInterests.bookId, books.id))
+      .leftJoin(sebos, eq(books.seboId, sebos.id))
+      .where(eq(bookInterests.userId, ctx.userId!));
+
+    return data
+      .map((row) => {
+        const normalized = normalizeBookDescription(row.book.description);
+        return {
+          interestId: row.interestId,
+          interestedAt: row.interestedAt,
+          book: {
+            ...row.book,
+            description: normalized.description,
+            availabilityStatus: normalized.availabilityStatus,
+          },
+          sebo: row.sebo
+            ? {
+                id: row.sebo.id,
+                name: row.sebo.name,
+                city: row.sebo.city,
+                state: row.sebo.state,
+              }
+            : null,
+        };
+      })
+      .sort((a, b) => Number(b.interestedAt) - Number(a.interestedAt));
+  }),
 
   // Delete book
   delete: protectedProcedure

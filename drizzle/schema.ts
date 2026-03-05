@@ -96,6 +96,19 @@ export const favorites = sqliteTable("favorites", {
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = typeof favorites.$inferInsert;
 
+// Tabela de interesses em livros
+export const bookInterests = sqliteTable("book_interests", {
+  id: int("id").primaryKey({ autoIncrement: true }),
+  userId: int("userId").notNull(),
+  bookId: int("bookId").notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+export type BookInterest = typeof bookInterests.$inferSelect;
+export type InsertBookInterest = typeof bookInterests.$inferInsert;
+
 // Tabela de lista de procura (wishlist)
 export const wishlistItems = sqliteTable("wishlist_items", {
   id: int("id").primaryKey({ autoIncrement: true }),
@@ -114,6 +127,7 @@ export type InsertWishlistItem = typeof wishlistItems.$inferInsert;
 export const usersRelations = relations(users, ({ many }) => ({
   sebos: many(sebos),
   favorites: many(favorites),
+  bookInterests: many(bookInterests),
   wishlistItems: many(wishlistItems),
 }));
 
@@ -131,6 +145,7 @@ export const booksRelations = relations(books, ({ one, many }) => ({
     references: [sebos.id],
   }),
   favorites: many(favorites),
+  interests: many(bookInterests),
 }));
 
 export const favoritesRelations = relations(favorites, ({ one }) => ({
@@ -140,6 +155,17 @@ export const favoritesRelations = relations(favorites, ({ one }) => ({
   }),
   book: one(books, {
     fields: [favorites.bookId],
+    references: [books.id],
+  }),
+}));
+
+export const bookInterestsRelations = relations(bookInterests, ({ one }) => ({
+  user: one(users, {
+    fields: [bookInterests.userId],
+    references: [users.id],
+  }),
+  book: one(books, {
+    fields: [bookInterests.bookId],
     references: [books.id],
   }),
 }));

@@ -49,6 +49,13 @@ CREATE TABLE IF NOT EXISTS favorites (
   createdAt INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS book_interests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  userId INTEGER NOT NULL,
+  bookId INTEGER NOT NULL,
+  createdAt INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS wishlist_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   userId INTEGER NOT NULL,
@@ -58,6 +65,8 @@ CREATE TABLE IF NOT EXISTS wishlist_items (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_favorites_user_book ON favorites(userId, bookId);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_book_interests_user_book ON book_interests(userId, bookId);
+CREATE INDEX IF NOT EXISTS idx_book_interests_book ON book_interests(bookId);
 CREATE INDEX IF NOT EXISTS idx_wishlist_user ON wishlist_items(userId);
 CREATE INDEX IF NOT EXISTS idx_wishlist_isbn ON wishlist_items(isbn);
 CREATE INDEX IF NOT EXISTS idx_books_sebo ON books(seboId);

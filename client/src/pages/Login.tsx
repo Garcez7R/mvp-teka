@@ -8,10 +8,10 @@ import { trackEvent } from "@/lib/analytics";
 export default function Login() {
   const utils = trpc.useUtils();
   const setMyRoleMutation = trpc.users.setMyRole.useMutation();
-  const [role, setRole] = useState<"livreiro" | "comprador">("livreiro");
+  const [role, setRole] = useState<"livreiro" | "comprador">("comprador");
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
-  const roleRef = useRef<"livreiro" | "comprador">("livreiro");
+  const roleRef = useRef<"livreiro" | "comprador">("comprador");
   const googleContainerRef = useRef<HTMLDivElement | null>(null);
   const googleInitializedRef = useRef(false);
   const googleClientId = useMemo(
@@ -46,7 +46,12 @@ export default function Login() {
   };
 
   const refreshSessionAndGo = async (destination = "/") => {
-    await ensureServerSession();
+    try {
+      await ensureServerSession();
+    } catch {
+      // In Cloudflare/proxy contexts the first auth sync can lag a bit.
+      // Redirect anyway and let app-level auth refresh continue on the next screen.
+    }
     window.location.assign(destination);
   };
 

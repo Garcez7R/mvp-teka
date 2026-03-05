@@ -11,24 +11,6 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 
-const LOCAL_INTEREST_KEY = "teka_local_interest_book_ids";
-
-function saveLocalInterest(bookId: number): number {
-  if (typeof window === "undefined") return 1;
-  try {
-    const raw = window.localStorage.getItem(LOCAL_INTEREST_KEY);
-    const parsed = raw ? (JSON.parse(raw) as number[]) : [];
-    const values = Array.isArray(parsed) ? parsed : [];
-    if (!values.includes(bookId)) {
-      values.push(bookId);
-      window.localStorage.setItem(LOCAL_INTEREST_KEY, JSON.stringify(values));
-    }
-    return values.length;
-  } catch {
-    return 1;
-  }
-}
-
 export default function Book() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, refresh } = useAuth();
@@ -106,10 +88,8 @@ export default function Book() {
           );
           return;
         } catch {
-          const localTotal = saveLocalInterest(bookId);
-          toast.success(
-            `Interesse salvo localmente. Total local: ${localTotal}.`
-          );
+          toast.error("Sessão expirada. Faça login novamente.");
+          window.location.href = "/login";
           return;
         }
       }
