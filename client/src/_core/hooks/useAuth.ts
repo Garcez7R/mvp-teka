@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { clearSessionIdToken } from "@/lib/session";
+import { clearSessionIdToken, getGoogleTokenClaims, getSignupRole } from "@/lib/session";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
@@ -43,16 +43,30 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
+    const claims = getGoogleTokenClaims();
+    const fallbackRole = getSignupRole();
+    const fallbackUser =
+      !meQuery.data && claims?.sub
+        ? {
+            id: 0,
+            openId: `google:${claims.sub}`,
+            name: claims.name ?? null,
+            email: claims.email ?? null,
+            role: (fallbackRole ?? "comprador") as "livreiro" | "comprador",
+          }
+        : null;
+    const resolvedUser = meQuery.data ?? fallbackUser;
+
     localStorage.setItem(
       "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
+      JSON.stringify(resolvedUser)
     );
     return {
-      user: meQuery.data ?? null,
+      user: resolvedUser,
       loading: meQuery.isLoading || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: Boolean(meQuery.data),
-      role: meQuery.data?.role ?? null,
+      isAuthenticated: Boolean(resolvedUser),
+      role: resolvedUser?.role ?? null,
     };
   }, [
     meQuery.data,
