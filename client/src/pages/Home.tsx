@@ -16,7 +16,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSebo, setSelectedSebo] = useState<string | null>(null);
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<"ativo" | "reservado" | "vendido">("ativo");
+  const [selectedStatus, setSelectedStatus] = useState<"ativo" | "reservado" | "vendido" | null>(null);
   const [cityFilter, setCityFilter] = useState("");
   const [stateFilter, setStateFilter] = useState("");
   const [minPriceFilter, setMinPriceFilter] = useState("");
@@ -102,7 +102,7 @@ export default function Home() {
     setSelectedCategory(null);
     setSelectedSebo(null);
     setSelectedCondition(null);
-    setSelectedStatus("ativo");
+    setSelectedStatus(null);
     setCityFilter("");
     setStateFilter("");
     setMinPriceFilter("");
@@ -134,7 +134,7 @@ export default function Home() {
     search: undefined,
     category: selectedCategory || undefined,
     condition: (selectedCondition as any) || undefined,
-    availabilityStatus: selectedStatus,
+    availabilityStatus: selectedStatus || undefined,
     city: cityFilter || undefined,
     state: stateFilter || undefined,
     minPrice: minPriceFilter ? Number(minPriceFilter) : undefined,
@@ -171,7 +171,8 @@ export default function Home() {
       const matchesCategory = !selectedCategory || book.category === selectedCategory;
       const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
       const matchesCondition = !selectedCondition || book.condition === selectedCondition;
-      const matchesStatus = !selectedStatus || (book.availabilityStatus || "ativo") === selectedStatus;
+      const matchesStatus =
+        !selectedStatus || (book.availabilityStatus || "ativo") === selectedStatus;
       const price = Number(book.price);
       const matchesMin = !minPriceFilter || price >= Number(minPriceFilter);
       const matchesMax = !maxPriceFilter || price <= Number(maxPriceFilter);
@@ -524,10 +525,15 @@ export default function Home() {
                     <option value="Desgastado">Desgastado</option>
                   </select>
                   <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value as "ativo" | "reservado" | "vendido")}
+                    value={selectedStatus || ""}
+                    onChange={(e) =>
+                      setSelectedStatus(
+                        (e.target.value || null) as "ativo" | "reservado" | "vendido" | null
+                      )
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
                   >
+                    <option value="">Todos os status</option>
                     <option value="ativo">Disponiveis</option>
                     <option value="reservado">Reservados</option>
                     <option value="vendido">Vendidos</option>

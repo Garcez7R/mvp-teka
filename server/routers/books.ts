@@ -6,6 +6,7 @@ import { eq, like, and, lte, gte, inArray, sql } from "drizzle-orm";
 import { normalizeBookTitle } from "./_utils/text.js";
 
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
+const HIDDEN_MARKER = /^\[HIDDEN\]\s*/i;
 type AvailabilityStatus = "ativo" | "reservado" | "vendido";
 
 function sanitizeBookDescription(raw?: string | null): string | null {
@@ -19,33 +20,57 @@ function sanitizeBookDescription(raw?: string | null): string | null {
 
 function normalizeBookDescription(raw?: string | null): {
   availabilityStatus: AvailabilityStatus;
+  isVisible: boolean;
   description: string | null;
 } {
-  const value = (raw ?? "").trim();
+  let value = (raw ?? "").trim();
   if (!value) {
-    return { availabilityStatus: "ativo", description: null };
+    return { availabilityStatus: "ativo", isVisible: true, description: null };
   }
 
-  const match = value.match(STATUS_MARKER);
-  const withoutStatus = value.replace(STATUS_MARKER, "").trim();
-  const description = sanitizeBookDescription(withoutStatus);
-  if (!match?.[1]) {
-    return { availabilityStatus: "ativo", description };
+  let availabilityStatus: AvailabilityStatus = "ativo";
+  let isVisible = true;
+
+  // Accept either marker order at the beginning: [HIDDEN] and [STATUS:*]
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const hiddenMatch = value.match(HIDDEN_MARKER);
+    if (hiddenMatch) {
+      isVisible = false;
+      value = value.replace(HIDDEN_MARKER, "").trim();
+      changed = true;
+    }
+    const statusMatch = value.match(STATUS_MARKER);
+    if (statusMatch?.[1]) {
+      availabilityStatus = statusMatch[1].toLowerCase() as AvailabilityStatus;
+      value = value.replace(STATUS_MARKER, "").trim();
+      changed = true;
+    }
   }
-  const status = match[1].toLowerCase() as AvailabilityStatus;
-  return { availabilityStatus: status, description };
+
+  const description = sanitizeBookDescription(value);
+  return { availabilityStatus, isVisible, description };
 }
 
-function withStatusMarker(
+function withBookMetadata(
   availabilityStatus: AvailabilityStatus,
+  isVisible: boolean,
   description?: string | null
 ): string | null {
   const clean = sanitizeBookDescription(normalizeBookDescription(description).description);
-  if (availabilityStatus === "ativo") {
+  const markers: string[] = [];
+  if (!isVisible) {
+    markers.push("[HIDDEN]");
+  }
+  if (availabilityStatus !== "ativo") {
+    const marker = availabilityStatus === "reservado" ? "RESERVADO" : "VENDIDO";
+    markers.push(`[STATUS:${marker}]`);
+  }
+  if (markers.length === 0) {
     return clean;
   }
-  const marker = availabilityStatus === "reservado" ? "RESERVADO" : "VENDIDO";
-  return clean ? `[STATUS:${marker}] ${clean}` : `[STATUS:${marker}]`;
+  return clean ? `${markers.join(" ")} ${clean}` : markers.join(" ");
 }
 
 export const booksRouter = router({
@@ -64,11 +89,12 @@ export const booksRouter = router({
           .enum(["Excelente", "Bom estado", "Usado", "Desgastado"])
           .optional(),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
+        includeHidden: z.boolean().optional(),
         limit: z.number().default(20),
         offset: z.number().default(0),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const filters: any[] = [];
 
       if (input.search) {
@@ -123,10 +149,15 @@ export const booksRouter = router({
             title: normalizeBookTitle(row.books.title) ?? row.books.title,
             description: normalized.description,
             availabilityStatus: normalized.availabilityStatus,
+            isVisible: normalized.isVisible,
             sebo: row.sebos
               ? { id: row.sebos.id, name: row.sebos.name, city: row.sebos.city, state: row.sebos.state }
               : null,
           };
+        })
+        .filter((book: any) => {
+          const canSeeHidden = ctx.role === "admin" || ctx.role === "livreiro" || input.includeHidden === true;
+          return canSeeHidden || book.isVisible;
         })
         .filter((book: any) =>
           input.availabilityStatus ? book.availabilityStatus === input.availabilityStatus : true
@@ -137,7 +168,7 @@ export const booksRouter = router({
   // Get single book
   getById: publicProcedure
     .input(z.number())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const book = await db
         .select()
         .from(books)
@@ -161,12 +192,20 @@ export const booksRouter = router({
         .from(books)
         .where(eq(books.seboId, book.seboId))
         .then((res: Array<{ count: number }>) => Number(res[0]?.count ?? 0));
+      const canSeeHidden =
+        normalized.isVisible ||
+        ctx.role === "admin" ||
+        (ctx.userId !== null && sebo?.userId === ctx.userId);
+      if (!canSeeHidden) {
+        throw new Error("Book not found");
+      }
 
       return {
         ...book,
         title: normalizeBookTitle(book.title) ?? book.title,
         description: normalized.description,
         availabilityStatus: normalized.availabilityStatus,
+        isVisible: normalized.isVisible,
         sebo,
         seboStats: {
           totalBooks: seboBooksCount,
@@ -204,6 +243,7 @@ export const booksRouter = router({
           title: normalizeBookTitle(book.title) ?? book.title,
           description: normalized.description,
           availabilityStatus: normalized.availabilityStatus,
+          isVisible: normalized.isVisible,
         };
       });
     }),
@@ -225,6 +265,7 @@ export const booksRouter = router({
         seboId: z.number(),
         quantity: z.number().int().min(0).default(1),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).default("ativo"),
+        isVisible: z.boolean().default(true),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -247,7 +288,11 @@ export const booksRouter = router({
         .values({
           ...input,
           title: normalizeBookTitle(input.title) ?? input.title,
-          description: withStatusMarker(input.availabilityStatus, input.description),
+          description: withBookMetadata(
+            input.availabilityStatus,
+            input.isVisible,
+            input.description
+          ),
           price: input.price,
           quantity: input.quantity,
         })
@@ -265,6 +310,7 @@ export const booksRouter = router({
           .optional(),
         quantity: z.number().int().min(0).optional(),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
+        isVisible: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -294,6 +340,7 @@ export const booksRouter = router({
       const availabilityStatus = quantity === 0
         ? "vendido"
         : input.availabilityStatus ?? normalizedOriginal.availabilityStatus;
+      const isVisible = input.isVisible ?? normalizedOriginal.isVisible;
 
       const created = await db
         .insert(books)
@@ -303,7 +350,11 @@ export const booksRouter = router({
           author: original.author,
           isbn: original.isbn,
           category: original.category,
-          description: withStatusMarker(availabilityStatus, normalizedOriginal.description),
+          description: withBookMetadata(
+            availabilityStatus,
+            isVisible,
+            normalizedOriginal.description
+          ),
           price: original.price,
           condition: input.condition ?? original.condition,
           pages: original.pages,
@@ -331,6 +382,7 @@ export const booksRouter = router({
           .enum(["Excelente", "Bom estado", "Usado", "Desgastado"])
           .optional(),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
+        isVisible: z.boolean().optional(),
         coverUrl: z.string().optional(),
         quantity: z.number().int().min(0).optional(),
       })
@@ -357,18 +409,24 @@ export const booksRouter = router({
         throw new Error("Unauthorized");
       }
 
-      const { id, availabilityStatus, quantity, ...updateData } = input;
+      const { id, availabilityStatus, isVisible, quantity, ...updateData } = input;
       const nextQuantity = quantity ?? book.quantity ?? 1;
+      const currentNormalized = normalizeBookDescription(book.description);
       const targetStatus = quantity === 0
         ? "vendido"
-        : availabilityStatus ?? normalizeBookDescription(book.description).availabilityStatus;
+        : availabilityStatus ?? currentNormalized.availabilityStatus;
+      const targetVisibility = isVisible ?? currentNormalized.isVisible;
       const updateDataWithStringPrice: any = {
         ...updateData,
         ...(updateData.title !== undefined && {
           title: normalizeBookTitle(updateData.title) ?? updateData.title,
         }),
         ...(quantity !== undefined && { quantity: nextQuantity }),
-        description: withStatusMarker(targetStatus, updateData.description ?? book.description),
+        description: withBookMetadata(
+          targetStatus,
+          targetVisibility,
+          updateData.description ?? book.description
+        ),
         ...(updateData.price !== undefined && { price: updateData.price }),
       };
       // cast to any because drizzle expects price string and our union could still

@@ -16,6 +16,7 @@ interface EditingBook {
   price: number;
   quantity: number;
   availabilityStatus?: "ativo" | "reservado" | "vendido";
+  isVisible?: boolean;
   coverUrl?: string;
   newCoverFile?: File;
 }
@@ -155,6 +156,7 @@ export default function ManageBooks() {
       price: Number(book.price),
       quantity: Number(book.quantity ?? 1),
       availabilityStatus: book.availabilityStatus || "ativo",
+      isVisible: book.isVisible ?? true,
       coverUrl: book.coverUrl || undefined,
     });
   };
@@ -195,6 +197,7 @@ export default function ManageBooks() {
         price: editingBook.price,
         quantity: normalizedQuantity,
         availabilityStatus: editingBook.availabilityStatus || "ativo",
+        isVisible: editingBook.isVisible ?? true,
         coverUrl: coverUrl || undefined,
       };
       if (editingBook.isbn) {
@@ -305,6 +308,23 @@ export default function ManageBooks() {
       toast.success(nextQuantity === 0 ? "Estoque zerado. Livro marcado como vendido." : "Quantidade atualizada");
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar quantidade");
+    }
+  };
+
+  const toggleVisibilityQuick = async (book: any) => {
+    const nextVisibility = !(book.isVisible ?? true);
+    try {
+      await updateBookMutation.mutateAsync({
+        id: Number(book.id),
+        isVisible: nextVisibility,
+      });
+      toast.success(
+        nextVisibility
+          ? "Livro visível no catálogo."
+          : "Livro ocultado do catálogo de compradores."
+      );
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar visibilidade");
     }
   };
 
@@ -527,6 +547,19 @@ export default function ManageBooks() {
                         <option value="reservado">Reservado</option>
                         <option value="vendido">Vendido</option>
                       </select>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={editingBook?.isVisible ?? true}
+                          onChange={(e) =>
+                            setEditingBook({
+                              ...editingBook!,
+                              isVisible: e.target.checked,
+                            })
+                          }
+                        />
+                        Visível para compradores
+                      </label>
 
                       {/* Cover Upload */}
                       <div>
@@ -597,6 +630,15 @@ export default function ManageBooks() {
                               ? "Reservado"
                               : "Disponivel"}
                           </span>
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${
+                              (book.isVisible ?? true)
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-slate-200 text-slate-700"
+                            }`}
+                          >
+                            {(book.isVisible ?? true) ? "Visível" : "Oculto"}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between gap-3 mb-3">
@@ -636,6 +678,12 @@ export default function ManageBooks() {
                           className="px-2 py-1 text-xs rounded border border-gray-700 text-gray-700"
                         >
                           Marcar vendido
+                        </button>
+                        <button
+                          onClick={() => void toggleVisibilityQuick(book)}
+                          className="px-2 py-1 text-xs rounded border border-blue-700 text-blue-700"
+                        >
+                          {(book.isVisible ?? true) ? "Ocultar" : "Exibir"}
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 mb-3">
