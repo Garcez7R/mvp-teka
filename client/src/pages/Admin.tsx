@@ -14,7 +14,9 @@ export default function Admin() {
   const utils = trpc.useUtils();
   const [tab, setTab] = useState<AdminTab>("users");
   const [selectedSeboId, setSelectedSeboId] = useState<number | null>(null);
+  const [booksPage, setBooksPage] = useState(0);
   const [userFilter, setUserFilter] = useState("");
+  const BOOKS_PAGE_SIZE = 50;
 
   const usersQuery = trpc.users.adminList.useQuery(undefined, {
     enabled: isAuthenticated && role === "admin",
@@ -24,11 +26,15 @@ export default function Admin() {
   });
   const booksQuery = trpc.books.list.useQuery(
     {
-      limit: 500,
-      offset: 0,
+      limit: BOOKS_PAGE_SIZE,
+      offset: booksPage * BOOKS_PAGE_SIZE,
       seboId: selectedSeboId ?? undefined,
     },
-    { enabled: isAuthenticated && role === "admin" && tab === "books" }
+    {
+      enabled: isAuthenticated && role === "admin" && tab === "books",
+      retry: 1,
+      refetchOnWindowFocus: false,
+    }
   );
   const users = usersQuery.data ?? [];
   const sebos = sebosQuery.data ?? [];
@@ -467,7 +473,10 @@ export default function Admin() {
               <label className="text-sm text-gray-700 mr-2">Filtrar por Sebo:</label>
               <select
                 value={selectedSeboId ?? ""}
-                onChange={(e) => setSelectedSeboId(e.target.value ? Number.parseInt(e.target.value, 10) : null)}
+                onChange={(e) => {
+                  setSelectedSeboId(e.target.value ? Number.parseInt(e.target.value, 10) : null);
+                  setBooksPage(0);
+                }}
                 className="px-3 py-2 border rounded"
               >
                 <option value="">Todos</option>
@@ -477,6 +486,28 @@ export default function Admin() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-gray-600">
+                Página {booksPage + 1}
+                {books.length > 0 ? ` • ${books.length} registro(s)` : ""}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setBooksPage((p) => Math.max(0, p - 1))}
+                  disabled={booksPage === 0 || booksQuery.isFetching}
+                  className="px-3 py-2 rounded border disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <button
+                  onClick={() => setBooksPage((p) => p + 1)}
+                  disabled={books.length < BOOKS_PAGE_SIZE || booksQuery.isFetching}
+                  className="px-3 py-2 rounded border disabled:opacity-50"
+                >
+                  Próxima
+                </button>
+              </div>
             </div>
 
             <div className="border rounded-lg overflow-auto">
