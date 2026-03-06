@@ -75,6 +75,18 @@ export default function SebosPage() {
                 {sebo.description ? (
                   <p className="text-sm text-gray-700 mt-2">{sebo.description}</p>
                 ) : null}
+                <p className="text-xs text-gray-600 mt-2">
+                  Entrega:{" "}
+                  {[
+                    (sebo as any).supportsPickup ? "Retirada" : null,
+                    (sebo as any).shipsNeighborhood ? "Bairro" : null,
+                    (sebo as any).shipsCity ? "Cidade" : null,
+                    (sebo as any).shipsState ? "Estado" : null,
+                    (sebo as any).shipsNationwide ? "Nacional" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" • ") || "Não informado"}
+                </p>
                 <div className="mt-3">
                   <Link href="/" className="text-[#da4653] hover:underline text-sm">
                     Ver livros na página inicial

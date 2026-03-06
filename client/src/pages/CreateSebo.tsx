@@ -19,6 +19,15 @@ export default function CreateSebo() {
     postalCode: "",
     openingYear: "",
     logoUrl: "",
+    supportsPickup: true,
+    shipsNeighborhood: false,
+    shipsCity: false,
+    shipsState: false,
+    shipsNationwide: false,
+    shippingAreas: "",
+    shippingFeeNotes: "",
+    shippingEta: "",
+    shippingNotes: "",
     whatsapp: "",
     city: "",
     state: "",
@@ -39,6 +48,14 @@ export default function CreateSebo() {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: checked,
     }));
   };
 
@@ -65,6 +82,15 @@ export default function CreateSebo() {
         postalCode: formData.postalCode || undefined,
         openingYear: formData.openingYear ? Number(formData.openingYear) : undefined,
         logoUrl: formData.logoUrl || undefined,
+        supportsPickup: formData.supportsPickup,
+        shipsNeighborhood: formData.shipsNeighborhood,
+        shipsCity: formData.shipsCity,
+        shipsState: formData.shipsState,
+        shipsNationwide: formData.shipsNationwide,
+        shippingAreas: formData.shippingAreas || undefined,
+        shippingFeeNotes: formData.shippingFeeNotes || undefined,
+        shippingEta: formData.shippingEta || undefined,
+        shippingNotes: formData.shippingNotes || undefined,
         whatsapp: formData.whatsapp,
         city: formData.city || undefined,
         state: formData.state || undefined,
@@ -230,6 +256,66 @@ export default function CreateSebo() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
                 />
               </div>
+            </div>
+
+            <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-white">
+              <p className="font-inter font-semibold text-gray-700 mb-3">Logística de Entrega</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" name="supportsPickup" checked={formData.supportsPickup} onChange={handleCheckboxChange} />
+                  Retirada no local
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" name="shipsNeighborhood" checked={formData.shipsNeighborhood} onChange={handleCheckboxChange} />
+                  Entrega no bairro
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" name="shipsCity" checked={formData.shipsCity} onChange={handleCheckboxChange} />
+                  Entrega na cidade
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" name="shipsState" checked={formData.shipsState} onChange={handleCheckboxChange} />
+                  Entrega no estado
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" name="shipsNationwide" checked={formData.shipsNationwide} onChange={handleCheckboxChange} />
+                  Envio nacional
+                </label>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  name="shippingAreas"
+                  value={formData.shippingAreas}
+                  onChange={handleChange}
+                  placeholder="Bairros/regiões atendidas"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                />
+                <input
+                  type="text"
+                  name="shippingEta"
+                  value={formData.shippingEta}
+                  onChange={handleChange}
+                  placeholder="Prazo médio (ex: 1-2 dias)"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                />
+                <input
+                  type="text"
+                  name="shippingFeeNotes"
+                  value={formData.shippingFeeNotes}
+                  onChange={handleChange}
+                  placeholder="Frete/custos (ex: grátis acima de R$ 100)"
+                  className="w-full md:col-span-2 px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                />
+              </div>
+              <textarea
+                name="shippingNotes"
+                value={formData.shippingNotes}
+                onChange={handleChange}
+                rows={2}
+                placeholder="Observações logísticas"
+                className="mt-3 w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+              />
             </div>
 
             {/* WhatsApp */}

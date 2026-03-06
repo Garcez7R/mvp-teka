@@ -368,6 +368,32 @@ export default function Book() {
                 <p className="font-inter text-sm opacity-90">
                   Entre em contato diretamente via WhatsApp para confirmar disponibilidade e negociar o melhor preço.
                 </p>
+                <div className="mt-4 p-3 rounded bg-white/15">
+                  <p className="text-sm font-semibold mb-2">Logística de entrega</p>
+                  <p className="text-xs">
+                    {[
+                      book.sebo.supportsPickup ? "Retirada no local" : null,
+                      book.sebo.shipsNeighborhood ? "Entrega no bairro" : null,
+                      book.sebo.shipsCity ? "Entrega na cidade" : null,
+                      book.sebo.shipsState ? "Entrega no estado" : null,
+                      book.sebo.shipsNationwide ? "Envio nacional" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" • ") || "Não informado"}
+                  </p>
+                  {book.sebo.shippingAreas && (
+                    <p className="text-xs mt-1">Áreas: {book.sebo.shippingAreas}</p>
+                  )}
+                  {book.sebo.shippingFeeNotes && (
+                    <p className="text-xs mt-1">Frete: {book.sebo.shippingFeeNotes}</p>
+                  )}
+                  {book.sebo.shippingEta && (
+                    <p className="text-xs mt-1">Prazo: {book.sebo.shippingEta}</p>
+                  )}
+                  {book.sebo.shippingNotes && (
+                    <p className="text-xs mt-1">Obs.: {book.sebo.shippingNotes}</p>
+                  )}
+                </div>
               </div>
             )}
 

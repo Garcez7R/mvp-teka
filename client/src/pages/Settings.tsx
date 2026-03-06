@@ -42,6 +42,15 @@ export default function SettingsPage() {
     postalCode: "",
     openingYear: "",
     logoUrl: "",
+    supportsPickup: true,
+    shipsNeighborhood: false,
+    shipsCity: false,
+    shipsState: false,
+    shipsNationwide: false,
+    shippingAreas: "",
+    shippingFeeNotes: "",
+    shippingEta: "",
+    shippingNotes: "",
   });
   const [installAvailable, setInstallAvailable] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -65,6 +74,15 @@ export default function SettingsPage() {
         postalCode: "",
         openingYear: "",
         logoUrl: "",
+        supportsPickup: true,
+        shipsNeighborhood: false,
+        shipsCity: false,
+        shipsState: false,
+        shipsNationwide: false,
+        shippingAreas: "",
+        shippingFeeNotes: "",
+        shippingEta: "",
+        shippingNotes: "",
       });
       return;
     }
@@ -80,6 +98,15 @@ export default function SettingsPage() {
       postalCode: (mySebo as any).postalCode || "",
       openingYear: (mySebo as any).openingYear ? String((mySebo as any).openingYear) : "",
       logoUrl: (mySebo as any).logoUrl || "",
+      supportsPickup: Boolean((mySebo as any).supportsPickup ?? true),
+      shipsNeighborhood: Boolean((mySebo as any).shipsNeighborhood ?? false),
+      shipsCity: Boolean((mySebo as any).shipsCity ?? false),
+      shipsState: Boolean((mySebo as any).shipsState ?? false),
+      shipsNationwide: Boolean((mySebo as any).shipsNationwide ?? false),
+      shippingAreas: (mySebo as any).shippingAreas || "",
+      shippingFeeNotes: (mySebo as any).shippingFeeNotes || "",
+      shippingEta: (mySebo as any).shippingEta || "",
+      shippingNotes: (mySebo as any).shippingNotes || "",
     });
   }, [mySebo]);
 
@@ -260,6 +287,15 @@ export default function SettingsPage() {
       postalCode: seboForm.postalCode.trim() || undefined,
       openingYear: seboForm.openingYear ? Number(seboForm.openingYear) : undefined,
       logoUrl: seboForm.logoUrl.trim() || undefined,
+      supportsPickup: seboForm.supportsPickup,
+      shipsNeighborhood: seboForm.shipsNeighborhood,
+      shipsCity: seboForm.shipsCity,
+      shipsState: seboForm.shipsState,
+      shipsNationwide: seboForm.shipsNationwide,
+      shippingAreas: seboForm.shippingAreas.trim() || undefined,
+      shippingFeeNotes: seboForm.shippingFeeNotes.trim() || undefined,
+      shippingEta: seboForm.shippingEta.trim() || undefined,
+      shippingNotes: seboForm.shippingNotes.trim() || undefined,
     });
   };
 
@@ -360,6 +396,78 @@ export default function SettingsPage() {
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
                   />
+                  <div className="p-3 border border-gray-200 rounded bg-white">
+                    <p className="text-sm font-semibold text-[#262969] mb-2">Logística de Entrega</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={seboForm.supportsPickup}
+                          onChange={(e) => setSeboForm((prev) => ({ ...prev, supportsPickup: e.target.checked }))}
+                        />
+                        Retirada no local
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={seboForm.shipsNeighborhood}
+                          onChange={(e) => setSeboForm((prev) => ({ ...prev, shipsNeighborhood: e.target.checked }))}
+                        />
+                        Entrega no bairro
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={seboForm.shipsCity}
+                          onChange={(e) => setSeboForm((prev) => ({ ...prev, shipsCity: e.target.checked }))}
+                        />
+                        Entrega na cidade
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={seboForm.shipsState}
+                          onChange={(e) => setSeboForm((prev) => ({ ...prev, shipsState: e.target.checked }))}
+                        />
+                        Entrega no estado
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={seboForm.shipsNationwide}
+                          onChange={(e) => setSeboForm((prev) => ({ ...prev, shipsNationwide: e.target.checked }))}
+                        />
+                        Envio nacional
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input
+                        value={seboForm.shippingAreas}
+                        onChange={(e) => setSeboForm((prev) => ({ ...prev, shippingAreas: e.target.value }))}
+                        placeholder="Bairros/regiões atendidas"
+                        className="px-3 py-2 border border-gray-300 rounded bg-white"
+                      />
+                      <input
+                        value={seboForm.shippingEta}
+                        onChange={(e) => setSeboForm((prev) => ({ ...prev, shippingEta: e.target.value }))}
+                        placeholder="Prazo médio"
+                        className="px-3 py-2 border border-gray-300 rounded bg-white"
+                      />
+                      <input
+                        value={seboForm.shippingFeeNotes}
+                        onChange={(e) => setSeboForm((prev) => ({ ...prev, shippingFeeNotes: e.target.value }))}
+                        placeholder="Frete/custos"
+                        className="md:col-span-2 px-3 py-2 border border-gray-300 rounded bg-white"
+                      />
+                    </div>
+                    <textarea
+                      value={seboForm.shippingNotes}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, shippingNotes: e.target.value }))}
+                      placeholder="Observações logísticas"
+                      rows={2}
+                      className="mt-3 w-full px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => void handleSaveSebo()}
@@ -391,6 +499,18 @@ export default function SettingsPage() {
                         {seboForm.addressLine && (
                           <p className="text-xs text-gray-600">{seboForm.addressLine}</p>
                         )}
+                        <p className="text-xs text-gray-600 mt-1">
+                          Entrega:{" "}
+                          {[
+                            seboForm.supportsPickup ? "Retirada" : null,
+                            seboForm.shipsNeighborhood ? "Bairro" : null,
+                            seboForm.shipsCity ? "Cidade" : null,
+                            seboForm.shipsState ? "Estado" : null,
+                            seboForm.shipsNationwide ? "Nacional" : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" • ") || "Não informado"}
+                        </p>
                         {seboForm.description && (
                           <p className="text-xs text-gray-700 mt-1 line-clamp-3">{seboForm.description}</p>
                         )}
