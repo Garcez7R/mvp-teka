@@ -46,13 +46,14 @@ export default function AddBook() {
   const [scannerError, setScannerError] = useState("");
   const [scannerBusy, setScannerBusy] = useState(false);
   const [scannerMode, setScannerMode] = useState<"barcode" | "cover">("barcode");
-  const [scannerEngine, setScannerEngine] = useState<"barcode" | "text">("barcode");
+  const [scannerEngine, setScannerEngine] = useState<"barcode" | "text" | "tesseract">("barcode");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const isbnInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scannerActiveRef = useRef(false);
   const scanFrameRef = useRef<number | null>(null);
   const autoScanTriggeredRef = useRef(false);
+  const tesseractLoaderRef = useRef<Promise<any> | null>(null);
 
   const createBookMutation = trpc.books.create.useMutation();
   const LAST_BOOK_DRAFT_KEY = "teka_last_book_draft";
@@ -238,6 +239,58 @@ export default function AddBook() {
     }
   };
 
+  const searchBookByText = async (queryInput: string) => {
+    const query = queryInput.trim();
+    if (!query) return false;
+
+    setSearchingBook(true);
+    setCoverError("");
+    trackEvent("text_lookup_started");
+
+    try {
+      const googleResp = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1`
+      );
+      if (!googleResp.ok) {
+        setCoverError("Não foi possível buscar livro por texto neste momento.");
+        return false;
+      }
+
+      const googleData = await googleResp.json();
+      const item = googleData?.items?.[0];
+      const info = item?.volumeInfo;
+      if (!info) {
+        setCoverError("OCR concluído, mas não encontrei um livro confiável por título/autor.");
+        return false;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        title: info.title || prev.title,
+        author: info.authors?.[0] || prev.author,
+        pages: info.pageCount ? String(info.pageCount) : prev.pages,
+        year: info.publishedDate?.match(/\d{4}/)?.[0] || prev.year,
+        description: sanitizeFetchedDescription(info.description) || prev.description,
+      }));
+
+      const thumb = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
+      if (thumb) {
+        setCoverUrl(String(thumb).replace("http://", "https://"));
+        setCoverFile(null);
+      }
+
+      toast.success("Livro sugerido por OCR de capa.");
+      trackEvent("text_lookup_success");
+      return true;
+    } catch {
+      trackEvent("text_lookup_error");
+      setCoverError("Erro de conexão durante busca por texto.");
+      return false;
+    } finally {
+      setSearchingBook(false);
+    }
+  };
+
   const stopScanner = () => {
     scannerActiveRef.current = false;
     setScannerBusy(false);
@@ -310,7 +363,7 @@ export default function AddBook() {
     }, 50);
   };
 
-  const chooseScannerEngine = (mode: "barcode" | "cover"): "barcode" | "text" | null => {
+  const chooseScannerEngine = (mode: "barcode" | "cover"): "barcode" | "text" | "tesseract" | null => {
     if (typeof window === "undefined") return null;
     const barcodeSupported = typeof (window as any).BarcodeDetector === "function";
     const textSupported = typeof (window as any).TextDetector === "function";
@@ -322,8 +375,96 @@ export default function AddBook() {
     }
 
     if (textSupported) return "text";
-    if (barcodeSupported) return "barcode";
-    return null;
+    return "tesseract";
+  };
+
+  const loadTesseract = async () => {
+    if (typeof window === "undefined") {
+      throw new Error("OCR indisponível neste ambiente.");
+    }
+    if ((window as any).Tesseract?.recognize) {
+      return (window as any).Tesseract;
+    }
+    if (!tesseractLoaderRef.current) {
+      tesseractLoaderRef.current = new Promise((resolve, reject) => {
+        const scriptId = "teka-tesseract-cdn";
+        const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
+        if (existingScript) {
+          existingScript.addEventListener("load", () => resolve((window as any).Tesseract));
+          existingScript.addEventListener("error", () => reject(new Error("Falha ao carregar OCR.")));
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.id = scriptId;
+        script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+        script.async = true;
+        script.onload = () => resolve((window as any).Tesseract);
+        script.onerror = () => reject(new Error("Falha ao carregar OCR."));
+        document.head.appendChild(script);
+      });
+    }
+    return tesseractLoaderRef.current;
+  };
+
+  const captureFrameDataUrl = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.92);
+  };
+
+  const extractSearchQueryFromText = (rawText: string) => {
+    return rawText
+      .replace(/\s+/g, " ")
+      .replace(/[^A-Za-zÀ-ÿ0-9 ]/g, " ")
+      .split(" ")
+      .map((token) => token.trim())
+      .filter((token) => token.length > 2 && !/^\d+$/.test(token))
+      .slice(0, 8)
+      .join(" ");
+  };
+
+  const runTesseractOcrFromCamera = async () => {
+    try {
+      setScannerBusy(true);
+      setScannerError("Processando OCR da imagem...");
+      const frame = captureFrameDataUrl();
+      if (!frame) {
+        setScannerError("Não foi possível capturar imagem da câmera. Tente novamente.");
+        return;
+      }
+
+      const tesseract = await loadTesseract();
+      const result = await tesseract.recognize(frame, "por+eng");
+      const extractedText = String(result?.data?.text || "");
+      const isbnFound = extractISBNFromRaw(extractedText);
+      stopScanner();
+
+      if (isbnFound) {
+        setFormData((prev) => ({ ...prev, isbn: isbnFound }));
+        toast.success(`ISBN detectado por OCR: ${isbnFound}`);
+        await searchBookByISBN(isbnFound);
+        return;
+      }
+
+      const query = extractSearchQueryFromText(extractedText);
+      if (query) {
+        await searchBookByText(query);
+        return;
+      }
+
+      fallbackToManualIsbn("OCR concluído, mas não encontrei ISBN nem texto útil.");
+    } catch {
+      fallbackToManualIsbn("Falha no OCR avançado da câmera.");
+    } finally {
+      setScannerBusy(false);
+    }
   };
 
   const openBackCameraStream = async (): Promise<MediaStream> => {
@@ -389,15 +530,19 @@ export default function AddBook() {
       });
       await video.play();
 
+      if (engine === "tesseract") {
+        setScannerError("OCR avançado pronto. Toque em Capturar para extrair ISBN/título/autor.");
+        setScannerBusy(false);
+        return;
+      }
+
       const detector = engine === "barcode"
         ? new BarcodeDetectorCtor({
             formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"],
           })
         : new TextDetectorCtor();
 
-      if (mode === "cover" && engine === "barcode") {
-        setScannerError("OCR não disponível neste navegador. Usando leitura de código de barras.");
-      } else if (mode === "barcode" && engine === "text") {
+      if (mode === "barcode" && engine === "text") {
         setScannerError("Detector de barras não disponível. Tentando extrair ISBN por OCR.");
       }
 
@@ -794,7 +939,7 @@ export default function AddBook() {
                 {scannerOpen && (
                   <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
                     <p className="text-sm text-gray-700 mb-2">
-                      {scannerEngine === "text"
+                      {scannerEngine === "text" || scannerEngine === "tesseract"
                         ? "Aponte a câmera para capa/lombada ou área com texto/ISBN."
                         : "Aponte a câmera para o código de barras do livro."}
                     </p>
@@ -812,6 +957,16 @@ export default function AddBook() {
                     >
                       Fechar câmera
                     </button>
+                    {scannerEngine === "tesseract" && (
+                      <button
+                        type="button"
+                        onClick={() => void runTesseractOcrFromCamera()}
+                        disabled={scannerBusy}
+                        className="mt-3 ml-2 px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white disabled:opacity-50"
+                      >
+                        {scannerBusy ? "Processando OCR..." : "Capturar e extrair"}
+                      </button>
+                    )}
                   </div>
                 )}
                 {coverError && (
