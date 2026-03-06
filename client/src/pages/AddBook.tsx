@@ -491,28 +491,51 @@ export default function AddBook() {
   const runTesseractOcrFromCamera = async () => {
     try {
       setScannerBusy(true);
-      setScannerError("Processando OCR da imagem...");
+      setScannerError("Processando foto da capa...");
       const frame = captureFrameDataUrl();
       if (!frame) {
         setScannerError("Não foi possível capturar imagem da câmera. Tente novamente.");
         return;
       }
 
-      const tesseract = await loadTesseract();
-      const isbnPass = await tesseract.recognize(frame, "eng", {
-        tessedit_pageseg_mode: "6",
-        tessedit_char_whitelist: "0123456789Xx- ",
-      });
-      const isbnText = String(isbnPass?.data?.text || "");
-      let extractedText = isbnText;
-      let isbnFound = extractISBNFromRaw(isbnText);
-      if (!isbnFound) {
-        const textPass = await tesseract.recognize(frame, "eng", {
-          tessedit_pageseg_mode: "6",
+      const remoteAbort = new AbortController();
+      const remoteTimeout = window.setTimeout(() => remoteAbort.abort(), 9_000);
+      let remoteOcrResponse: Response | null = null;
+      try {
+        remoteOcrResponse = await fetch("/api/ocr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: frame }),
+          signal: remoteAbort.signal,
         });
-        extractedText = String(textPass?.data?.text || "");
-        isbnFound = extractISBNFromRaw(extractedText);
+      } catch {
+        remoteOcrResponse = null;
+      } finally {
+        window.clearTimeout(remoteTimeout);
       }
+
+      let extractedText = "";
+      if (remoteOcrResponse?.ok) {
+        const remotePayload = await remoteOcrResponse.json();
+        extractedText = String(remotePayload?.text || "");
+      } else {
+        setScannerError("OCR remoto indisponível. Tentando OCR local...");
+        const tesseract = await loadTesseract();
+        const isbnPass = await tesseract.recognize(frame, "eng", {
+          tessedit_pageseg_mode: "6",
+          tessedit_char_whitelist: "0123456789Xx- ",
+        });
+        const isbnText = String(isbnPass?.data?.text || "");
+        extractedText = isbnText;
+        if (!extractISBNFromRaw(isbnText)) {
+          const textPass = await tesseract.recognize(frame, "eng", {
+            tessedit_pageseg_mode: "6",
+          });
+          extractedText = String(textPass?.data?.text || "");
+        }
+      }
+
+      let isbnFound = extractISBNFromRaw(extractedText);
       stopScanner();
 
       if (isbnFound) {

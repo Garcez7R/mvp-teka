@@ -65,6 +65,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(createRateLimiter("/trpc", 120, 60_000));
 app.use(createRateLimiter("/health", 30, 60_000));
+app.use(createRateLimiter("/api/ocr", 20, 60_000));
 app.use((req: Request, res: Response, next) => {
   res.header("X-Content-Type-Options", "nosniff");
   res.header("X-Frame-Options", "DENY");
@@ -102,6 +103,63 @@ app.use(
 // Health check
 app.get("/health", (req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.post("/api/ocr", async (req: Request, res: Response) => {
+  const apiKey = process.env.OCR_SPACE_API_KEY;
+  const imageDataUrl = String(req.body?.image || "").trim();
+
+  if (!apiKey) {
+    return res.status(503).json({ error: "OCR service is not configured." });
+  }
+
+  if (!imageDataUrl.startsWith("data:image/")) {
+    return res.status(400).json({ error: "Invalid image payload." });
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+
+  try {
+    const form = new FormData();
+    form.append("apikey", apiKey);
+    form.append("language", "eng");
+    form.append("isOverlayRequired", "false");
+    form.append("isCreateSearchablePdf", "false");
+    form.append("OCREngine", "2");
+    form.append("scale", "true");
+    form.append("base64Image", imageDataUrl);
+
+    const upstream = await fetch("https://api.ocr.space/parse/image", {
+      method: "POST",
+      body: form,
+      signal: controller.signal,
+    });
+
+    if (!upstream.ok) {
+      return res.status(502).json({ error: "OCR upstream request failed." });
+    }
+
+    const payload = await upstream.json();
+    const parsedResults = Array.isArray(payload?.ParsedResults) ? payload.ParsedResults : [];
+    const text = parsedResults
+      .map((item: any) => String(item?.ParsedText || ""))
+      .join("\n")
+      .trim();
+
+    if (!text) {
+      return res.status(422).json({ error: "No text extracted from image." });
+    }
+
+    return res.json({ text });
+  } catch (error) {
+    const isAbort = error instanceof Error && error.name === "AbortError";
+    return res.status(isAbort ? 504 : 500).json({
+      error: isAbort ? "OCR request timed out." : "OCR request failed.",
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 });
 
 // Serve static files from client
