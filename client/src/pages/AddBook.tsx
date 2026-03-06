@@ -46,6 +46,7 @@ export default function AddBook() {
   const [scannerError, setScannerError] = useState("");
   const [scannerBusy, setScannerBusy] = useState(false);
   const [scannerMode, setScannerMode] = useState<"barcode" | "cover">("barcode");
+  const [scannerEngine, setScannerEngine] = useState<"barcode" | "text">("barcode");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const isbnInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -309,6 +310,40 @@ export default function AddBook() {
     }, 50);
   };
 
+  const chooseScannerEngine = (mode: "barcode" | "cover"): "barcode" | "text" | null => {
+    if (typeof window === "undefined") return null;
+    const barcodeSupported = typeof (window as any).BarcodeDetector === "function";
+    const textSupported = typeof (window as any).TextDetector === "function";
+
+    if (mode === "barcode") {
+      if (barcodeSupported) return "barcode";
+      if (textSupported) return "text";
+      return null;
+    }
+
+    if (textSupported) return "text";
+    if (barcodeSupported) return "barcode";
+    return null;
+  };
+
+  const openBackCameraStream = async (): Promise<MediaStream> => {
+    const attempts: MediaStreamConstraints[] = [
+      { video: { facingMode: { exact: "environment" } }, audio: false },
+      { video: { facingMode: { ideal: "environment" } }, audio: false },
+      { video: true, audio: false },
+    ];
+
+    let lastError: unknown = null;
+    for (const constraints of attempts) {
+      try {
+        return await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError ?? new Error("Não foi possível abrir a câmera.");
+  };
+
   const startScanner = async (mode: "barcode" | "cover") => {
     if (typeof window === "undefined") return;
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -316,42 +351,56 @@ export default function AddBook() {
       return;
     }
 
-    const BarcodeDetectorCtor = (window as any).BarcodeDetector;
-    const TextDetectorCtor = (window as any).TextDetector;
-    if (mode === "barcode" && !BarcodeDetectorCtor) {
-      fallbackToManualIsbn("Leitura de código por câmera não suportada neste navegador.");
-      return;
-    }
-    if (mode === "cover" && !TextDetectorCtor) {
-      fallbackToManualIsbn("OCR por câmera não suportado neste navegador.");
+    const engine = chooseScannerEngine(mode);
+    if (!engine) {
+      fallbackToManualIsbn("Seu navegador não suporta detecção por câmera neste fluxo.");
       return;
     }
 
+    const BarcodeDetectorCtor = (window as any).BarcodeDetector;
+    const TextDetectorCtor = (window as any).TextDetector;
+
     try {
       setScannerMode(mode);
+      setScannerEngine(engine);
       setScannerError("");
       setScannerOpen(true);
       setScannerBusy(true);
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      });
+      const stream = await openBackCameraStream();
       streamRef.current = stream;
 
       const video = videoRef.current;
       if (!video) {
         throw new Error("Visualização da câmera indisponível.");
       }
+      video.setAttribute("playsinline", "true");
       video.srcObject = stream;
+      await new Promise<void>((resolve) => {
+        if (video.readyState >= 1) {
+          resolve();
+          return;
+        }
+        const onLoadedMetadata = () => {
+          video.removeEventListener("loadedmetadata", onLoadedMetadata);
+          resolve();
+        };
+        video.addEventListener("loadedmetadata", onLoadedMetadata);
+      });
       await video.play();
 
-      const detector =
-        mode === "barcode"
-          ? new BarcodeDetectorCtor({
-              formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"],
-            })
-          : new TextDetectorCtor();
+      const detector = engine === "barcode"
+        ? new BarcodeDetectorCtor({
+            formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"],
+          })
+        : new TextDetectorCtor();
+
+      if (mode === "cover" && engine === "barcode") {
+        setScannerError("OCR não disponível neste navegador. Usando leitura de código de barras.");
+      } else if (mode === "barcode" && engine === "text") {
+        setScannerError("Detector de barras não disponível. Tentando extrair ISBN por OCR.");
+      }
+
       scannerActiveRef.current = true;
 
       const scanLoop = async () => {
@@ -745,8 +794,8 @@ export default function AddBook() {
                 {scannerOpen && (
                   <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
                     <p className="text-sm text-gray-700 mb-2">
-                      {scannerMode === "cover"
-                        ? "Aponte a câmera para capa/lombada para capturar texto e extrair ISBN."
+                      {scannerEngine === "text"
+                        ? "Aponte a câmera para capa/lombada ou área com texto/ISBN."
                         : "Aponte a câmera para o código de barras do livro."}
                     </p>
                     <video
