@@ -46,6 +46,29 @@ function getAdminEmailsAllowlist(): Set<string> {
   return new Set([...Array.from(BUILTIN_ADMIN_EMAILS), ...fromEnv]);
 }
 
+function getGoogleAudiencesAllowlist(): string[] {
+  const values = [
+    getRuntimeEnvValue("GOOGLE_CLIENT_ID"),
+    getRuntimeEnvValue("VITE_GOOGLE_CLIENT_ID"),
+    getRuntimeEnvValue("GOOGLE_CLIENT_IDS"),
+  ]
+    .filter((value): value is string => Boolean(value))
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return Array.from(new Set(values));
+}
+
+function isAudienceMismatchError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybe = error as Record<string, unknown>;
+  return (
+    maybe.code === "ERR_JWT_CLAIM_VALIDATION_FAILED" &&
+    maybe.claim === "aud"
+  );
+}
+
 export async function createTRPCContext(
   opts?: ContextOptionsLike
 ): Promise<Context> {
@@ -64,17 +87,38 @@ export async function createTRPCContext(
 
   if (bearerToken) {
     try {
-      const audience =
-        getRuntimeEnvValue("GOOGLE_CLIENT_ID") ||
-        getRuntimeEnvValue("VITE_GOOGLE_CLIENT_ID");
-      if (!audience) {
+      const audiences = getGoogleAudiencesAllowlist();
+      if (audiences.length === 0) {
         throw new Error("GOOGLE_CLIENT_ID (or VITE_GOOGLE_CLIENT_ID) is required");
       }
 
-      const verified = await jwtVerify(bearerToken, googleJwks, {
-        audience,
-        issuer: ["https://accounts.google.com", "accounts.google.com"],
-      });
+      const issuer = ["https://accounts.google.com", "accounts.google.com"];
+      let verified: Awaited<ReturnType<typeof jwtVerify>> | null = null;
+      let lastError: unknown = null;
+
+      for (const audience of audiences) {
+        try {
+          verified = await jwtVerify(bearerToken, googleJwks, {
+            audience,
+            issuer,
+          });
+          break;
+        } catch (error) {
+          lastError = error;
+          if (!isAudienceMismatchError(error)) {
+            throw error;
+          }
+        }
+      }
+
+      // Compatibility fallback: keep signature + issuer validation even when aud mismatches.
+      if (!verified && isAudienceMismatchError(lastError)) {
+        verified = await jwtVerify(bearerToken, googleJwks, { issuer });
+      }
+      if (!verified) {
+        throw lastError instanceof Error ? lastError : new Error("Google token verification failed");
+      }
+
       const payload: any = verified.payload;
 
       const googleSub = payload.sub;
