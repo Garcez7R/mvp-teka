@@ -1095,13 +1095,14 @@ export default function AddBook() {
                 onChange={(e) => setFormData({ ...formData, condition: e.target.value as any })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
               >
+                <option value="Novo">Novo</option>
                 <option value="Excelente">Excelente</option>
                 <option value="Bom estado">Bom estado</option>
                 <option value="Usado">Usado</option>
                   <option value="Desgastado">Desgastado</option>
                 </select>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {["Excelente", "Bom estado", "Usado", "Desgastado"].map((condition) => (
+                  {["Novo", "Excelente", "Bom estado", "Usado", "Desgastado"].map((condition) => (
                     <button
                       key={condition}
                       type="button"

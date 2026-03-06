@@ -346,12 +346,12 @@ export default function ManageBooks() {
 
   const handleCloneBook = async (book: any) => {
     const nextCondition = window.prompt(
-      'Condição do novo item (Excelente, Bom estado, Usado, Desgastado)',
+      'Condição do novo item (Novo, Excelente, Bom estado, Usado, Desgastado)',
       String(book.condition || "Bom estado")
     );
     if (!nextCondition) return;
 
-    const allowed = new Set(["Excelente", "Bom estado", "Usado", "Desgastado"]);
+    const allowed = new Set(["Novo", "Excelente", "Bom estado", "Usado", "Desgastado"]);
     if (!allowed.has(nextCondition)) {
       toast.error("Condição inválida para duplicação.");
       return;
@@ -368,7 +368,7 @@ export default function ManageBooks() {
     try {
       await cloneBookMutation.mutateAsync({
         id: Number(book.id),
-        condition: nextCondition as "Excelente" | "Bom estado" | "Usado" | "Desgastado",
+        condition: nextCondition as "Novo" | "Excelente" | "Bom estado" | "Usado" | "Desgastado",
         quantity,
       });
       toast.success("Livro duplicado como novo item.");

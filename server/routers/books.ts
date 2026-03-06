@@ -107,7 +107,7 @@ export const booksRouter = router({
         minPrice: z.number().optional(),
         maxPrice: z.number().optional(),
         condition: z
-          .enum(["Excelente", "Bom estado", "Usado", "Desgastado"])
+          .enum(["Novo", "Excelente", "Bom estado", "Usado", "Desgastado"])
           .optional(),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
         sortBy: z
@@ -354,7 +354,7 @@ export const booksRouter = router({
         category: z.string(),
         description: z.string().optional(),
         price: z.number(),
-        condition: z.enum(["Excelente", "Bom estado", "Usado", "Desgastado"]),
+        condition: z.enum(["Novo", "Excelente", "Bom estado", "Usado", "Desgastado"]),
         pages: z.number().optional(),
         year: z.number().optional(),
         coverUrl: z.string().optional(),
@@ -402,7 +402,7 @@ export const booksRouter = router({
       z.object({
         id: z.number(),
         condition: z
-          .enum(["Excelente", "Bom estado", "Usado", "Desgastado"])
+          .enum(["Novo", "Excelente", "Bom estado", "Usado", "Desgastado"])
           .optional(),
         quantity: z.number().int().min(0).optional(),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
@@ -475,7 +475,7 @@ export const booksRouter = router({
         description: z.string().optional(),
         price: z.number().optional(),
         condition: z
-          .enum(["Excelente", "Bom estado", "Usado", "Desgastado"])
+          .enum(["Novo", "Excelente", "Bom estado", "Usado", "Desgastado"])
           .optional(),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
         isVisible: z.boolean().optional(),

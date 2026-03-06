@@ -82,7 +82,7 @@ export const books = sqliteTable("books", {
   description: text("description"),
   price: real("price").notNull(),
   condition: text("condition", {
-    enum: ["Excelente", "Bom estado", "Usado", "Desgastado"],
+    enum: ["Novo", "Excelente", "Bom estado", "Usado", "Desgastado"],
   }).default("Bom estado"),
   pages: int("pages"),
   year: int("year"),

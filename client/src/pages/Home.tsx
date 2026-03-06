@@ -458,6 +458,7 @@ export default function Home() {
                     className="w-full mb-2 px-3 py-2 border border-gray-300 rounded bg-white"
                   >
                     <option value="">Todas condições</option>
+                    <option value="Novo">Novo</option>
                     <option value="Excelente">Excelente</option>
                     <option value="Bom estado">Bom estado</option>
                     <option value="Usado">Usado</option>
