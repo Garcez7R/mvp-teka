@@ -8,7 +8,14 @@ import { toast } from "sonner";
 type AdminTab = "users" | "sebos" | "books";
 
 export default function Admin() {
-  const { isAuthenticated, isServerAuthenticated, role, loading } = useAuth({
+  const {
+    isAuthenticated,
+    isServerAuthenticated,
+    hasSessionToken,
+    role,
+    loading,
+    refresh,
+  } = useAuth({
     redirectOnUnauthenticated: true,
   });
   const utils = trpc.useUtils();
@@ -16,13 +23,18 @@ export default function Admin() {
   const [selectedSeboId, setSelectedSeboId] = useState<number | null>(null);
   const [booksPage, setBooksPage] = useState(0);
   const [userFilter, setUserFilter] = useState("");
+  const [allowUnverifiedSession, setAllowUnverifiedSession] = useState(false);
   const BOOKS_PAGE_SIZE = 50;
+  const canRunAdminQueries =
+    isAuthenticated &&
+    role === "admin" &&
+    (isServerAuthenticated || allowUnverifiedSession);
 
   const usersQuery = trpc.users.adminList.useQuery(undefined, {
-    enabled: isAuthenticated && isServerAuthenticated && role === "admin",
+    enabled: canRunAdminQueries,
   });
   const sebosQuery = trpc.sebos.list.useQuery(undefined, {
-    enabled: isAuthenticated && isServerAuthenticated && role === "admin",
+    enabled: canRunAdminQueries,
   });
   const booksQuery = trpc.books.list.useQuery(
     {
@@ -31,7 +43,7 @@ export default function Admin() {
       seboId: selectedSeboId ?? undefined,
     },
     {
-      enabled: isAuthenticated && isServerAuthenticated && role === "admin" && tab === "books",
+      enabled: canRunAdminQueries && tab === "books",
       retry: 1,
       refetchOnWindowFocus: false,
     }
@@ -175,13 +187,34 @@ export default function Admin() {
     );
   }
 
-  if (!isServerAuthenticated) {
+  if (!isServerAuthenticated && !allowUnverifiedSession) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
         <Header />
         <main className="container flex-1 py-12">
           <div className="max-w-2xl mx-auto p-6 border border-amber-200 bg-amber-50 rounded-lg text-amber-800">
-            Sincronizando autenticação da sessão com o servidor. Se demorar, recarregue a página.
+            <p className="font-semibold">Sincronizando autenticação da sessão com o servidor.</p>
+            <p className="mt-1 text-sm">
+              {hasSessionToken
+                ? "Se demorar, tente sincronizar novamente sem recarregar."
+                : "Sua sessão local não está ativa. Faça login novamente."}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={() => void refresh()}
+                className="px-3 py-2 rounded bg-[#262969] text-white text-sm"
+              >
+                Tentar sincronizar
+              </button>
+              {hasSessionToken && (
+                <button
+                  onClick={() => setAllowUnverifiedSession(true)}
+                  className="px-3 py-2 rounded border border-[#262969] text-[#262969] text-sm bg-white"
+                >
+                  Abrir painel mesmo assim
+                </button>
+              )}
+            </div>
           </div>
         </main>
         <Footer />

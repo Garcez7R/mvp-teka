@@ -24,6 +24,7 @@ export function useAuth(options?: UseAuthOptions) {
     options ?? {};
   const utils = trpc.useUtils();
   const silentAuthAttemptedRef = useRef(false);
+  const serverSyncRetryCountRef = useRef(0);
   const [silentAuthRunning, setSilentAuthRunning] = useState(false);
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
@@ -60,6 +61,7 @@ export function useAuth(options?: UseAuthOptions) {
     const claims = getGoogleTokenClaims();
     const fallbackRole = getSignupRole();
     const fallbackIsAdmin = isAdminEmail(claims?.email ?? null);
+    const hasSessionToken = Boolean(getSessionIdToken());
     const fallbackUser =
       !meQuery.data && claims?.sub
         ? {
@@ -85,6 +87,7 @@ export function useAuth(options?: UseAuthOptions) {
       error: meQuery.error ?? logoutMutation.error ?? null,
       isAuthenticated: Boolean(resolvedUser),
       isServerAuthenticated: Boolean(meQuery.data),
+      hasSessionToken,
       role: resolvedUser?.role ?? null,
     };
   }, [
@@ -93,6 +96,36 @@ export function useAuth(options?: UseAuthOptions) {
     meQuery.isLoading,
     logoutMutation.error,
     logoutMutation.isPending,
+  ]);
+
+  useEffect(() => {
+    if (!state.hasSessionToken) {
+      serverSyncRetryCountRef.current = 0;
+      return;
+    }
+    if (state.isServerAuthenticated) {
+      serverSyncRetryCountRef.current = 0;
+      return;
+    }
+    if (meQuery.isLoading || silentAuthRunning) {
+      return;
+    }
+    if (serverSyncRetryCountRef.current >= 5) {
+      return;
+    }
+
+    serverSyncRetryCountRef.current += 1;
+    const delay = 300 * serverSyncRetryCountRef.current;
+    const timeoutId = window.setTimeout(() => {
+      void meQuery.refetch();
+    }, delay);
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    meQuery.refetch,
+    meQuery.isLoading,
+    silentAuthRunning,
+    state.hasSessionToken,
+    state.isServerAuthenticated,
   ]);
 
   useEffect(() => {
