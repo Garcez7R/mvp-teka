@@ -26,6 +26,14 @@ pnpm install
 
 2. Crie e ajuste seu `.env.local` na raiz do projeto (não versionado).
 
+3. Crie seu `wrangler.toml` local a partir do exemplo:
+
+```bash
+cp wrangler.example.toml wrangler.toml
+```
+
+Depois, preencha o `database_id` do D1.
+
 3. Rode em desenvolvimento:
 
 ```bash
@@ -60,3 +68,11 @@ Servidor local padrão: `http://localhost:3777`
 
 - Upload manual de capa está desativado no fluxo Cloudflare-only.
 - Cadastro por ISBN tenta OpenLibrary e fallback Google Books.
+
+## Checklist Cloudflare Release (curto)
+
+1. `git push origin main` e aguarde o deploy no Pages.
+2. Verifique `https://mvp-teka.pages.dev/health` e confirme `mode: "local"`.
+3. Se houver mudança de schema, aplique no D1 remoto:
+   `npx wrangler d1 migrations apply teka-db --remote`
+4. Valide homepage e admin sem erro de `Failed to fetch`.

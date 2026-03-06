@@ -1,0 +1,8 @@
+name = "mvp-teka"
+compatibility_date = "2026-03-06"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "teka-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "drizzle"
