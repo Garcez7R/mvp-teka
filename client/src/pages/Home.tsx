@@ -325,64 +325,36 @@ export default function Home() {
         {showFilters && (
             <div className="mt-4 p-6 bg-gray-50 rounded-lg border border-gray-200">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Category Filter */}
                 <div>
                   <h3 className="font-outfit font-semibold text-[#262969] mb-3">Categoria</h3>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => setSelectedCategory(null)}
-                      className={`block w-full text-left px-3 py-2 rounded transition-colors font-inter text-sm ${
-                        !selectedCategory
-                          ? "bg-[#da4653] text-white"
-                          : "bg-white text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      Todas
-                    </button>
+                  <select
+                    value={selectedCategory || ""}
+                    onChange={(e) => setSelectedCategory(e.target.value || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
+                  >
+                    <option value="">Todas</option>
                     {categories.map((cat: any) => (
-                      <button
-                        key={cat as string}
-                        onClick={() => setSelectedCategory(cat as string)}
-                        className={`block w-full text-left px-3 py-2 rounded transition-colors font-inter text-sm ${
-                          selectedCategory === cat
-                            ? "bg-[#da4653] text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-100"
-                        }`}
-                      >
+                      <option key={cat as string} value={cat as string}>
                         {cat as string}
-                      </button>
+                      </option>
                     ))}
-                  </div>
+                  </select>
                 </div>
 
-                {/* Sebo Filter */}
                 <div>
                   <h3 className="font-outfit font-semibold text-[#262969] mb-3">Sebo</h3>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => setSelectedSebo(null)}
-                      className={`block w-full text-left px-3 py-2 rounded transition-colors font-inter text-sm ${
-                        !selectedSebo
-                          ? "bg-[#da4653] text-white"
-                          : "bg-white text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      Todos
-                    </button>
+                  <select
+                    value={selectedSebo || ""}
+                    onChange={(e) => setSelectedSebo(e.target.value || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
+                  >
+                    <option value="">Todos</option>
                     {sebos.map((sebo: any) => (
-                      <button
-                        key={sebo as string}
-                        onClick={() => setSelectedSebo(sebo as string)}
-                        className={`block w-full text-left px-3 py-2 rounded transition-colors font-inter text-sm ${
-                          selectedSebo === sebo
-                            ? "bg-[#da4653] text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-100"
-                        }`}
-                      >
+                      <option key={sebo as string} value={sebo as string}>
                         {sebo as string}
-                      </button>
+                      </option>
                     ))}
-                  </div>
+                  </select>
                 </div>
                 <div>
                   <h3 className="font-outfit font-semibold text-[#262969] mb-3">Condição, Status e Ordenação</h3>
