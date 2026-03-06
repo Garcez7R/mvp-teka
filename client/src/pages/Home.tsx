@@ -10,13 +10,24 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
+type CatalogSort =
+  | "recent"
+  | "most_searched"
+  | "most_favorited"
+  | "title_asc"
+  | "author_asc"
+  | "price_asc"
+  | "price_desc";
+
 export default function Home() {
   const { isAuthenticated, role } = useAuth();
+  const PAGE_SIZE = 24;
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSebo, setSelectedSebo] = useState<string | null>(null);
   const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<"ativo" | "reservado" | "vendido" | null>(null);
+  const [sortBy, setSortBy] = useState<CatalogSort>("recent");
   const [cityFilter, setCityFilter] = useState("");
   const [stateFilter, setStateFilter] = useState("");
   const [minPriceFilter, setMinPriceFilter] = useState("");
@@ -25,12 +36,16 @@ export default function Home() {
   const [groupOffers, setGroupOffers] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchBarKey, setSearchBarKey] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loadedBooks, setLoadedBooks] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
   const [wishlistTitle, setWishlistTitle] = useState("");
   const [wishlistIsbn, setWishlistIsbn] = useState("");
   const [onlyWishlistMatches, setOnlyWishlistMatches] = useState(false);
   const { getFavoriteCount, isFavorite } = useFavorites();
   const utils = trpc.useUtils();
   const previousMatchesCountRef = useRef(0);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const normalizeText = (value: string) =>
     value
@@ -38,18 +53,6 @@ export default function Home() {
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .trim();
-
-  const includesAllTerms = (haystack: string, query: string) => {
-    const h = normalizeText(haystack);
-    const words = h.split(/[^a-z0-9]+/).filter(Boolean);
-    const terms = normalizeText(query).split(/\s+/).filter(Boolean);
-    return terms.every((term) => {
-      if (h.includes(term)) return true;
-      if (term.length < 4) return false;
-      const fuzzyPrefix = term.slice(0, term.length - 1);
-      return words.some((word) => word.startsWith(fuzzyPrefix));
-    });
-  };
 
   const { data: wishlistItems = [] } = trpc.wishlist.list.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -108,9 +111,13 @@ export default function Home() {
     setMinPriceFilter("");
     setMaxPriceFilter("");
     setOnlyFavorites(false);
-    setGroupOffers(true);
+    setGroupOffers(false);
+    setSortBy("recent");
     setOnlyWishlistMatches(false);
     setShowFilters(false);
+    setPage(0);
+    setLoadedBooks([]);
+    setHasMore(true);
     setSearchBarKey((prev) => prev + 1);
   };
 
@@ -129,9 +136,8 @@ export default function Home() {
     });
   };
 
-  // Fetch books from API
-  const { data: booksData = [] } = trpc.books.list.useQuery({
-    search: undefined,
+  const booksQueryInput = {
+    search: searchQuery || undefined,
     category: selectedCategory || undefined,
     condition: (selectedCondition as any) || undefined,
     availabilityStatus: selectedStatus || undefined,
@@ -139,10 +145,71 @@ export default function Home() {
     state: stateFilter || undefined,
     minPrice: minPriceFilter ? Number(minPriceFilter) : undefined,
     maxPrice: maxPriceFilter ? Number(maxPriceFilter) : undefined,
-    limit: 500,
+    sortBy,
+    includeHidden: false,
+    limit: PAGE_SIZE,
+    offset: page * PAGE_SIZE,
+  } as const;
+
+  const {
+    data: booksPage = [],
+    isLoading: booksLoading,
+    isFetching: booksFetching,
+  } = trpc.books.list.useQuery(booksQueryInput, {
+    placeholderData: (prev) => prev,
+    refetchOnWindowFocus: false,
   });
 
-  const displayBooks = booksData;
+  useEffect(() => {
+    setPage(0);
+    setLoadedBooks([]);
+    setHasMore(true);
+  }, [
+    searchQuery,
+    selectedCategory,
+    selectedCondition,
+    selectedStatus,
+    cityFilter,
+    stateFilter,
+    minPriceFilter,
+    maxPriceFilter,
+    sortBy,
+  ]);
+
+  useEffect(() => {
+    if (page === 0) {
+      setLoadedBooks(booksPage);
+    } else if (booksPage.length > 0) {
+      setLoadedBooks((prev) => {
+        const map = new Map(prev.map((book: any) => [String(book.id), book]));
+        for (const book of booksPage) {
+          map.set(String((book as any).id), book);
+        }
+        return Array.from(map.values());
+      });
+    }
+    setHasMore(booksPage.length === PAGE_SIZE);
+  }, [booksPage, page]);
+
+  useEffect(() => {
+    if (!hasMore || booksFetching) return;
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        observer.unobserve(entry.target);
+        setPage((prev) => prev + 1);
+      },
+      { rootMargin: "400px 0px" }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, booksFetching, loadedBooks.length]);
+
+  const displayBooks = loadedBooks;
 
   // Get unique categories and sebos from the displayed data
   const categories = useMemo(
@@ -154,7 +221,7 @@ export default function Home() {
     [displayBooks]
   );
 
-  // Filter books locally
+  // Client-only filters (sebo/favoritos/lista de procura) on top of server query
   const filteredBooks = useMemo(() => {
     const matchBookIds = new Set(
       wishlistMatches
@@ -162,53 +229,20 @@ export default function Home() {
         .filter((id: number) => Number.isFinite(id))
     );
     return displayBooks.filter((book: any) => {
-      const matchesSearch =
-        !searchQuery ||
-        includesAllTerms(
-          `${book.title || ""} ${book.author || ""} ${book.category || ""} ${book.sebo?.name || ""}`,
-          searchQuery
-        );
-      const matchesCategory = !selectedCategory || book.category === selectedCategory;
       const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
-      const matchesCondition = !selectedCondition || book.condition === selectedCondition;
-      const matchesStatus =
-        !selectedStatus || (book.availabilityStatus || "ativo") === selectedStatus;
-      const price = Number(book.price);
-      const matchesMin = !minPriceFilter || price >= Number(minPriceFilter);
-      const matchesMax = !maxPriceFilter || price <= Number(maxPriceFilter);
-      const city = (book.sebo?.city || "").toLowerCase();
-      const state = (book.sebo?.state || "").toLowerCase();
-      const matchesCity = !cityFilter || city.includes(cityFilter.toLowerCase());
-      const matchesState = !stateFilter || state === stateFilter.toLowerCase();
       const favoriteKey = String(book.id);
       const matchesFavorites = !onlyFavorites || isFavorite(favoriteKey);
       const numericId = Number(book.id);
       const matchesWishlist = !onlyWishlistMatches || matchBookIds.has(numericId);
       return (
-        matchesSearch &&
-        matchesCategory &&
         matchesSebo &&
-        matchesCondition &&
-        matchesStatus &&
-        matchesMin &&
-        matchesMax &&
-        matchesCity &&
-        matchesState &&
         matchesFavorites &&
         matchesWishlist
       );
     });
   }, [
-    cityFilter,
     displayBooks,
-    maxPriceFilter,
-    minPriceFilter,
-    searchQuery,
-    selectedCategory,
-    selectedCondition,
     selectedSebo,
-    selectedStatus,
-    stateFilter,
     isFavorite,
     onlyFavorites,
     onlyWishlistMatches,
@@ -351,6 +385,72 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSortBy("recent")}
+              className={`px-3 py-2 rounded border text-sm ${
+                sortBy === "recent" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+              }`}
+            >
+              Recentes
+            </button>
+            <button
+              onClick={() => setSortBy("most_searched")}
+              className={`px-3 py-2 rounded border text-sm ${
+                sortBy === "most_searched" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+              }`}
+            >
+              Mais buscados
+            </button>
+            <button
+              onClick={() => setSortBy("most_favorited")}
+              className={`px-3 py-2 rounded border text-sm ${
+                sortBy === "most_favorited" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+              }`}
+            >
+              Top favoritados
+            </button>
+            <button
+              onClick={() => setSortBy("title_asc")}
+              className={`px-3 py-2 rounded border text-sm ${
+                sortBy === "title_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+              }`}
+            >
+              A-Z Título
+            </button>
+            <button
+              onClick={() => setSortBy("author_asc")}
+              className={`px-3 py-2 rounded border text-sm ${
+                sortBy === "author_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+              }`}
+            >
+              A-Z Autor
+            </button>
+            <button
+              onClick={() => setSortBy("price_asc")}
+              className={`px-3 py-2 rounded border text-sm ${
+                sortBy === "price_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+              }`}
+            >
+              Menor preço
+            </button>
+            <button
+              onClick={() => setSortBy("price_desc")}
+              className={`px-3 py-2 rounded border text-sm ${
+                sortBy === "price_desc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+              }`}
+            >
+              Maior preço
+            </button>
+          </div>
+          {sortBy === "most_searched" && (
+            <p className="mt-2 text-xs text-gray-500">
+              Ranking de busca em implantação: por enquanto esta aba usa a ordem de recentes.
+            </p>
+          )}
+        </div>
 
         {/* Filters Section */}
         <div className="mb-8 flex gap-3 flex-wrap">
@@ -577,41 +677,56 @@ export default function Home() {
         {/* Results Count */}
         <div className="mb-6">
           <p className="font-inter text-sm text-gray-600">
-            <span className="font-semibold text-[#262969]">{groupedBooks.length}</span> resultado(s) encontrado(s)
+            <span className="font-semibold text-[#262969]">{groupedBooks.length}</span>{" "}
+            resultado(s) carregado(s)
           </p>
           {groupOffers && (
             <p className="font-inter text-xs text-gray-500 mt-1">
               Ofertas iguais estão agrupadas por ISBN/título para facilitar comparação.
             </p>
           )}
+          {hasMore && (
+            <p className="font-inter text-xs text-gray-500 mt-1">
+              Role para carregar mais livros.
+            </p>
+          )}
         </div>
 
         {/* Books Grid */}
         {groupedBooks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {groupedBooks.map((book: any) => (
-              <BookCard
-                key={book.id}
-                id={book.id}
-                title={book.title}
-                author={book.author ?? undefined}
-                category={book.category ?? ""}
-                price={book.price}
-                sebo={book.sebo ?? undefined}
-                condition={book.condition ?? ""}
-                isbn={book.isbn ?? undefined}
-                coverUrl={book.coverUrl ?? undefined}
-                quantity={Number(book.quantity ?? 1)}
-                offerCount={book.offerCount}
-                locationSummary={book.locationSummary}
-                priceLabel={book.priceLabel}
-                availabilityStatus={book.availabilityStatus ?? "ativo"}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {groupedBooks.map((book: any) => (
+                <BookCard
+                  key={book.id}
+                  id={book.id}
+                  title={book.title}
+                  author={book.author ?? undefined}
+                  category={book.category ?? ""}
+                  price={book.price}
+                  sebo={book.sebo ?? undefined}
+                  condition={book.condition ?? ""}
+                  isbn={book.isbn ?? undefined}
+                  coverUrl={book.coverUrl ?? undefined}
+                  quantity={Number(book.quantity ?? 1)}
+                  offerCount={book.offerCount}
+                  locationSummary={book.locationSummary}
+                  priceLabel={book.priceLabel}
+                  availabilityStatus={book.availabilityStatus ?? "ativo"}
+                />
+              ))}
+            </div>
+            <div ref={loadMoreRef} className="h-10 mt-8 flex items-center justify-center">
+              {booksFetching && hasMore ? (
+                <p className="text-sm text-gray-500">Carregando mais livros...</p>
+              ) : null}
+            </div>
+          </>
         ) : (
           <div className="text-center py-12">
-            <p className="font-inter text-gray-600 mb-2">Nenhum livro encontrado</p>
+            <p className="font-inter text-gray-600 mb-2">
+              {booksLoading ? "Carregando catálogo..." : "Nenhum livro encontrado"}
+            </p>
             <p className="font-inter text-sm text-gray-500">Tente ajustar seus filtros ou busca</p>
             <button
               onClick={clearAllFilters}

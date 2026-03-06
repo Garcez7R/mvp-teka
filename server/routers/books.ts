@@ -2,7 +2,7 @@ import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, livreiroProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
 import { books, sebos, favorites, bookInterests } from "../_schema.ts";
-import { eq, like, and, lte, gte, inArray, sql } from "drizzle-orm";
+import { eq, like, and, lte, gte, inArray, sql, asc, desc } from "drizzle-orm";
 import { normalizeBookTitle } from "./_utils/text.js";
 
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
@@ -89,6 +89,17 @@ export const booksRouter = router({
           .enum(["Excelente", "Bom estado", "Usado", "Desgastado"])
           .optional(),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
+        sortBy: z
+          .enum([
+            "recent",
+            "most_searched",
+            "most_favorited",
+            "title_asc",
+            "author_asc",
+            "price_asc",
+            "price_desc",
+          ])
+          .default("recent"),
         includeHidden: z.boolean().optional(),
         limit: z.number().default(20),
         offset: z.number().default(0),
@@ -132,11 +143,54 @@ export const booksRouter = router({
 
       const where = filters.length > 0 ? and(...filters) : undefined;
 
-      const dataRaw = await db
+      const favoriteCounts = db
+        .select({
+          bookId: favorites.bookId,
+          count: sql<number>`count(*)`,
+        })
+        .from(favorites)
+        .groupBy(favorites.bookId)
+        .as("favorite_counts");
+
+      const listQuery = db
         .select()
         .from(books)
         .leftJoin(sebos, eq(books.seboId, sebos.id))
-        .where(where)
+        .leftJoin(favoriteCounts, eq(books.id, favoriteCounts.bookId))
+        .where(where);
+
+      let orderByClauses: any[] = [desc(books.createdAt)];
+      switch (input.sortBy) {
+        case "title_asc":
+          orderByClauses = [asc(books.title), desc(books.createdAt)];
+          break;
+        case "author_asc":
+          orderByClauses = [asc(books.author), desc(books.createdAt)];
+          break;
+        case "price_asc":
+          orderByClauses = [asc(books.price), desc(books.createdAt)];
+          break;
+        case "price_desc":
+          orderByClauses = [desc(books.price), desc(books.createdAt)];
+          break;
+        case "most_favorited":
+          orderByClauses = [
+            desc(sql`coalesce(${favoriteCounts.count}, 0)`),
+            desc(books.createdAt),
+          ];
+          break;
+        case "most_searched":
+          // TODO: swap to real metric once search analytics table is available.
+          orderByClauses = [desc(books.createdAt)];
+          break;
+        case "recent":
+        default:
+          orderByClauses = [desc(books.createdAt)];
+          break;
+      }
+
+      const dataRaw = await listQuery
+        .orderBy(...orderByClauses)
         .limit(input.limit)
         .offset(input.offset);
 
@@ -156,7 +210,10 @@ export const booksRouter = router({
           };
         })
         .filter((book: any) => {
-          const canSeeHidden = ctx.role === "admin" || ctx.role === "livreiro" || input.includeHidden === true;
+          const canSeeHidden =
+            input.includeHidden === true ||
+            (input.includeHidden !== false &&
+              (ctx.role === "admin" || ctx.role === "livreiro"));
           return canSeeHidden || book.isVisible;
         })
         .filter((book: any) =>
