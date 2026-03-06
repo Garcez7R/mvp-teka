@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type AdminTab = "users" | "sebos" | "books";
@@ -29,6 +29,24 @@ export default function Admin() {
     isAuthenticated &&
     role === "admin" &&
     (isServerAuthenticated || allowUnverifiedSession);
+
+  useEffect(() => {
+    if (loading) return;
+    if (role !== "admin") return;
+    if (!hasSessionToken) return;
+    if (isServerAuthenticated || allowUnverifiedSession) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setAllowUnverifiedSession(true);
+    }, 1800);
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    allowUnverifiedSession,
+    hasSessionToken,
+    isServerAuthenticated,
+    loading,
+    role,
+  ]);
 
   const usersQuery = trpc.users.adminList.useQuery(undefined, {
     enabled: canRunAdminQueries,
