@@ -6,89 +6,46 @@ import { trpc } from "./lib/trpc";
 import { getSessionIdToken, getSignupRole } from "./lib/session";
 import "./index.css";
 
-type BeforeInstallPromptEventLike = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-};
-
-declare global {
-  interface Window {
-    __TEKA_BEFORE_INSTALL_PROMPT__?: BeforeInstallPromptEventLike;
-  }
-}
-
-function setupPwaRuntime() {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+function disableServiceWorkerAndClearLocalCaches() {
+  if (typeof window === "undefined") {
     return;
   }
 
-  const SW_RELOAD_FLAG = "teka_sw_reloaded_once";
-  if (!navigator.serviceWorker.controller) {
-    window.sessionStorage.removeItem(SW_RELOAD_FLAG);
-  }
-
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (window.sessionStorage.getItem(SW_RELOAD_FLAG) === "1") {
-      return;
-    }
-    window.sessionStorage.setItem(SW_RELOAD_FLAG, "1");
-    window.location.reload();
-  });
-
   void (async () => {
     try {
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+
       if ("caches" in window) {
         const keys = await window.caches.keys();
         await Promise.all(keys.map((key) => window.caches.delete(key)));
       }
-
-      const registration = await navigator.serviceWorker.register("/sw.js", {
-        updateViaCache: "none",
-      });
-
-      await registration.update();
-
-      if (registration.waiting) {
-        registration.waiting.postMessage({ type: "SKIP_WAITING" });
-      }
-
-      registration.addEventListener("updatefound", () => {
-        const newWorker = registration.installing;
-        if (!newWorker) return;
-
-        newWorker.addEventListener("statechange", () => {
-          if (
-            newWorker.state === "installed" &&
-            navigator.serviceWorker.controller
-          ) {
-            newWorker.postMessage({ type: "SKIP_WAITING" });
-          }
-        });
-      });
     } catch (error) {
-      console.warn("Falha ao registrar Service Worker:", error);
+      console.warn("Falha ao limpar Service Worker/cache:", error);
     }
   })();
-
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    window.__TEKA_BEFORE_INSTALL_PROMPT__ = event as BeforeInstallPromptEventLike;
-    window.dispatchEvent(new CustomEvent("teka:pwa-install-available"));
-  });
-
-  window.addEventListener("appinstalled", () => {
-    window.__TEKA_BEFORE_INSTALL_PROMPT__ = undefined;
-    window.dispatchEvent(new CustomEvent("teka:pwa-installed"));
-  });
 }
 
-setupPwaRuntime();
+disableServiceWorkerAndClearLocalCaches();
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+      window.location.reload();
+    }
+  });
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,
+      staleTime: 0,
       gcTime: 1000 * 60 * 10,
+      refetchOnMount: "always",
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   },
 });
