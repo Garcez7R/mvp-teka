@@ -4,10 +4,9 @@ import SearchBar from "@/components/SearchBar";
 import BookCard from "@/components/BookCard";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
-import { Filter, Heart, Bell, Plus, Trash2 } from "lucide-react";
+import { Filter, Heart } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { toast } from "sonner";
 import { Link } from "wouter";
 
 type CatalogSort =
@@ -36,24 +35,9 @@ export default function Home() {
   const [page, setPage] = useState(0);
   const [loadedBooks, setLoadedBooks] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
-  const [wishlistTitle, setWishlistTitle] = useState("");
-  const [wishlistIsbn, setWishlistIsbn] = useState("");
-  const [onlyWishlistMatches, setOnlyWishlistMatches] = useState(false);
   const { getFavoriteCount, isFavorite } = useFavorites();
-  const utils = trpc.useUtils();
-  const previousMatchesCountRef = useRef(0);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const { data: wishlistItems = [] } = trpc.wishlist.list.useQuery(undefined, {
-    enabled: isAuthenticated,
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-  const { data: wishlistMatches = [] } = trpc.wishlist.matches.useQuery(undefined, {
-    enabled: isAuthenticated,
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
   const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
     enabled: isAuthenticated && (role === "livreiro" || role === "admin"),
     retry: false,
@@ -64,32 +48,6 @@ export default function Home() {
     retry: false,
     refetchOnWindowFocus: false,
   });
-  const addWishlistMutation = trpc.wishlist.add.useMutation({
-    onSuccess: async () => {
-      await Promise.all([
-        utils.wishlist.list.invalidate(),
-        utils.wishlist.matches.invalidate(),
-      ]);
-      setWishlistTitle("");
-      setWishlistIsbn("");
-      toast.success("Livro adicionado na lista de procura.");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Falha ao adicionar item na lista.");
-    },
-  });
-  const removeWishlistMutation = trpc.wishlist.remove.useMutation({
-    onSuccess: async () => {
-      await Promise.all([
-        utils.wishlist.list.invalidate(),
-        utils.wishlist.matches.invalidate(),
-      ]);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Falha ao remover item da lista.");
-    },
-  });
-
   const clearAllFilters = () => {
     setSearchQuery("");
     setSelectedCategory(null);
@@ -102,27 +60,11 @@ export default function Home() {
     setMaxPriceFilter("");
     setOnlyFavorites(false);
     setSortBy("recent");
-    setOnlyWishlistMatches(false);
     setShowFilters(false);
     setPage(0);
     setLoadedBooks([]);
     setHasMore(true);
     setSearchBarKey((prev) => prev + 1);
-  };
-
-  const handleAddWishlist = async () => {
-    if (!isAuthenticated) {
-      toast.error("Faça login para usar a lista de procura.");
-      return;
-    }
-    if (!wishlistTitle.trim() && !wishlistIsbn.trim()) {
-      toast.error("Informe um título ou ISBN.");
-      return;
-    }
-    await addWishlistMutation.mutateAsync({
-      title: wishlistTitle.trim() || undefined,
-      isbn: wishlistIsbn.trim() || undefined,
-    });
   };
 
   const booksQueryInput = {
@@ -144,6 +86,8 @@ export default function Home() {
     data: booksPage = [],
     isLoading: booksLoading,
     isFetching: booksFetching,
+    error: booksError,
+    refetch: refetchBooks,
   } = trpc.books.list.useQuery(booksQueryInput, {
     placeholderData: (prev) => prev,
     refetchOnWindowFocus: false,
@@ -212,21 +156,13 @@ export default function Home() {
 
   // Client-only filters (sebo/favoritos/lista de procura) on top of server query
   const filteredBooks = useMemo(() => {
-    const matchBookIds = new Set(
-      wishlistMatches
-        .map((match: any) => Number(match.bookId))
-        .filter((id: number) => Number.isFinite(id))
-    );
     return displayBooks.filter((book: any) => {
       const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
       const favoriteKey = String(book.id);
       const matchesFavorites = !onlyFavorites || isFavorite(favoriteKey);
-      const numericId = Number(book.id);
-      const matchesWishlist = !onlyWishlistMatches || matchBookIds.has(numericId);
       return (
         matchesSebo &&
-        matchesFavorites &&
-        matchesWishlist
+        matchesFavorites
       );
     });
   }, [
@@ -234,8 +170,6 @@ export default function Home() {
     selectedSebo,
     isFavorite,
     onlyFavorites,
-    onlyWishlistMatches,
-    wishlistMatches,
   ]);
 
   const groupedBooks = filteredBooks;
@@ -257,20 +191,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    const previous = previousMatchesCountRef.current;
-    const current = wishlistMatches.length;
-    if (current > previous && previous > 0) {
-      toast.success(`Boa notícia: ${current - previous} novo(s) livro(s) da sua lista de procura apareceu(ram).`);
-    }
-    previousMatchesCountRef.current = current;
-  }, [isAuthenticated, wishlistMatches.length]);
-
-  useEffect(() => {
     const handler = () => clearAllFilters();
     window.addEventListener("teka:reset-catalog", handler);
     return () => window.removeEventListener("teka:reset-catalog", handler);
   }, []);
+
+  const hasBooksQueryError = Boolean(booksError);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -340,22 +266,6 @@ export default function Home() {
               Recentes
             </button>
             <button
-              onClick={() => setSortBy("most_favorited")}
-              className={`px-3 py-2 rounded-full border text-sm ${
-                sortBy === "most_favorited" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
-              }`}
-            >
-              Top favoritados
-            </button>
-            <button
-              onClick={() => setSortBy("title_asc")}
-              className={`px-3 py-2 rounded-full border text-sm ${
-                sortBy === "title_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
-              }`}
-            >
-              A-Z Título
-            </button>
-            <button
               onClick={() => setSortBy("price_asc")}
               className={`px-3 py-2 rounded-full border text-sm ${
                 sortBy === "price_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
@@ -383,84 +293,32 @@ export default function Home() {
             <Filter className="w-4 h-4" />
             Filtros
           </button>
-          <button
-            onClick={() => setOnlyFavorites((prev) => !prev)}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-[#262969] rounded-full hover:bg-[#262969] hover:text-white transition-colors font-inter text-sm font-medium text-[#262969]"
-            title="Ver livros favoritos"
-          >
-            <Heart className="w-4 h-4" />
-            {onlyFavorites ? "Favoritos: ON" : "Favoritos"} ({getFavoriteCount()})
-          </button>
-          {isAuthenticated && (
+          {isAuthenticated && role !== "livreiro" && (
             <button
-              onClick={() => setOnlyWishlistMatches((prev) => !prev)}
-              className="flex items-center gap-2 px-4 py-2 border-2 border-[#1f7a8c] rounded-full hover:bg-[#1f7a8c] hover:text-white transition-colors font-inter text-sm font-medium text-[#1f7a8c]"
-              title="Ver livros da sua lista de procura"
+              onClick={() => setOnlyFavorites((prev) => !prev)}
+              className="flex items-center gap-2 px-4 py-2 border-2 border-[#262969] rounded-full hover:bg-[#262969] hover:text-white transition-colors font-inter text-sm font-medium text-[#262969]"
+              title="Ver livros favoritos"
             >
-              <Bell className="w-4 h-4" />
-              {onlyWishlistMatches ? "Lista de Procura: ON" : "Lista de Procura"} ({wishlistMatches.length})
+              <Heart className="w-4 h-4" />
+              {onlyFavorites ? "Favoritos: ON" : "Favoritos"} ({getFavoriteCount()})
             </button>
           )}
         </div>
 
-        {isAuthenticated && (
-          <div className="mb-8 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <h3 className="font-outfit font-semibold text-[#262969]">Lista de Procura</h3>
-              <span className="text-xs text-gray-600">
-                {wishlistMatches.length} match(es) ativo(s)
-              </span>
-            </div>
-            {wishlistMatches.length > 0 && (
-              <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
-                Encontramos {wishlistMatches.length} livro(s) da sua lista disponíveis no catálogo.
-              </div>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-              <input
-                value={wishlistTitle}
-                onChange={(e) => setWishlistTitle(e.target.value)}
-                placeholder="Título (ex: Duna)"
-                className="px-3 py-2 border border-gray-300 rounded bg-white"
-              />
-              <input
-                value={wishlistIsbn}
-                onChange={(e) => setWishlistIsbn(e.target.value)}
-                placeholder="ISBN (opcional)"
-                className="px-3 py-2 border border-gray-300 rounded bg-white"
-              />
-              <button
-                type="button"
-                onClick={() => void handleAddWishlist()}
-                disabled={addWishlistMutation.isPending}
-                className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded bg-[#262969] text-white hover:bg-[#1a1a4d] disabled:opacity-60"
-              >
-                <Plus className="w-4 h-4" />
-                Adicionar à procura
-              </button>
-            </div>
-            {wishlistItems.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {wishlistItems.map((item: any) => (
-                  <span
-                    key={item.id}
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-gray-300 text-sm text-gray-700"
-                  >
-                    {item.title || item.isbn}
-                    <button
-                      type="button"
-                      onClick={() => void removeWishlistMutation.mutateAsync({ id: item.id })}
-                      className="text-red-600 hover:text-red-800"
-                      aria-label="Remover da lista de procura"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-600">Nenhum item na sua lista de procura ainda.</p>
-            )}
+        {hasBooksQueryError && (
+          <div className="mb-8 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+            <p className="font-semibold">Falha ao carregar o catálogo.</p>
+            <p className="mt-1">{booksError?.message || "Erro de rede ou de banco."}</p>
+            <p className="mt-1">
+              Se persistir no deploy, revise migrações do D1 (ex.: coluna <code>quantity</code> em <code>books</code>).
+            </p>
+            <button
+              type="button"
+              onClick={() => void refetchBooks()}
+              className="mt-3 px-3 py-2 rounded bg-[#262969] text-white"
+            >
+              Tentar novamente
+            </button>
           </div>
         )}
 
@@ -527,7 +385,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-outfit font-semibold text-[#262969] mb-3">Condição e Status</h3>
+                  <h3 className="font-outfit font-semibold text-[#262969] mb-3">Condição, Status e Ordenação</h3>
                   <select
                     value={selectedCondition || ""}
                     onChange={(e) => setSelectedCondition(e.target.value || null)}
@@ -546,12 +404,23 @@ export default function Home() {
                         (e.target.value || null) as "ativo" | "reservado" | "vendido" | null
                       )
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
+                    className="w-full mb-2 px-3 py-2 border border-gray-300 rounded bg-white"
                   >
                     <option value="">Todos os status</option>
                     <option value="ativo">Disponiveis</option>
                     <option value="reservado">Reservados</option>
                     <option value="vendido">Vendidos</option>
+                  </select>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as CatalogSort)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
+                  >
+                    <option value="recent">Recentes</option>
+                    <option value="most_favorited">Top favoritados</option>
+                    <option value="title_asc">A-Z Título</option>
+                    <option value="price_asc">Menor preço</option>
+                    <option value="price_desc">Maior preço</option>
                   </select>
                 </div>
               </div>
