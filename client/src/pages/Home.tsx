@@ -12,10 +12,8 @@ import { Link } from "wouter";
 
 type CatalogSort =
   | "recent"
-  | "most_searched"
   | "most_favorited"
   | "title_asc"
-  | "author_asc"
   | "price_asc"
   | "price_desc";
 
@@ -33,7 +31,6 @@ export default function Home() {
   const [minPriceFilter, setMinPriceFilter] = useState("");
   const [maxPriceFilter, setMaxPriceFilter] = useState("");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
-  const [groupOffers, setGroupOffers] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchBarKey, setSearchBarKey] = useState(0);
   const [page, setPage] = useState(0);
@@ -46,13 +43,6 @@ export default function Home() {
   const utils = trpc.useUtils();
   const previousMatchesCountRef = useRef(0);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-
-  const normalizeText = (value: string) =>
-    value
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim();
 
   const { data: wishlistItems = [] } = trpc.wishlist.list.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -111,7 +101,6 @@ export default function Home() {
     setMinPriceFilter("");
     setMaxPriceFilter("");
     setOnlyFavorites(false);
-    setGroupOffers(false);
     setSortBy("recent");
     setOnlyWishlistMatches(false);
     setShowFilters(false);
@@ -249,53 +238,7 @@ export default function Home() {
     wishlistMatches,
   ]);
 
-  const groupedBooks = useMemo(() => {
-    if (!groupOffers) return filteredBooks;
-
-    const grouped = new Map<string, any[]>();
-    for (const book of filteredBooks) {
-      const isbnKey = String(book.isbn || "").trim();
-      const titleKey = normalizeText(String(book.title || ""));
-      const authorKey = normalizeText(String(book.author || ""));
-      const groupKey = isbnKey
-        ? `isbn:${isbnKey}`
-        : `title:${titleKey}|author:${authorKey}`;
-      const current = grouped.get(groupKey) ?? [];
-      current.push(book);
-      grouped.set(groupKey, current);
-    }
-
-    return Array.from(grouped.values()).map((items) => {
-      const sortedByPrice = [...items].sort((a, b) => Number(a.price) - Number(b.price));
-      const cheapest = sortedByPrice[0];
-      const minPrice = Number(sortedByPrice[0].price);
-      const maxPrice = Number(sortedByPrice[sortedByPrice.length - 1].price);
-      const distinctSebos = new Set(
-        items.map((book) => String(book?.sebo?.name || "").trim()).filter(Boolean)
-      ).size;
-      const distinctStates = new Set(
-        items
-          .map((book) => String(book?.sebo?.state || "").trim().toUpperCase())
-          .filter(Boolean)
-      ).size;
-
-      return {
-        ...cheapest,
-        offerCount: items.length,
-        quantity: items.reduce((sum, item) => sum + Number(item.quantity ?? 1), 0),
-        locationSummary:
-          items.length > 1
-            ? `${distinctSebos} sebo(s) • ${distinctStates || 1} estado(s)`
-            : cheapest?.sebo?.name || "Sebo",
-        priceLabel:
-          items.length > 1
-            ? minPrice === maxPrice
-              ? `A partir de R$ ${minPrice.toFixed(2)}`
-              : `R$ ${minPrice.toFixed(2)} - R$ ${maxPrice.toFixed(2)}`
-            : `R$ ${Number(cheapest.price).toFixed(2)}`,
-      };
-    });
-  }, [filteredBooks, groupOffers]);
+  const groupedBooks = filteredBooks;
 
   useEffect(() => {
     document.title = "TEKA - Catálogo de Livros Usados";
@@ -390,23 +333,15 @@ export default function Home() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setSortBy("recent")}
-              className={`px-3 py-2 rounded border text-sm ${
+              className={`px-3 py-2 rounded-full border text-sm ${
                 sortBy === "recent" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
               }`}
             >
               Recentes
             </button>
             <button
-              onClick={() => setSortBy("most_searched")}
-              className={`px-3 py-2 rounded border text-sm ${
-                sortBy === "most_searched" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
-              }`}
-            >
-              Mais buscados
-            </button>
-            <button
               onClick={() => setSortBy("most_favorited")}
-              className={`px-3 py-2 rounded border text-sm ${
+              className={`px-3 py-2 rounded-full border text-sm ${
                 sortBy === "most_favorited" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
               }`}
             >
@@ -414,23 +349,15 @@ export default function Home() {
             </button>
             <button
               onClick={() => setSortBy("title_asc")}
-              className={`px-3 py-2 rounded border text-sm ${
+              className={`px-3 py-2 rounded-full border text-sm ${
                 sortBy === "title_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
               }`}
             >
               A-Z Título
             </button>
             <button
-              onClick={() => setSortBy("author_asc")}
-              className={`px-3 py-2 rounded border text-sm ${
-                sortBy === "author_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
-              }`}
-            >
-              A-Z Autor
-            </button>
-            <button
               onClick={() => setSortBy("price_asc")}
-              className={`px-3 py-2 rounded border text-sm ${
+              className={`px-3 py-2 rounded-full border text-sm ${
                 sortBy === "price_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
               }`}
             >
@@ -438,32 +365,27 @@ export default function Home() {
             </button>
             <button
               onClick={() => setSortBy("price_desc")}
-              className={`px-3 py-2 rounded border text-sm ${
+              className={`px-3 py-2 rounded-full border text-sm ${
                 sortBy === "price_desc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
               }`}
             >
               Maior preço
             </button>
           </div>
-          {sortBy === "most_searched" && (
-            <p className="mt-2 text-xs text-gray-500">
-              Ranking de busca em implantação: por enquanto esta aba usa a ordem de recentes.
-            </p>
-          )}
         </div>
 
         {/* Filters Section */}
         <div className="mb-8 flex gap-3 flex-wrap">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-[#da4653] rounded-lg hover:bg-[#da4653] hover:text-white transition-colors font-inter text-sm font-medium text-[#da4653]"
+            className="flex items-center gap-2 px-4 py-2 border-2 border-[#da4653] rounded-full hover:bg-[#da4653] hover:text-white transition-colors font-inter text-sm font-medium text-[#da4653]"
           >
             <Filter className="w-4 h-4" />
             Filtros
           </button>
           <button
             onClick={() => setOnlyFavorites((prev) => !prev)}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-[#262969] rounded-lg hover:bg-[#262969] hover:text-white transition-colors font-inter text-sm font-medium text-[#262969]"
+            className="flex items-center gap-2 px-4 py-2 border-2 border-[#262969] rounded-full hover:bg-[#262969] hover:text-white transition-colors font-inter text-sm font-medium text-[#262969]"
             title="Ver livros favoritos"
           >
             <Heart className="w-4 h-4" />
@@ -472,20 +394,13 @@ export default function Home() {
           {isAuthenticated && (
             <button
               onClick={() => setOnlyWishlistMatches((prev) => !prev)}
-              className="flex items-center gap-2 px-4 py-2 border-2 border-[#1f7a8c] rounded-lg hover:bg-[#1f7a8c] hover:text-white transition-colors font-inter text-sm font-medium text-[#1f7a8c]"
+              className="flex items-center gap-2 px-4 py-2 border-2 border-[#1f7a8c] rounded-full hover:bg-[#1f7a8c] hover:text-white transition-colors font-inter text-sm font-medium text-[#1f7a8c]"
               title="Ver livros da sua lista de procura"
             >
               <Bell className="w-4 h-4" />
               {onlyWishlistMatches ? "Lista de Procura: ON" : "Lista de Procura"} ({wishlistMatches.length})
             </button>
           )}
-          <button
-            onClick={() => setGroupOffers((prev) => !prev)}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-[#4b5563] rounded-lg hover:bg-[#4b5563] hover:text-white transition-colors font-inter text-sm font-medium text-[#4b5563]"
-            title="Agrupar ofertas iguais por ISBN/título"
-          >
-            {groupOffers ? "Agrupado: ON" : "Agrupado: OFF"}
-          </button>
         </div>
 
         {isAuthenticated && (
@@ -680,11 +595,6 @@ export default function Home() {
             <span className="font-semibold text-[#262969]">{groupedBooks.length}</span>{" "}
             resultado(s) carregado(s)
           </p>
-          {groupOffers && (
-            <p className="font-inter text-xs text-gray-500 mt-1">
-              Ofertas iguais estão agrupadas por ISBN/título para facilitar comparação.
-            </p>
-          )}
           {hasMore && (
             <p className="font-inter text-xs text-gray-500 mt-1">
               Role para carregar mais livros.
