@@ -10,7 +10,7 @@ interface BookCardProps {
   category: string;
   price: string | number;
   priceLabel?: string;
-  sebo?: { name: string };
+  sebo?: { name: string; verified?: boolean };
   condition: string;
   isbn?: string;
   coverUrl?: string;
@@ -18,6 +18,7 @@ interface BookCardProps {
   offerCount?: number;
   locationSummary?: string;
   availabilityStatus?: "ativo" | "reservado" | "vendido";
+  matchReason?: "titulo" | "autor" | "isbn" | "titulo_aprox";
 }
 
 export default function BookCard({
@@ -35,6 +36,7 @@ export default function BookCard({
   offerCount,
   locationSummary,
   availabilityStatus = "ativo",
+  matchReason,
 }: BookCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = isFavorite(id);
@@ -108,7 +110,26 @@ export default function BookCard({
           <div className="flex items-center gap-1 text-gray-700 text-sm font-inter">
             <MapPin className="w-4 h-4 text-gray-400" />
             <span className="truncate">{locationSummary || seboName}</span>
+            {sebo?.verified && (
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">
+                Verificado
+              </span>
+            )}
           </div>
+          {matchReason && (
+            <p className="text-[11px] text-[#262969]">
+              Match por{" "}
+              <span className="font-semibold">
+                {matchReason === "isbn"
+                  ? "ISBN"
+                  : matchReason === "autor"
+                  ? "autor"
+                  : matchReason === "titulo_aprox"
+                  ? "título aproximado"
+                  : "título"}
+              </span>
+            </p>
+          )}
           {typeof quantity === "number" && (
             <p className="text-xs text-gray-600">Unidades: {quantity}</p>
           )}

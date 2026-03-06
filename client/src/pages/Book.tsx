@@ -22,6 +22,19 @@ export default function Book() {
   const { data: book, isLoading, error } = trpc.books.getById.useQuery(parsedBookId, {
     enabled: Number.isFinite(parsedBookId) && parsedBookId > 0,
   });
+  const { data: similarBooks = [] } = trpc.books.list.useQuery(
+    {
+      category: book?.category || undefined,
+      limit: 12,
+      offset: 0,
+      includeHidden: false,
+      sortBy: "recent",
+    },
+    {
+      enabled: Boolean(book?.id),
+      refetchOnWindowFocus: false,
+    }
+  );
   const registerInterestMutation = trpc.books.registerInterest.useMutation();
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = favoriteId ? isFavorite(favoriteId) : false;
@@ -320,6 +333,17 @@ export default function Book() {
             {book.sebo && (
               <div className="bg-gradient-to-br from-[#da4653] to-[#c23a45] rounded-lg p-6 mb-8 border border-[#da4653] text-white">
                 <h3 className="font-outfit font-semibold text-lg mb-4">Informações do Sebo</h3>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <span className="text-xs bg-white/20 px-2 py-1 rounded">Sebo: {book.sebo.name}</span>
+                  {book.sebo.verified && (
+                    <span className="text-xs bg-emerald-600 px-2 py-1 rounded font-semibold">Verificado</span>
+                  )}
+                  {(book.sebo.city || book.sebo.state) && (
+                    <span className="text-xs bg-white/20 px-2 py-1 rounded">
+                      {book.sebo.city || "-"} / {book.sebo.state || "-"}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-3 mb-6">
                   <MapPin className="w-5 h-5" />
                   <div>
@@ -348,13 +372,7 @@ export default function Book() {
             )}
 
             {/* CTA Buttons */}
-              <div className="flex flex-col gap-3 mb-8">
-              <button
-                onClick={() => void handleInterest(book.id, book.title)}
-                className="flex items-center justify-center gap-2 w-full bg-[#262969] hover:bg-[#1e2157] text-white font-outfit font-bold py-3 px-6 rounded-lg transition-colors"
-              >
-                Tenho Interesse
-              </button>
+            <div className="flex flex-col gap-3 mb-8">
               <a
                 href={whatsappUrl}
                 target="_blank"
@@ -368,27 +386,61 @@ export default function Book() {
                 <MessageCircle className="w-5 h-5" />
                 {book.availabilityStatus === "vendido"
                   ? "Livro Vendido"
-                  : "Contato via WhatsApp"}
+                  : "Contatar Sebo"}
               </a>
               <button
-                onClick={() => toggleFavorite(book.id)}
-                className={`flex items-center justify-center gap-2 w-full font-outfit font-bold py-3 px-6 rounded-lg transition-all border-2 ${
-                  favorited
-                    ? "bg-[#da4653] border-[#da4653] text-white"
-                    : "bg-white border-[#da4653] text-[#da4653] hover:bg-[#da4653] hover:text-white"
-                }`}
+                onClick={() => void handleInterest(book.id, book.title)}
+                className="text-sm text-[#262969] hover:underline text-left"
               >
-                <Heart className={`w-5 h-5 ${favorited ? "fill-current" : ""}`} />
-                {favorited ? "Remover dos Favoritos" : "Adicionar aos Favoritos"}
+                Registrar interesse neste livro
               </button>
             </div>
 
             {/* Additional Info */}
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
               <p className="font-inter text-sm text-blue-900">
                 <span className="font-semibold">💡 Dica:</span> Confirme a disponibilidade antes de se deslocar até o sebo. Muitos livros são vendidos rapidamente!
               </p>
             </div>
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 mb-8">
+              <p className="font-inter text-sm text-amber-900">
+                A TEKA conecta leitores e sebos. Pagamento, entrega e condições finais são tratados diretamente com o sebo.
+              </p>
+            </div>
+
+            {similarBooks.length > 0 && (
+              <div>
+                <h3 className="font-outfit font-semibold text-lg text-[#262969] mb-3">
+                  Alternativas Semelhantes
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {similarBooks
+                    .filter((candidate: any) => Number(candidate.id) !== Number(book.id))
+                    .filter(
+                      (candidate: any) =>
+                        (book.author &&
+                          candidate.author &&
+                          String(candidate.author).toLowerCase() ===
+                            String(book.author).toLowerCase()) ||
+                        candidate.category === book.category
+                    )
+                    .slice(0, 4)
+                    .map((candidate: any) => (
+                      <Link
+                        key={candidate.id}
+                        href={`/book/${candidate.id}`}
+                        className="border border-gray-200 rounded-lg p-3 hover:border-[#da4653] transition-colors"
+                      >
+                        <p className="font-semibold text-[#262969] line-clamp-1">{candidate.title}</p>
+                        <p className="text-sm text-gray-600 line-clamp-1">{candidate.author || "Autor desconhecido"}</p>
+                        <p className="text-sm text-[#da4653] font-semibold mt-1">
+                          R$ {Number(candidate.price).toFixed(2)}
+                        </p>
+                      </Link>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>

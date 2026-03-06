@@ -231,6 +231,23 @@ export default function MyInterests() {
                         {book.author ? (
                           <p className="text-sm text-gray-600 truncate">{book.author}</p>
                         ) : null}
+                        <div className="mt-1">
+                          <span
+                            className={`text-[11px] px-2 py-1 rounded font-semibold ${
+                              book.availabilityStatus === "vendido"
+                                ? "bg-gray-200 text-gray-700"
+                                : book.availabilityStatus === "reservado"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-emerald-100 text-emerald-700"
+                            }`}
+                          >
+                            {book.availabilityStatus === "vendido"
+                              ? "Vendido"
+                              : book.availabilityStatus === "reservado"
+                              ? "Reservado"
+                              : "Disponível"}
+                          </span>
+                        </div>
                         <p className="text-sm font-semibold text-[#da4653] mt-1">
                           R$ {Number(book.price).toFixed(2)}
                         </p>
@@ -242,6 +259,12 @@ export default function MyInterests() {
                           Interesse em{" "}
                           {new Date(Number(item.interestedAt)).toLocaleDateString("pt-BR")}
                         </p>
+                        {(book.availabilityStatus === "reservado" ||
+                          book.availabilityStatus === "vendido") && (
+                          <p className="text-xs mt-1 text-amber-700">
+                            Atualização: este livro mudou de status. Veja alternativas semelhantes.
+                          </p>
+                        )}
                       </div>
                     </div>
                 </Link>

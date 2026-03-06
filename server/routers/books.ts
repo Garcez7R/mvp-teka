@@ -220,7 +220,13 @@ export const booksRouter = router({
             availabilityStatus: normalized.availabilityStatus,
             isVisible: normalized.isVisible,
             sebo: row.sebo
-              ? { id: row.sebo.id, name: row.sebo.name, city: row.sebo.city, state: row.sebo.state }
+              ? {
+                  id: row.sebo.id,
+                  name: row.sebo.name,
+                  city: row.sebo.city,
+                  state: row.sebo.state,
+                  verified: Boolean(row.sebo.verified),
+                }
               : null,
           };
         })

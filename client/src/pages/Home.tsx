@@ -16,6 +16,46 @@ type CatalogSort =
   | "price_asc"
   | "price_desc";
 
+function normalizeSearchValue(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const matrix = Array.from({ length: a.length + 1 }, () =>
+    Array.from({ length: b.length + 1 }, () => 0)
+  );
+  for (let i = 0; i <= a.length; i += 1) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j += 1) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i += 1) {
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[a.length][b.length];
+}
+
+function titleMatchesWithTolerance(title: string, query: string): boolean {
+  const normalizedTitle = normalizeSearchValue(title);
+  const normalizedQuery = normalizeSearchValue(query);
+  if (!normalizedTitle || !normalizedQuery) return false;
+  if (normalizedTitle.includes(normalizedQuery)) return true;
+  if (normalizedQuery.length < 4) return false;
+  const words = normalizedTitle.split(/\s+/).filter(Boolean);
+  return words.some((word) => Math.abs(word.length - normalizedQuery.length) <= 1 && levenshteinDistance(word, normalizedQuery) <= 1);
+}
+
 export default function Home() {
   const { isAuthenticated, role } = useAuth();
   const PAGE_SIZE = 24;
@@ -92,6 +132,20 @@ export default function Home() {
     placeholderData: (prev) => prev,
     refetchOnWindowFocus: false,
   });
+  const normalizedSearchQuery = normalizeSearchValue(searchQuery);
+  const { data: fuzzyFallbackBooks = [] } = trpc.books.list.useQuery(
+    {
+      limit: 240,
+      offset: 0,
+      includeHidden: false,
+      sortBy: "recent",
+    },
+    {
+      enabled: normalizedSearchQuery.length >= 4,
+      refetchOnWindowFocus: false,
+      retry: false,
+    }
+  );
 
   useEffect(() => {
     setPage(0);
@@ -156,13 +210,34 @@ export default function Home() {
 
   // Client-only filters (sebo/favoritos/lista de procura) on top of server query
   const filteredBooks = useMemo(() => {
-    return displayBooks.filter((book: any) => {
+    const withReason = displayBooks.map((book: any) => {
+      const normalizedTitle = normalizeSearchValue(String(book.title ?? ""));
+      const normalizedAuthor = normalizeSearchValue(String(book.author ?? ""));
+      const normalizedIsbn = normalizeSearchValue(String(book.isbn ?? ""));
+      let matchReason: "titulo" | "autor" | "isbn" | "titulo_aprox" | undefined;
+      if (!normalizedSearchQuery) {
+        matchReason = undefined;
+      } else if (normalizedIsbn.includes(normalizedSearchQuery)) {
+        matchReason = "isbn";
+      } else if (normalizedAuthor.includes(normalizedSearchQuery)) {
+        matchReason = "autor";
+      } else if (normalizedTitle.includes(normalizedSearchQuery)) {
+        matchReason = "titulo";
+      } else if (titleMatchesWithTolerance(String(book.title ?? ""), normalizedSearchQuery)) {
+        matchReason = "titulo_aprox";
+      }
+      return { ...book, matchReason };
+    });
+
+    return withReason.filter((book: any) => {
       const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
       const favoriteKey = String(book.id);
       const matchesFavorites = !onlyFavorites || isFavorite(favoriteKey);
+      const matchesSearch = !normalizedSearchQuery || Boolean(book.matchReason);
       return (
         matchesSebo &&
-        matchesFavorites
+        matchesFavorites &&
+        matchesSearch
       );
     });
   }, [
@@ -170,9 +245,28 @@ export default function Home() {
     selectedSebo,
     isFavorite,
     onlyFavorites,
+    normalizedSearchQuery,
   ]);
+  const fallbackBooks = useMemo(() => {
+    if (filteredBooks.length > 0 || normalizedSearchQuery.length < 4) return [];
+    return fuzzyFallbackBooks
+      .map((book: any) => {
+        const normalizedTitle = normalizeSearchValue(String(book.title ?? ""));
+        const normalizedAuthor = normalizeSearchValue(String(book.author ?? ""));
+        const normalizedIsbn = normalizeSearchValue(String(book.isbn ?? ""));
+        if (normalizedIsbn.includes(normalizedSearchQuery)) return { ...book, matchReason: "isbn" as const };
+        if (normalizedAuthor.includes(normalizedSearchQuery)) return { ...book, matchReason: "autor" as const };
+        if (normalizedTitle.includes(normalizedSearchQuery)) return { ...book, matchReason: "titulo" as const };
+        if (titleMatchesWithTolerance(String(book.title ?? ""), normalizedSearchQuery)) {
+          return { ...book, matchReason: "titulo_aprox" as const };
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .slice(0, PAGE_SIZE);
+  }, [filteredBooks.length, fuzzyFallbackBooks, normalizedSearchQuery, PAGE_SIZE]);
 
-  const groupedBooks = filteredBooks;
+  const groupedBooks = filteredBooks.length > 0 ? filteredBooks : fallbackBooks;
 
   useEffect(() => {
     document.title = "TEKA - Catálogo de Livros Usados";
@@ -436,6 +530,11 @@ export default function Home() {
             <span className="font-semibold text-[#262969]">{groupedBooks.length}</span>{" "}
             resultado(s) carregado(s)
           </p>
+          {filteredBooks.length === 0 && fallbackBooks.length > 0 && (
+            <p className="font-inter text-xs text-[#262969] mt-1">
+              Mostrando aproximações de busca para ajudar com possíveis erros de digitação.
+            </p>
+          )}
           {hasMore && (
             <p className="font-inter text-xs text-gray-500 mt-1">
               Role para carregar mais livros.
@@ -464,6 +563,7 @@ export default function Home() {
                   locationSummary={book.locationSummary}
                   priceLabel={book.priceLabel}
                   availabilityStatus={book.availabilityStatus ?? "ativo"}
+                  matchReason={book.matchReason}
                 />
               ))}
             </div>
