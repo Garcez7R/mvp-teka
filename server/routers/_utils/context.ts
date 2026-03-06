@@ -25,7 +25,6 @@ const googleJwks = createRemoteJWKSet(
 const BUILTIN_ADMIN_EMAILS = new Set([
   "rgs.dba7@gmail.com",
   "claudiasobralm@gmail.com",
-  "janainazanusso@gmail.com",
   "carlosdanielbp101@gmail.com",
   "dianadasilv4ds@gmail.com",
 ]);
