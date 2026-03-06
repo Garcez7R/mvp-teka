@@ -95,13 +95,6 @@ export default function Admin() {
     onError: (error) => toast.error(error.message || "Erro ao remover sebo."),
   });
 
-  const adminCreateBookMutation = trpc.books.create.useMutation({
-    onSuccess: async () => {
-      await utils.books.list.invalidate();
-      toast.success("Livro criado.");
-    },
-    onError: (error) => toast.error(error.message || "Erro ao criar livro."),
-  });
   const adminUpdateBookMutation = trpc.books.update.useMutation({
     onSuccess: async () => {
       await utils.books.list.invalidate();
@@ -128,16 +121,6 @@ export default function Admin() {
     whatsapp: "",
     city: "",
     state: "",
-  });
-  const [newBook, setNewBook] = useState({
-    seboId: "",
-    title: "",
-    author: "",
-    category: "",
-    price: "",
-    condition: "Bom estado" as "Excelente" | "Bom estado" | "Usado" | "Desgastado",
-    availabilityStatus: "ativo" as "ativo" | "reservado" | "vendido",
-    quantity: "1",
   });
 
   const usersById = useMemo(
@@ -461,52 +444,6 @@ export default function Admin() {
                 Carregando livros...
               </div>
             )}
-            <div className="p-4 border rounded-lg bg-gray-50">
-              <h2 className="font-semibold text-[#262969] mb-3">Criar Livro</h2>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-                <input value={newBook.seboId} onChange={(e) => setNewBook((p) => ({ ...p, seboId: e.target.value }))} placeholder="Sebo ID" className="px-3 py-2 border rounded" />
-                <input value={newBook.title} onChange={(e) => setNewBook((p) => ({ ...p, title: e.target.value }))} placeholder="Título" className="px-3 py-2 border rounded" />
-                <input value={newBook.author} onChange={(e) => setNewBook((p) => ({ ...p, author: e.target.value }))} placeholder="Autor" className="px-3 py-2 border rounded" />
-                <input value={newBook.category} onChange={(e) => setNewBook((p) => ({ ...p, category: e.target.value }))} placeholder="Categoria" className="px-3 py-2 border rounded" />
-                <input value={newBook.price} onChange={(e) => setNewBook((p) => ({ ...p, price: e.target.value }))} placeholder="Preço" type="number" min="0" step="0.01" className="px-3 py-2 border rounded" />
-                <select value={newBook.condition} onChange={(e) => setNewBook((p) => ({ ...p, condition: e.target.value as any }))} className="px-3 py-2 border rounded">
-                  <option value="Excelente">Excelente</option>
-                  <option value="Bom estado">Bom estado</option>
-                  <option value="Usado">Usado</option>
-                  <option value="Desgastado">Desgastado</option>
-                </select>
-                <select value={newBook.availabilityStatus} onChange={(e) => setNewBook((p) => ({ ...p, availabilityStatus: e.target.value as any }))} className="px-3 py-2 border rounded">
-                  <option value="ativo">Disponível</option>
-                  <option value="reservado">Reservado</option>
-                  <option value="vendido">Vendido</option>
-                </select>
-                <input value={newBook.quantity} onChange={(e) => setNewBook((p) => ({ ...p, quantity: e.target.value }))} placeholder="Quantidade" type="number" min="0" className="px-3 py-2 border rounded" />
-                <button
-                  onClick={() => {
-                    const seboId = Number.parseInt(newBook.seboId, 10);
-                    const price = Number(newBook.price);
-                    const quantity = Number.parseInt(newBook.quantity, 10);
-                    if (!Number.isFinite(seboId) || !newBook.title || !Number.isFinite(price) || price <= 0 || !Number.isFinite(quantity) || quantity < 0) {
-                      return toast.error("Preencha sebo, título, preço e quantidade válidos.");
-                    }
-                    void adminCreateBookMutation.mutateAsync({
-                      seboId,
-                      title: newBook.title,
-                      author: newBook.author || "Desconhecido",
-                      category: newBook.category || "Outros",
-                      price,
-                      quantity,
-                      condition: newBook.condition,
-                      availabilityStatus: newBook.availabilityStatus,
-                    });
-                  }}
-                  className="px-3 py-2 rounded bg-[#262969] text-white"
-                >
-                  Criar
-                </button>
-              </div>
-            </div>
-
             <div className="p-4 border rounded-lg bg-gray-50">
               <label className="text-sm text-gray-700 mr-2">Filtrar por Sebo:</label>
               <select
