@@ -37,6 +37,11 @@ function setupPwaRuntime() {
 
   void (async () => {
     try {
+      if ("caches" in window) {
+        const keys = await window.caches.keys();
+        await Promise.all(keys.map((key) => window.caches.delete(key)));
+      }
+
       const registration = await navigator.serviceWorker.register("/sw.js", {
         updateViaCache: "none",
       });
