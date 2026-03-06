@@ -14,6 +14,7 @@ export default function Admin() {
   const utils = trpc.useUtils();
   const [tab, setTab] = useState<AdminTab>("users");
   const [selectedSeboId, setSelectedSeboId] = useState<number | null>(null);
+  const [userFilter, setUserFilter] = useState("");
 
   const usersQuery = trpc.users.adminList.useQuery(undefined, {
     enabled: isAuthenticated && role === "admin",
@@ -27,7 +28,7 @@ export default function Admin() {
       offset: 0,
       seboId: selectedSeboId ?? undefined,
     },
-    { enabled: isAuthenticated && role === "admin" }
+    { enabled: isAuthenticated && role === "admin" && tab === "books" }
   );
   const users = usersQuery.data ?? [];
   const sebos = sebosQuery.data ?? [];
@@ -126,6 +127,25 @@ export default function Admin() {
     () => new Map(users.map((user: any) => [Number(user.id), user])),
     [users]
   );
+  const normalizedUserFilter = userFilter.trim().toLowerCase();
+  const filteredUsers = useMemo(() => {
+    if (!normalizedUserFilter) return users;
+    return users.filter((user: any) => {
+      const name = String(user.name ?? "").toLowerCase();
+      const email = String(user.email ?? "").toLowerCase();
+      return (
+        name.includes(normalizedUserFilter) ||
+        email.includes(normalizedUserFilter) ||
+        String(user.id).includes(normalizedUserFilter)
+      );
+    });
+  }, [normalizedUserFilter, users]);
+  const activeError =
+    tab === "users"
+      ? usersQuery.error
+      : tab === "sebos"
+      ? sebosQuery.error
+      : booksQuery.error;
 
   if (loading && role !== "admin") {
     return (
@@ -154,22 +174,29 @@ export default function Admin() {
       <Header />
       <main className="container flex-1 py-12">
         <h1 className="font-outfit text-3xl font-bold text-[#262969] mb-6">Painel Admin</h1>
-        {(usersQuery.error || sebosQuery.error || booksQuery.error) && (
+        {activeError && (
           <div className="mb-6 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
-            <p className="font-semibold">Falha ao carregar dados de admin.</p>
+            <p className="font-semibold">Falha ao carregar dados desta aba.</p>
             <p className="mt-1">
-              {usersQuery.error?.message ||
-                sebosQuery.error?.message ||
-                booksQuery.error?.message ||
-                "Tente novamente em instantes."}
+              {activeError.message || "Tente novamente em instantes."}
             </p>
+            {tab === "books" && (
+              <p className="mt-1">
+                Se o erro persistir no deploy, revise as migrações do banco D1 para a tabela
+                <code> books </code> (especialmente coluna <code>quantity</code>).
+              </p>
+            )}
             <button
               onClick={() => {
-                void Promise.all([
-                  usersQuery.refetch(),
-                  sebosQuery.refetch(),
-                  booksQuery.refetch(),
-                ]);
+                if (tab === "users") {
+                  void usersQuery.refetch();
+                  return;
+                }
+                if (tab === "sebos") {
+                  void sebosQuery.refetch();
+                  return;
+                }
+                void booksQuery.refetch();
               }}
               className="mt-3 px-3 py-2 rounded bg-[#262969] text-white"
             >
@@ -212,6 +239,15 @@ export default function Admin() {
                 </button>
               </div>
             </div>
+            <div className="p-4 border rounded-lg bg-gray-50">
+              <h2 className="font-semibold text-[#262969] mb-3">Buscar Usuário</h2>
+              <input
+                value={userFilter}
+                onChange={(e) => setUserFilter(e.target.value)}
+                placeholder="Filtrar por nome, e-mail ou ID"
+                className="w-full md:w-[420px] px-3 py-2 border rounded"
+              />
+            </div>
 
             <div className="border rounded-lg overflow-auto">
               <table className="w-full text-sm">
@@ -225,7 +261,7 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user: any) => (
+                  {filteredUsers.map((user: any) => (
                     <tr key={user.id} className="border-t">
                       <td className="px-3 py-2">{user.id}</td>
                       <td className="px-3 py-2">{user.name || "-"}</td>
@@ -270,11 +306,12 @@ export default function Admin() {
           <section className="space-y-4">
             <div className="p-4 border rounded-lg bg-gray-50">
               <h2 className="font-semibold text-[#262969] mb-3">Criar Sebo</h2>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
                 <input value={newSebo.userId} onChange={(e) => setNewSebo((p) => ({ ...p, userId: e.target.value }))} placeholder="User ID" className="px-3 py-2 border rounded" />
                 <input value={newSebo.name} onChange={(e) => setNewSebo((p) => ({ ...p, name: e.target.value }))} placeholder="Nome do sebo" className="px-3 py-2 border rounded" />
                 <input value={newSebo.whatsapp} onChange={(e) => setNewSebo((p) => ({ ...p, whatsapp: e.target.value }))} placeholder="WhatsApp" className="px-3 py-2 border rounded" />
                 <input value={newSebo.city} onChange={(e) => setNewSebo((p) => ({ ...p, city: e.target.value }))} placeholder="Cidade" className="px-3 py-2 border rounded" />
+                <input value={newSebo.state} onChange={(e) => setNewSebo((p) => ({ ...p, state: e.target.value }))} placeholder="UF" className="px-3 py-2 border rounded" />
                 <button
                   onClick={() => {
                     const userId = Number.parseInt(newSebo.userId, 10);
@@ -304,6 +341,9 @@ export default function Admin() {
                       <p className="font-semibold text-[#262969]">{sebo.name}</p>
                       <p className="text-sm text-gray-600">
                         ID {sebo.id} • User {sebo.userId} • {sebo.city || "-"} / {sebo.state || "-"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Responsável: {usersById.get(Number(sebo.userId))?.email || "-"}
                       </p>
                     </div>
                     <button
@@ -372,6 +412,11 @@ export default function Admin() {
 
         {tab === "books" && (
           <section className="space-y-4">
+            {booksQuery.isFetching && (
+              <div className="p-3 rounded border border-gray-200 bg-gray-50 text-sm text-gray-700">
+                Carregando livros...
+              </div>
+            )}
             <div className="p-4 border rounded-lg bg-gray-50">
               <h2 className="font-semibold text-[#262969] mb-3">Criar Livro</h2>
               <div className="grid grid-cols-1 md:grid-cols-5 gap-2">

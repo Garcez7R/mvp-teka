@@ -8,6 +8,15 @@ import { normalizeBookTitle } from "./_utils/text.js";
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
 type AvailabilityStatus = "ativo" | "reservado" | "vendido";
 
+function sanitizeBookDescription(raw?: string | null): string | null {
+  if (typeof raw !== "string") return null;
+  const cleaned = raw
+    .replace(/source\s*title\s*:[^\n\r]*/gi, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return cleaned || null;
+}
+
 function normalizeBookDescription(raw?: string | null): {
   availabilityStatus: AvailabilityStatus;
   description: string | null;
@@ -18,7 +27,8 @@ function normalizeBookDescription(raw?: string | null): {
   }
 
   const match = value.match(STATUS_MARKER);
-  const description = value.replace(STATUS_MARKER, "").trim() || null;
+  const withoutStatus = value.replace(STATUS_MARKER, "").trim();
+  const description = sanitizeBookDescription(withoutStatus);
   if (!match?.[1]) {
     return { availabilityStatus: "ativo", description };
   }
@@ -30,7 +40,7 @@ function withStatusMarker(
   availabilityStatus: AvailabilityStatus,
   description?: string | null
 ): string | null {
-  const clean = normalizeBookDescription(description).description;
+  const clean = sanitizeBookDescription(normalizeBookDescription(description).description);
   if (availabilityStatus === "ativo") {
     return clean;
   }
