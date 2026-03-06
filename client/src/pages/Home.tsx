@@ -719,7 +719,17 @@ export default function Home() {
             <div ref={loadMoreRef} className="h-10 mt-8 flex items-center justify-center">
               {booksFetching && hasMore ? (
                 <p className="text-sm text-gray-500">Carregando mais livros...</p>
-              ) : null}
+              ) : hasMore ? (
+                <button
+                  type="button"
+                  onClick={() => setPage((prev) => prev + 1)}
+                  className="px-4 py-2 rounded border border-[#262969] text-[#262969] text-sm hover:bg-[#262969] hover:text-white"
+                >
+                  Carregar mais
+                </button>
+              ) : (
+                <p className="text-sm text-gray-400">Fim do catálogo.</p>
+              )}
             </div>
           </>
         ) : (

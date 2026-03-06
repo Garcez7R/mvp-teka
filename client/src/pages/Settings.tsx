@@ -5,6 +5,8 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ArrowLeft, Camera, Download, CheckCircle2 } from "lucide-react";
 import { SESSION_MAX_AGE_MS } from "@/lib/session";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 type BeforeInstallPromptEventLike = Event & {
   prompt: () => Promise<void>;
@@ -12,7 +14,29 @@ type BeforeInstallPromptEventLike = Event & {
 };
 
 export default function SettingsPage() {
-  useAuth({ redirectOnUnauthenticated: true });
+  const { role, isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
+  const canManageSebo = role === "livreiro" || role === "admin";
+  const utils = trpc.useUtils();
+  const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
+    enabled: isAuthenticated && canManageSebo,
+    refetchOnWindowFocus: false,
+  });
+  const updateSeboMutation = trpc.sebos.update.useMutation({
+    onSuccess: async () => {
+      await utils.sebos.getMySebo.invalidate();
+      toast.success("Dados do sebo atualizados.");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Falha ao atualizar sebo.");
+    },
+  });
+  const [seboForm, setSeboForm] = useState({
+    name: "",
+    whatsapp: "",
+    city: "",
+    state: "",
+    description: "",
+  });
   const [installAvailable, setInstallAvailable] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [installStatus, setInstallStatus] = useState("");
@@ -20,6 +44,26 @@ export default function SettingsPage() {
   const [cameraHelpText, setCameraHelpText] = useState("");
   const [cameraHelpCopied, setCameraHelpCopied] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+
+  useEffect(() => {
+    if (!mySebo) {
+      setSeboForm({
+        name: "",
+        whatsapp: "",
+        city: "",
+        state: "",
+        description: "",
+      });
+      return;
+    }
+    setSeboForm({
+      name: mySebo.name || "",
+      whatsapp: mySebo.whatsapp || "",
+      city: mySebo.city || "",
+      state: mySebo.state || "",
+      description: mySebo.description || "",
+    });
+  }, [mySebo]);
 
   useEffect(() => {
     const standalone =
@@ -179,6 +223,22 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveSebo = async () => {
+    if (!mySebo?.id) return;
+    if (!seboForm.name.trim() || !seboForm.whatsapp.trim()) {
+      toast.error("Nome e WhatsApp do sebo são obrigatórios.");
+      return;
+    }
+    await updateSeboMutation.mutateAsync({
+      id: mySebo.id,
+      name: seboForm.name.trim(),
+      whatsapp: seboForm.whatsapp.trim(),
+      city: seboForm.city.trim() || undefined,
+      state: seboForm.state.trim().toUpperCase() || undefined,
+      description: seboForm.description.trim() || undefined,
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
@@ -193,6 +253,65 @@ export default function SettingsPage() {
         <h1 className="font-outfit font-bold text-3xl text-[#262969] mb-6">Configurações</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {canManageSebo && (
+            <section className="border border-gray-200 rounded-xl p-5 bg-white md:col-span-2">
+              <h2 className="font-outfit font-semibold text-xl text-[#262969] mb-2">Meu Sebo</h2>
+              {!mySebo ? (
+                <div className="text-sm text-gray-700">
+                  Você ainda não possui sebo.
+                  <Link href="/sebo/novo" className="ml-2 text-[#da4653] hover:underline">
+                    Criar sebo agora
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input
+                      value={seboForm.name}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, name: e.target.value }))}
+                      placeholder="Nome do sebo"
+                      className="px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                    <input
+                      value={seboForm.whatsapp}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, whatsapp: e.target.value }))}
+                      placeholder="WhatsApp"
+                      className="px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                    <input
+                      value={seboForm.city}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, city: e.target.value }))}
+                      placeholder="Cidade"
+                      className="px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                    <input
+                      value={seboForm.state}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, state: e.target.value }))}
+                      placeholder="UF"
+                      maxLength={2}
+                      className="px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                  </div>
+                  <textarea
+                    value={seboForm.description}
+                    onChange={(e) => setSeboForm((prev) => ({ ...prev, description: e.target.value }))}
+                    placeholder="Descrição do sebo"
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleSaveSebo()}
+                    disabled={updateSeboMutation.isPending}
+                    className="px-4 py-2 rounded-lg bg-[#262969] text-white hover:bg-[#1e2157] disabled:opacity-60"
+                  >
+                    {updateSeboMutation.isPending ? "Salvando..." : "Salvar dados do sebo"}
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
+
           <section className="border border-gray-200 rounded-xl p-5 bg-white">
             <h2 className="font-outfit font-semibold text-xl text-[#262969] mb-2">Instalar App</h2>
             <p className="text-sm text-gray-600 mb-4">
