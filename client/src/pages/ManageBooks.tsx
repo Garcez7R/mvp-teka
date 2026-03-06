@@ -36,6 +36,7 @@ export default function ManageBooks() {
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [statusHistoryByBook, setStatusHistoryByBook] = useState<Record<number, StatusHistoryEntry[]>>({});
+  const [selectedBookIds, setSelectedBookIds] = useState<number[]>([]);
 
   const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
     enabled: isAuthenticated
@@ -145,6 +146,10 @@ export default function ManageBooks() {
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (book.author?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
   );
+  const selectedBooksCount = selectedBookIds.length;
+  const allFilteredSelected =
+    filteredBooks.length > 0 &&
+    filteredBooks.every((book: any) => selectedBookIds.includes(Number(book.id)));
 
   const handleEdit = (book: typeof myBooks[0]) => {
     setEditingId(book.id);
@@ -260,6 +265,82 @@ export default function ManageBooks() {
       toast.success("Status atualizado");
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar status");
+    }
+  };
+
+  const toggleSelectBook = (bookId: number, selected: boolean) => {
+    setSelectedBookIds((prev) => {
+      if (selected) {
+        if (prev.includes(bookId)) return prev;
+        return [...prev, bookId];
+      }
+      return prev.filter((id) => id !== bookId);
+    });
+  };
+
+  const toggleSelectAllFiltered = (selected: boolean) => {
+    if (selected) {
+      const allFilteredIds = filteredBooks.map((book: any) => Number(book.id));
+      setSelectedBookIds((prev) => Array.from(new Set([...prev, ...allFilteredIds])));
+      return;
+    }
+    const filteredSet = new Set(filteredBooks.map((book: any) => Number(book.id)));
+    setSelectedBookIds((prev) => prev.filter((id) => !filteredSet.has(id)));
+  };
+
+  const bulkUpdateStatus = async (status: "ativo" | "reservado" | "vendido") => {
+    if (selectedBookIds.length === 0) {
+      toast.error("Selecione ao menos um livro para ação em lote.");
+      return;
+    }
+    try {
+      await Promise.all(
+        selectedBookIds.map((id) =>
+          updateBookMutation.mutateAsync({ id, availabilityStatus: status })
+        )
+      );
+      const now = Date.now();
+      setStatusHistoryByBook((prev) => {
+        const next = { ...prev };
+        for (const id of selectedBookIds) {
+          const entry: StatusHistoryEntry = {
+            status,
+            at: now,
+            reason: "Ação em lote no painel",
+          };
+          next[id] = [entry, ...(next[id] || [])].slice(0, 10);
+        }
+        return next;
+      });
+      toast.success(`Status atualizado para ${selectedBookIds.length} livro(s).`);
+      setSelectedBookIds([]);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao aplicar ação em lote.");
+    }
+  };
+
+  const bulkAdjustQuantity = async (delta: number) => {
+    if (selectedBookIds.length === 0) {
+      toast.error("Selecione ao menos um livro para ação em lote.");
+      return;
+    }
+    const selectedBooks = myBooks.filter((book: any) => selectedBookIds.includes(Number(book.id)));
+    try {
+      await Promise.all(
+        selectedBooks.map((book: any) => {
+          const current = Number(book.quantity ?? 1);
+          const next = Math.max(0, current + delta);
+          return updateBookMutation.mutateAsync({
+            id: Number(book.id),
+            quantity: next,
+            ...(next === 0 ? { availabilityStatus: "vendido" as const } : {}),
+          });
+        })
+      );
+      toast.success(`Quantidade ajustada para ${selectedBooks.length} livro(s).`);
+      setSelectedBookIds([]);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao ajustar quantidade em lote.");
     }
   };
 
@@ -383,7 +464,7 @@ export default function ManageBooks() {
         </Link>
         <h1 className="font-outfit font-bold text-3xl text-[#262969] mb-2">Meus Livros</h1>
         <p className="text-gray-600 mb-8">{mySebo.name}</p>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           <div className="p-4 border rounded-lg bg-white">
             <p className="text-xs text-gray-500">Livros</p>
             <p className="text-xl font-bold text-[#262969]">{metrics?.totalBooks ?? myBooks.length}</p>
@@ -401,10 +482,12 @@ export default function ManageBooks() {
             <p className="text-xl font-bold text-gray-800">{metrics?.soldBooks ?? 0}</p>
           </div>
           <div className="p-4 border rounded-lg bg-white">
-            <p className="text-xs text-gray-500">Interesse (fav+lead)</p>
-            <p className="text-xl font-bold text-[#da4653]">
-              {(metrics?.totalFavorites ?? 0) + (metrics?.totalInterests ?? 0)}
-            </p>
+            <p className="text-xs text-gray-500">Favoritos</p>
+            <p className="text-xl font-bold text-[#da4653]">{metrics?.totalFavorites ?? 0}</p>
+          </div>
+          <div className="p-4 border rounded-lg bg-white">
+            <p className="text-xs text-gray-500">Interesses</p>
+            <p className="text-xl font-bold text-[#262969]">{metrics?.totalInterests ?? 0}</p>
           </div>
         </div>
         {metrics?.topBooks?.length ? (
@@ -455,6 +538,58 @@ export default function ManageBooks() {
             />
           </div>
         </div>
+        {filteredBooks.length > 0 && (
+          <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={allFilteredSelected}
+                  onChange={(e) => toggleSelectAllFiltered(e.target.checked)}
+                />
+                Selecionar todos visíveis
+              </label>
+              <span className="text-sm text-gray-600">Selecionados: {selectedBooksCount}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void bulkUpdateStatus("ativo")}
+                className="px-3 py-2 text-sm rounded border border-emerald-600 text-emerald-700"
+              >
+                Em lote: marcar ativos
+              </button>
+              <button
+                type="button"
+                onClick={() => void bulkUpdateStatus("reservado")}
+                className="px-3 py-2 text-sm rounded border border-amber-500 text-amber-700"
+              >
+                Em lote: marcar reservados
+              </button>
+              <button
+                type="button"
+                onClick={() => void bulkUpdateStatus("vendido")}
+                className="px-3 py-2 text-sm rounded border border-gray-700 text-gray-700"
+              >
+                Em lote: marcar vendidos
+              </button>
+              <button
+                type="button"
+                onClick={() => void bulkAdjustQuantity(1)}
+                className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969]"
+              >
+                Em lote: +1 unidade
+              </button>
+              <button
+                type="button"
+                onClick={() => void bulkAdjustQuantity(-1)}
+                className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969]"
+              >
+                Em lote: -1 unidade
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Books Grid */}
         {filteredBooks.length > 0 ? (
@@ -479,6 +614,16 @@ export default function ManageBooks() {
 
                 {/* Book Info */}
                 <div className="p-4">
+                  <div className="mb-2">
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={selectedBookIds.includes(Number(book.id))}
+                        onChange={(e) => toggleSelectBook(Number(book.id), e.target.checked)}
+                      />
+                      Selecionar para ações em lote
+                    </label>
+                  </div>
                   {editingId === book.id ? (
                     // Edit Mode
                     <div className="space-y-4">

@@ -41,6 +41,7 @@ export default function AddBook() {
   const [isbnValid, setIsbnValid] = useState<boolean | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showSeboCreatedBanner, setShowSeboCreatedBanner] = useState(false);
+  const [hasLastDraft, setHasLastDraft] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerError, setScannerError] = useState("");
   const [scannerBusy, setScannerBusy] = useState(false);
@@ -53,6 +54,7 @@ export default function AddBook() {
   const autoScanTriggeredRef = useRef(false);
 
   const createBookMutation = trpc.books.create.useMutation();
+  const LAST_BOOK_DRAFT_KEY = "teka_last_book_draft";
   const { data: sebosList = [], isLoading: sebosLoading } = trpc.sebos.list.useQuery(undefined, {
     staleTime: 1000 * 60 * 5,
     retry: 1,
@@ -109,6 +111,12 @@ export default function AddBook() {
       setShowSeboCreatedBanner(true);
       trackEvent("funnel_sebo_to_add_book");
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hasDraft = Boolean(window.localStorage.getItem(LAST_BOOK_DRAFT_KEY));
+    setHasLastDraft(hasDraft);
   }, []);
 
   const searchBookByISBN = async (isbnInput?: string) => {
@@ -483,6 +491,24 @@ export default function AddBook() {
       });
 
       trackEvent("book_create_success", { category: formData.category || "Outros" });
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          LAST_BOOK_DRAFT_KEY,
+          JSON.stringify({
+            title: formData.title,
+            author: formData.author,
+            category: formData.category,
+            price: formData.price,
+            condition: formData.condition,
+            pages: formData.pages,
+            year: formData.year,
+            description: formData.description,
+            quantity: formData.quantity,
+            availabilityStatus: formData.availabilityStatus,
+          })
+        );
+        setHasLastDraft(true);
+      }
       toast.success("Livro cadastrado com sucesso! 📚");
       setTimeout(() => navigate("/"), 1500);
     } catch (error: any) {
@@ -490,6 +516,41 @@ export default function AddBook() {
       toast.error(error.message || "Erro ao cadastrar livro");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const applyPricePreset = (value: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      price: value.toFixed(2).replace(".", ","),
+    }));
+  };
+
+  const loadLastDraft = () => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(LAST_BOOK_DRAFT_KEY);
+      if (!raw) {
+        toast.error("Nenhum último cadastro encontrado.");
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      setFormData((prev) => ({
+        ...prev,
+        title: parsed.title || "",
+        author: parsed.author || "",
+        category: parsed.category || "",
+        price: parsed.price || "",
+        condition: parsed.condition || "Bom estado",
+        pages: parsed.pages || "",
+        year: parsed.year || "",
+        description: parsed.description || "",
+        quantity: parsed.quantity || "1",
+        availabilityStatus: parsed.availabilityStatus || "ativo",
+      }));
+      toast.success("Último cadastro carregado.");
+    } catch {
+      toast.error("Não foi possível carregar o último cadastro.");
     }
   };
 
@@ -538,6 +599,16 @@ export default function AddBook() {
           </div>
         )}
         <form onSubmit={handleSubmit} className="max-w-2xl">
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={loadLastDraft}
+              disabled={!hasLastDraft}
+              className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white disabled:opacity-50"
+            >
+              Reaproveitar último cadastro
+            </button>
+          </div>
           <div className="grid grid-cols-1 gap-6 mb-8">
             {/* Seção do Sebo */}
             <div className="md:col-span-2">
@@ -760,6 +831,18 @@ export default function AddBook() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
                 placeholder="0,00"
               />
+              <div className="mt-2 flex flex-wrap gap-2">
+                {[10, 20, 30, 50].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => applyPricePreset(value)}
+                    className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+                  >
+                    R$ {value},00
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>
@@ -772,8 +855,24 @@ export default function AddBook() {
                 <option value="Excelente">Excelente</option>
                 <option value="Bom estado">Bom estado</option>
                 <option value="Usado">Usado</option>
-                <option value="Desgastado">Desgastado</option>
-              </select>
+                  <option value="Desgastado">Desgastado</option>
+                </select>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {["Excelente", "Bom estado", "Usado", "Desgastado"].map((condition) => (
+                    <button
+                      key={condition}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, condition: condition as any })}
+                      className={`px-2 py-1 text-xs rounded border ${
+                        formData.condition === condition
+                          ? "border-[#da4653] text-[#da4653] bg-red-50"
+                          : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {condition}
+                    </button>
+                  ))}
+                </div>
             </div>
 
             <div>
