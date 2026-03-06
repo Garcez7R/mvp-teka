@@ -1,60 +1,90 @@
-const CACHE_NAME = 'teka-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-];
+const CACHE_NAME = "teka-static-v2";
+const PRECACHE_URLS = ["/manifest.json"];
 
-// Install event
-self.addEventListener('install', event => {
+function isTrpcRequest(requestUrl) {
+  return requestUrl.pathname.startsWith("/trpc");
+}
+
+function isNavigationRequest(request) {
+  return request.mode === "navigate";
+}
+
+function isStaticAsset(requestUrl) {
+  return requestUrl.pathname.startsWith("/assets/") || requestUrl.pathname.startsWith("/covers/");
+}
+
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
   );
 });
 
-// Activate event
-self.addEventListener('activate', event => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((cacheNames) =>
+        Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              return caches.delete(cacheName);
+            }
+            return Promise.resolve();
+          })
+        )
+      ),
+    ])
   );
 });
 
-// Fetch event
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') {
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method !== "GET") {
+    return;
+  }
+
+  const requestUrl = new URL(request.url);
+  if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
+  if (isTrpcRequest(requestUrl)) {
+    event.respondWith(fetch(request, { cache: "no-store" }));
+    return;
+  }
+
+  if (isNavigationRequest(request)) {
+    event.respondWith(
+      fetch(request, { cache: "no-store" }).catch(() => caches.match("/index.html"))
+    );
+    return;
+  }
+
+  if (!isStaticAsset(requestUrl)) {
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then(response => {
-      if (response) {
-        return response;
+    caches.match(request).then((cached) => {
+      if (cached) {
+        return cached;
       }
 
-      return fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
+      return fetch(request).then((response) => {
+        if (!response || response.status !== 200 || response.type !== "basic") {
           return response;
         }
 
         const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseToCache);
-        });
-
+        void caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
         return response;
-      }).catch(() => {
-        // Return offline page or cached response
-        return caches.match('/index.html');
       });
     })
   );

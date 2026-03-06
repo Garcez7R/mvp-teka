@@ -13,8 +13,6 @@ export type Context = {
 
 type RequestLike = {
   headers?: Record<string, string | string[] | undefined>;
-  query?: Record<string, unknown>;
-  cookies?: Record<string, string | undefined>;
 };
 
 type ContextOptionsLike = {
@@ -37,7 +35,6 @@ export async function createTRPCContext(
   opts?: ContextOptionsLike
 ): Promise<Context> {
   const req = opts?.req;
-  const isProduction = getRuntimeEnvValue("NODE_ENV") === "production";
 
   const authHeader =
     readFirstValue(req?.headers?.authorization) ??
@@ -55,23 +52,15 @@ export async function createTRPCContext(
       const audience =
         getRuntimeEnvValue("GOOGLE_CLIENT_ID") ||
         getRuntimeEnvValue("VITE_GOOGLE_CLIENT_ID");
-      let payload: any;
-      try {
-        if (!audience) {
-          throw new Error("missing_audience");
-        }
-        const verified = await jwtVerify(bearerToken, googleJwks, {
-          audience,
-          issuer: ["https://accounts.google.com", "accounts.google.com"],
-        });
-        payload = verified.payload;
-      } catch {
-        // Fallback for temporary env/audience mismatch in production migrations.
-        const verified = await jwtVerify(bearerToken, googleJwks, {
-          issuer: ["https://accounts.google.com", "accounts.google.com"],
-        });
-        payload = verified.payload;
+      if (!audience) {
+        throw new Error("GOOGLE_CLIENT_ID (or VITE_GOOGLE_CLIENT_ID) is required");
       }
+
+      const verified = await jwtVerify(bearerToken, googleJwks, {
+        audience,
+        issuer: ["https://accounts.google.com", "accounts.google.com"],
+      });
+      const payload: any = verified.payload;
 
       const googleSub = payload.sub;
       const email = typeof payload.email === "string" ? payload.email : null;
@@ -149,39 +138,9 @@ export async function createTRPCContext(
     }
   }
 
-  // Prefer explicit headers/cookies. In production, do not trust query params.
-  const fromHeader = readFirstValue(req?.headers?.["x-user-id"]);
-  const fromCookie = req?.cookies?.userId ?? null;
-  const fromQuery = !isProduction ? readFirstValue(req?.query?.userId) : null;
-  const rawUserId = fromHeader ?? fromCookie ?? fromQuery;
-  const parsedUserId = rawUserId ? Number.parseInt(rawUserId, 10) : NaN;
-  const userId = Number.isFinite(parsedUserId) && parsedUserId > 0 ? parsedUserId : null;
-
-  if (!userId) {
-    return {
-      user: null,
-      userId: null,
-      role: null,
-    };
-  }
-
-  const user = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, userId))
-    .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
-
-  if (!user) {
-    return {
-      user: null,
-      userId: null,
-      role: null,
-    };
-  }
-
   return {
-    user,
-    userId: user.id,
-    role: user.role,
+    user: null,
+    userId: null,
+    role: null,
   };
 }

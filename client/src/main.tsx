@@ -22,9 +22,44 @@ function setupPwaRuntime() {
     return;
   }
 
+  const SW_RELOAD_FLAG = "teka_sw_reloaded_once";
+  if (!navigator.serviceWorker.controller) {
+    window.sessionStorage.removeItem(SW_RELOAD_FLAG);
+  }
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (window.sessionStorage.getItem(SW_RELOAD_FLAG) === "1") {
+      return;
+    }
+    window.sessionStorage.setItem(SW_RELOAD_FLAG, "1");
+    window.location.reload();
+  });
+
   void (async () => {
     try {
-      await navigator.serviceWorker.register("/sw.js");
+      const registration = await navigator.serviceWorker.register("/sw.js", {
+        updateViaCache: "none",
+      });
+
+      await registration.update();
+
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      }
+
+      registration.addEventListener("updatefound", () => {
+        const newWorker = registration.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener("statechange", () => {
+          if (
+            newWorker.state === "installed" &&
+            navigator.serviceWorker.controller
+          ) {
+            newWorker.postMessage({ type: "SKIP_WAITING" });
+          }
+        });
+      });
     } catch (error) {
       console.warn("Falha ao registrar Service Worker:", error);
     }
