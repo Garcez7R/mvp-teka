@@ -8,6 +8,11 @@ import Footer from "@/components/Footer";
 import { ArrowLeft, Upload, Search, Loader2, BookOpen, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { trackEvent } from "@/lib/analytics";
+import {
+  formatCurrencyFromDigits,
+  parseCurrencyBRLToNumber,
+  sanitizeFetchedDescription,
+} from "@/lib/book-form";
 
 export default function AddBook() {
   const [, navigate] = useLocation();
@@ -148,7 +153,9 @@ export default function AddBook() {
             pages: bookInfo.number_of_pages?.toString() || prev.pages,
             year: bookInfo.publish_date?.match(/\d{4}/)?.[0] || prev.year,
             description:
-              typeof bookInfo.notes === "string" ? bookInfo.notes : prev.description,
+              sanitizeFetchedDescription(
+                typeof bookInfo.notes === "string" ? bookInfo.notes : undefined
+              ) || prev.description,
           }));
 
           if (bookInfo.cover?.large || bookInfo.cover?.medium) {
@@ -176,7 +183,7 @@ export default function AddBook() {
               author: info.authors?.[0] || prev.author,
               pages: info.pageCount ? String(info.pageCount) : prev.pages,
               year: info.publishedDate?.match(/\d{4}/)?.[0] || prev.year,
-              description: info.description || prev.description,
+              description: sanitizeFetchedDescription(info.description) || prev.description,
             }));
 
             const thumb = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
@@ -431,7 +438,7 @@ export default function AddBook() {
       return;
     }
 
-    const normalizedPrice = Number(formData.price.replace(",", "."));
+    const normalizedPrice = parseCurrencyBRLToNumber(formData.price);
     if (!Number.isFinite(normalizedPrice) || normalizedPrice <= 0) {
       toast.error("Informe um preço válido");
       return;
@@ -484,6 +491,13 @@ export default function AddBook() {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handlePriceChange = (rawValue: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      price: formatCurrencyFromDigits(rawValue),
+    }));
   };
 
   const canManageBooks = role === "livreiro" || role === "admin";
@@ -738,13 +752,13 @@ export default function AddBook() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$) *</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="numeric"
                 required
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                onChange={(e) => handlePriceChange(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
 

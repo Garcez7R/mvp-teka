@@ -246,6 +246,66 @@ export const booksRouter = router({
       return newBook;
     }),
 
+  clone: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        condition: z
+          .enum(["Excelente", "Bom estado", "Usado", "Desgastado"])
+          .optional(),
+        quantity: z.number().int().min(0).optional(),
+        availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const original = await db
+        .select()
+        .from(books)
+        .where(eq(books.id, input.id))
+        .then((res: Array<typeof books.$inferSelect>) => res[0]);
+
+      if (!original) {
+        throw new Error("Book not found");
+      }
+
+      const sebo = await db
+        .select()
+        .from(sebos)
+        .where(eq(sebos.id, original.seboId))
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
+
+      const canClone = Boolean(sebo && (sebo.userId === ctx.userId || ctx.role === "admin"));
+      if (!canClone) {
+        throw new Error("Unauthorized");
+      }
+
+      const normalizedOriginal = normalizeBookDescription(original.description);
+      const quantity = input.quantity ?? original.quantity ?? 1;
+      const availabilityStatus = quantity === 0
+        ? "vendido"
+        : input.availabilityStatus ?? normalizedOriginal.availabilityStatus;
+
+      const created = await db
+        .insert(books)
+        .values({
+          seboId: original.seboId,
+          title: normalizeBookTitle(original.title) ?? original.title,
+          author: original.author,
+          isbn: original.isbn,
+          category: original.category,
+          description: withStatusMarker(availabilityStatus, normalizedOriginal.description),
+          price: original.price,
+          condition: input.condition ?? original.condition,
+          pages: original.pages,
+          year: original.year,
+          coverUrl: original.coverUrl,
+          quantity,
+        })
+        .returning({ id: books.id });
+
+      return created[0];
+    }),
+
   // Update book
   update: protectedProcedure
     .input(

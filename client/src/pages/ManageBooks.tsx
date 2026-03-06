@@ -81,6 +81,11 @@ export default function ManageBooks() {
       await utils.books.listBySebo.invalidate();
     },
   });
+  const cloneBookMutation = trpc.books.clone.useMutation({
+    onSuccess: async () => {
+      await utils.books.listBySebo.invalidate();
+    },
+  });
 
   if (!isAuthenticated) {
     return (
@@ -252,6 +257,39 @@ export default function ManageBooks() {
       toast.success("Status atualizado");
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar status");
+    }
+  };
+
+  const handleCloneBook = async (book: any) => {
+    const nextCondition = window.prompt(
+      'Condição do novo item (Excelente, Bom estado, Usado, Desgastado)',
+      String(book.condition || "Bom estado")
+    );
+    if (!nextCondition) return;
+
+    const allowed = new Set(["Excelente", "Bom estado", "Usado", "Desgastado"]);
+    if (!allowed.has(nextCondition)) {
+      toast.error("Condição inválida para duplicação.");
+      return;
+    }
+
+    const qtyInput = window.prompt("Quantidade do novo item", String(book.quantity ?? 1));
+    if (qtyInput === null) return;
+    const quantity = Number.parseInt(qtyInput, 10);
+    if (!Number.isFinite(quantity) || quantity < 0) {
+      toast.error("Quantidade inválida.");
+      return;
+    }
+
+    try {
+      await cloneBookMutation.mutateAsync({
+        id: Number(book.id),
+        condition: nextCondition as "Excelente" | "Bom estado" | "Usado" | "Desgastado",
+        quantity,
+      });
+      toast.success("Livro duplicado como novo item.");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao duplicar livro");
     }
   };
 
@@ -623,6 +661,12 @@ export default function ManageBooks() {
                         >
                           <Edit2 className="w-4 h-4" />
                           Editar
+                        </button>
+                        <button
+                          onClick={() => void handleCloneBook(book)}
+                          className="flex-1 flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded font-medium text-sm"
+                        >
+                          Duplicar
                         </button>
                         <button
                           onClick={() => handleDelete(book.id, book.title)}
