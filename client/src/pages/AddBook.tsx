@@ -35,6 +35,7 @@ export default function AddBook() {
 
   const [creatingSebo, setCreatingSebo] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string>("");
+  const [coverCandidates, setCoverCandidates] = useState<string[]>([]);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [searchingBook, setSearchingBook] = useState(false);
   const [coverError, setCoverError] = useState("");
@@ -74,6 +75,21 @@ export default function AddBook() {
 
   const normalizeISBN = (isbn: string): string =>
     isbn.toUpperCase().replace(/[^0-9X]/g, "");
+  const normalizeCoverUrl = (value?: string | null): string | null => {
+    if (!value) return null;
+    return String(value).replace("http://", "https://");
+  };
+  const dedupeCoverUrls = (values: Array<string | null | undefined>) => {
+    const seen = new Set<string>();
+    const normalized: string[] = [];
+    for (const value of values) {
+      const safeValue = normalizeCoverUrl(value);
+      if (!safeValue || seen.has(safeValue)) continue;
+      seen.add(safeValue);
+      normalized.push(safeValue);
+    }
+    return normalized;
+  };
   const curatedCoverByIsbn: Record<string, string> = {
     "9788595084759": "/covers/as-duas-torres.svg",
   };
@@ -144,7 +160,7 @@ export default function AddBook() {
         setCoverFile(null);
       }
       let found = false;
-      let foundCover = false;
+      const candidateCovers: Array<string | null | undefined> = [];
 
       // 1) Open Library
       const metaResp = await fetch(
@@ -168,25 +184,26 @@ export default function AddBook() {
               ) || prev.description,
           }));
 
-          if (bookInfo.cover?.large || bookInfo.cover?.medium) {
-            setCoverUrl(bookInfo.cover.large || bookInfo.cover.medium);
-            setCoverFile(null);
-            foundCover = true;
-          }
+          candidateCovers.push(
+            bookInfo.cover?.large,
+            bookInfo.cover?.medium,
+            bookInfo.cover?.small
+          );
           found = true;
         }
       }
 
       // 2) Google Books fallback
-      if (!found) {
+      if (!found || candidateCovers.length < 2) {
         const googleResp = await fetch(
-          `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbnClean}&maxResults=1`
+          `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbnClean}&maxResults=5`
         );
         if (googleResp.ok) {
           const googleData = await googleResp.json();
-          const item = googleData?.items?.[0];
-          const info = item?.volumeInfo;
-          if (info) {
+          const items = Array.isArray(googleData?.items) ? googleData.items : [];
+          const first = items[0];
+          const info = first?.volumeInfo;
+          if (!found && info) {
             setFormData((prev) => ({
               ...prev,
               title: info.title || prev.title,
@@ -195,41 +212,61 @@ export default function AddBook() {
               year: info.publishedDate?.match(/\d{4}/)?.[0] || prev.year,
               description: sanitizeFetchedDescription(info.description) || prev.description,
             }));
-
-            const thumb = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
-            if (thumb) {
-              setCoverUrl(String(thumb).replace("http://", "https://"));
-              setCoverFile(null);
-              foundCover = true;
-            }
             found = true;
+          }
+          for (const item of items) {
+            const imageLinks = item?.volumeInfo?.imageLinks;
+            candidateCovers.push(
+              imageLinks?.extraLarge,
+              imageLinks?.large,
+              imageLinks?.medium,
+              imageLinks?.small,
+              imageLinks?.thumbnail,
+              imageLinks?.smallThumbnail
+            );
           }
         }
       }
 
       // 3) Open Library direct cover fallback
-      if (!foundCover) {
-        const directCoverUrl = `https://covers.openlibrary.org/b/isbn/${isbnClean}-L.jpg`;
-        const checkCover = await fetch(directCoverUrl, { method: "HEAD" });
-        if (checkCover.ok && !checkCover.url.includes("blank")) {
-          setCoverUrl(directCoverUrl);
-          setCoverFile(null);
-          foundCover = true;
+      const openLibraryDirect = [
+        `https://covers.openlibrary.org/b/isbn/${isbnClean}-L.jpg`,
+        `https://covers.openlibrary.org/b/isbn/${isbnClean}-M.jpg`,
+      ];
+      for (const directCoverUrl of openLibraryDirect) {
+        try {
+          const checkCover = await fetch(directCoverUrl, { method: "HEAD" });
+          if (checkCover.ok && !checkCover.url.includes("blank")) {
+            candidateCovers.push(directCoverUrl);
+          }
+        } catch {
+          // Ignore network hiccups for optional candidates.
         }
+      }
+
+      const uniqueCandidates = dedupeCoverUrls([
+        curatedCoverByIsbn[isbnClean],
+        ...candidateCovers,
+      ]);
+      setCoverCandidates(uniqueCandidates);
+      if (uniqueCandidates[0]) {
+        setCoverUrl(uniqueCandidates[0]);
+        setCoverFile(null);
       }
 
       if (found) {
         const normalizedTitle = (formData.title || "").trim().toLowerCase();
-        if (!foundCover && normalizedTitle && curatedCoverByTitle[normalizedTitle]) {
+        if (!uniqueCandidates.length && normalizedTitle && curatedCoverByTitle[normalizedTitle]) {
           setCoverUrl(curatedCoverByTitle[normalizedTitle]);
+          setCoverCandidates([curatedCoverByTitle[normalizedTitle]]);
           setCoverFile(null);
-          foundCover = true;
         }
-        trackEvent("isbn_lookup_success", { isbn: isbnClean, cover: foundCover });
+        trackEvent("isbn_lookup_success", { isbn: isbnClean, cover: uniqueCandidates.length > 0 });
         toast.success("Dados do livro encontrados!");
       } else {
         trackEvent("isbn_lookup_not_found", { isbn: isbnClean });
         setCoverError("Livro não encontrado nas bases. Preencha manualmente.");
+        setCoverCandidates([]);
       }
     } catch (error) {
       trackEvent("isbn_lookup_error");
@@ -261,6 +298,7 @@ export default function AddBook() {
       const info = item?.volumeInfo;
       if (!info) {
         setCoverError("OCR concluído, mas não encontrei um livro confiável por título/autor.");
+        setCoverCandidates([]);
         return false;
       }
 
@@ -273,9 +311,17 @@ export default function AddBook() {
         description: sanitizeFetchedDescription(info.description) || prev.description,
       }));
 
-      const thumb = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
-      if (thumb) {
-        setCoverUrl(String(thumb).replace("http://", "https://"));
+      const options = dedupeCoverUrls([
+        info.imageLinks?.extraLarge,
+        info.imageLinks?.large,
+        info.imageLinks?.medium,
+        info.imageLinks?.small,
+        info.imageLinks?.thumbnail,
+        info.imageLinks?.smallThumbnail,
+      ]);
+      if (options[0]) {
+        setCoverUrl(options[0]);
+        setCoverCandidates(options);
         setCoverFile(null);
       }
 
@@ -410,12 +456,24 @@ export default function AddBook() {
   const captureFrameDataUrl = () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || !video.videoHeight) return null;
+
+    const sourceW = video.videoWidth;
+    const sourceH = video.videoHeight;
+    const cropW = Math.floor(sourceW * 0.8);
+    const cropH = Math.floor(sourceH * 0.8);
+    const cropX = Math.floor((sourceW - cropW) / 2);
+    const cropY = Math.floor((sourceH - cropH) / 2);
+    const maxOutW = 1100;
+    const scale = Math.min(1, maxOutW / cropW);
+    const outW = Math.max(480, Math.floor(cropW * scale));
+    const outH = Math.max(320, Math.floor(cropH * scale));
+
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = outW;
+    canvas.height = outH;
     const context = canvas.getContext("2d");
     if (!context) return null;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, outW, outH);
     return canvas.toDataURL("image/jpeg", 0.92);
   };
 
@@ -441,9 +499,20 @@ export default function AddBook() {
       }
 
       const tesseract = await loadTesseract();
-      const result = await tesseract.recognize(frame, "por+eng");
-      const extractedText = String(result?.data?.text || "");
-      const isbnFound = extractISBNFromRaw(extractedText);
+      const isbnPass = await tesseract.recognize(frame, "eng", {
+        tessedit_pageseg_mode: "6",
+        tessedit_char_whitelist: "0123456789Xx- ",
+      });
+      const isbnText = String(isbnPass?.data?.text || "");
+      let extractedText = isbnText;
+      let isbnFound = extractISBNFromRaw(isbnText);
+      if (!isbnFound) {
+        const textPass = await tesseract.recognize(frame, "eng", {
+          tessedit_pageseg_mode: "6",
+        });
+        extractedText = String(textPass?.data?.text || "");
+        isbnFound = extractISBNFromRaw(extractedText);
+      }
       stopScanner();
 
       if (isbnFound) {
@@ -628,6 +697,7 @@ export default function AddBook() {
     if (file) {
       setCoverFile(file);
       setCoverUrl(URL.createObjectURL(file));
+      setCoverCandidates([]);
       setCoverError("");
     }
   };
@@ -1154,6 +1224,33 @@ export default function AddBook() {
                         <img src={coverUrl} alt="Preview da capa" className="w-full h-full object-contain" />
                       </div>
                       <p className="text-xs text-green-600 mt-2">Esta capa será usada no cadastro</p>
+                    </div>
+                  </div>
+                )}
+
+                {coverCandidates.length > 1 && (
+                  <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                    <p className="text-sm font-medium text-gray-800 mb-3">Escolha a capa oficial preferida:</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                      {coverCandidates.map((candidate) => {
+                        const selected = coverUrl === candidate;
+                        return (
+                          <button
+                            key={candidate}
+                            type="button"
+                            onClick={() => {
+                              setCoverUrl(candidate);
+                              setCoverFile(null);
+                            }}
+                            className={`rounded-lg border-2 overflow-hidden transition ${
+                              selected ? "border-[#da4653]" : "border-gray-200 hover:border-gray-400"
+                            }`}
+                            title={selected ? "Capa selecionada" : "Selecionar capa"}
+                          >
+                            <img src={candidate} alt="Opção de capa" className="w-full h-28 object-cover" />
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
