@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type AdminTab = "users" | "sebos" | "books";
@@ -23,30 +23,11 @@ export default function Admin() {
   const [selectedSeboId, setSelectedSeboId] = useState<number | null>(null);
   const [booksPage, setBooksPage] = useState(0);
   const [userFilter, setUserFilter] = useState("");
-  const [allowUnverifiedSession, setAllowUnverifiedSession] = useState(false);
   const BOOKS_PAGE_SIZE = 50;
   const canRunAdminQueries =
     isAuthenticated &&
     role === "admin" &&
-    (isServerAuthenticated || allowUnverifiedSession);
-
-  useEffect(() => {
-    if (loading) return;
-    if (role !== "admin") return;
-    if (!hasSessionToken) return;
-    if (isServerAuthenticated || allowUnverifiedSession) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setAllowUnverifiedSession(true);
-    }, 1800);
-    return () => window.clearTimeout(timeoutId);
-  }, [
-    allowUnverifiedSession,
-    hasSessionToken,
-    isServerAuthenticated,
-    loading,
-    role,
-  ]);
+    isServerAuthenticated;
 
   const usersQuery = trpc.users.adminList.useQuery(undefined, {
     enabled: canRunAdminQueries,
@@ -205,7 +186,7 @@ export default function Admin() {
     );
   }
 
-  if (!isServerAuthenticated && !allowUnverifiedSession) {
+  if (!isServerAuthenticated) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
         <Header />
@@ -224,14 +205,6 @@ export default function Admin() {
               >
                 Tentar sincronizar
               </button>
-              {hasSessionToken && (
-                <button
-                  onClick={() => setAllowUnverifiedSession(true)}
-                  className="px-3 py-2 rounded border border-[#262969] text-[#262969] text-sm bg-white"
-                >
-                  Abrir painel mesmo assim
-                </button>
-              )}
             </div>
           </div>
         </main>
