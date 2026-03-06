@@ -8,6 +8,18 @@ import { normalizeBookTitle } from "./_utils/text.js";
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
 const HIDDEN_MARKER = /^\[HIDDEN\]\s*/i;
 type AvailabilityStatus = "ativo" | "reservado" | "vendido";
+const seboBaseSelect = {
+  id: sebos.id,
+  userId: sebos.userId,
+  name: sebos.name,
+  description: sebos.description,
+  whatsapp: sebos.whatsapp,
+  city: sebos.city,
+  state: sebos.state,
+  verified: sebos.verified,
+  createdAt: sebos.createdAt,
+  updatedAt: sebos.updatedAt,
+} as const;
 
 function sanitizeBookDescription(raw?: string | null): string | null {
   if (typeof raw !== "string") return null;
@@ -153,7 +165,10 @@ export const booksRouter = router({
         .as("favorite_counts");
 
       const listQuery = db
-        .select()
+        .select({
+          book: books,
+          sebo: seboBaseSelect,
+        })
         .from(books)
         .leftJoin(sebos, eq(books.seboId, sebos.id))
         .leftJoin(favoriteCounts, eq(books.id, favoriteCounts.bookId))
@@ -196,16 +211,16 @@ export const booksRouter = router({
 
       // Format response to include sebo info
       const data = dataRaw
-        .map((row: { books: typeof books.$inferSelect; sebos: typeof sebos.$inferSelect | null }) => {
-          const normalized = normalizeBookDescription(row.books.description);
+        .map((row) => {
+          const normalized = normalizeBookDescription(row.book.description);
           return {
-            ...row.books,
-            title: normalizeBookTitle(row.books.title) ?? row.books.title,
+            ...row.book,
+            title: normalizeBookTitle(row.book.title) ?? row.book.title,
             description: normalized.description,
             availabilityStatus: normalized.availabilityStatus,
             isVisible: normalized.isVisible,
-            sebo: row.sebos
-              ? { id: row.sebos.id, name: row.sebos.name, city: row.sebos.city, state: row.sebos.state }
+            sebo: row.sebo
+              ? { id: row.sebo.id, name: row.sebo.name, city: row.sebo.city, state: row.sebo.state }
               : null,
           };
         })
@@ -238,10 +253,10 @@ export const booksRouter = router({
 
       // Get sebo info
       const sebo = await db
-        .select()
+        .select(seboBaseSelect)
         .from(sebos)
         .where(eq(sebos.id, book.seboId))
-        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
+        .then((res) => res[0]);
 
       const normalized = normalizeBookDescription(book.description);
       const seboBooksCount = await db
@@ -278,10 +293,10 @@ export const booksRouter = router({
     .query(async ({ input, ctx }) => {
       // Verify user owns this sebo
       const sebo = await db
-        .select()
+        .select(seboBaseSelect)
         .from(sebos)
         .where(eq(sebos.id, input))
-        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
+        .then((res) => res[0]);
 
       const canRead = Boolean(sebo && (sebo.userId === ctx.userId || ctx.role === "admin"));
       if (!canRead) {
@@ -328,10 +343,10 @@ export const booksRouter = router({
     .mutation(async ({ input, ctx }) => {
       // Verify sebo exists
       const sebo = await db
-        .select()
+        .select(seboBaseSelect)
         .from(sebos)
         .where(eq(sebos.id, input.seboId))
-        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
+        .then((res) => res[0]);
 
       if (!sebo) {
         throw new Error("Sebo not found");
@@ -382,10 +397,10 @@ export const booksRouter = router({
       }
 
       const sebo = await db
-        .select()
+        .select(seboBaseSelect)
         .from(sebos)
         .where(eq(sebos.id, original.seboId))
-        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
+        .then((res) => res[0]);
 
       const canClone = Boolean(sebo && (sebo.userId === ctx.userId || ctx.role === "admin"));
       if (!canClone) {
@@ -456,10 +471,10 @@ export const booksRouter = router({
       }
 
       const sebo = await db
-        .select()
+        .select(seboBaseSelect)
         .from(sebos)
         .where(eq(sebos.id, book.seboId))
-        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
+        .then((res) => res[0]);
 
       const canEdit = Boolean(sebo && (sebo.userId === ctx.userId || ctx.role === "admin"));
       if (!canEdit) {
@@ -498,10 +513,10 @@ export const booksRouter = router({
     .query(async ({ input, ctx }) => {
       const targetSeboId = input?.seboId;
       const mySebo = await db
-        .select()
+        .select(seboBaseSelect)
         .from(sebos)
         .where(eq(sebos.userId, ctx.userId!))
-        .then((res: Array<typeof sebos.$inferSelect>) => res[0] ?? null);
+        .then((res) => res[0] ?? null);
 
       const seboId = ctx.role === "admin" ? targetSeboId ?? mySebo?.id : mySebo?.id;
       if (!seboId) {
@@ -625,7 +640,7 @@ export const booksRouter = router({
         interestId: bookInterests.id,
         interestedAt: bookInterests.createdAt,
         book: books,
-        sebo: sebos,
+        sebo: seboBaseSelect,
       })
       .from(bookInterests)
       .innerJoin(books, eq(bookInterests.bookId, books.id))
@@ -672,10 +687,10 @@ export const booksRouter = router({
       }
 
       const sebo = await db
-        .select()
+        .select(seboBaseSelect)
         .from(sebos)
         .where(eq(sebos.id, book.seboId))
-        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
+        .then((res) => res[0]);
 
       const canDelete = Boolean(sebo && (sebo.userId === ctx.userId || ctx.role === "admin"));
       if (!canDelete) {
