@@ -600,7 +600,7 @@ export default function AddBook() {
       await video.play();
 
       if (engine === "tesseract") {
-        setScannerError("OCR avançado pronto. Toque em Capturar para extrair ISBN/título/autor.");
+        setScannerError("Pronto para foto da capa. Toque em Capturar para extrair ISBN/título/autor.");
         setScannerBusy(false);
         return;
       }
@@ -646,30 +646,6 @@ export default function AddBook() {
       fallbackToManualIsbn(getCameraErrorMessage(error));
     } finally {
       setScannerBusy(false);
-    }
-  };
-
-  const handlePasteLensText = async () => {
-    if (!navigator.clipboard?.readText) {
-      setScannerError("Seu navegador não permite ler a área de transferência automaticamente.");
-      return;
-    }
-
-    try {
-      const clipboardText = await navigator.clipboard.readText();
-      const isbnFound = extractISBNFromRaw(clipboardText || "");
-      if (!isbnFound) {
-        setScannerError("Não encontrei ISBN no texto copiado do Lens.");
-        return;
-      }
-      setScannerError("");
-      setFormData((prev) => ({ ...prev, isbn: isbnFound }));
-      toast.success(`ISBN detectado no texto: ${isbnFound}`);
-      await searchBookByISBN(isbnFound);
-    } catch {
-      setScannerError(
-        "Não foi possível acessar a área de transferência. Copie o texto do Lens e tente novamente."
-      );
     }
   };
 
@@ -996,14 +972,7 @@ export default function AddBook() {
                   >
                     {scannerBusy && scannerMode === "cover"
                       ? "Abrindo câmera..."
-                      : "Escanear capa (OCR)"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handlePasteLensText()}
-                    className="w-full py-3 border-2 border-[#4b5563] text-[#4b5563] rounded-lg hover:bg-[#4b5563] hover:text-white transition-colors font-bold"
-                  >
-                    Colar texto (Google Lens)
+                      : "Fotografar capa e extrair dados"}
                   </button>
                 </div>
                 {scannerOpen && (
@@ -1034,7 +1003,7 @@ export default function AddBook() {
                         disabled={scannerBusy}
                         className="mt-3 ml-2 px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white disabled:opacity-50"
                       >
-                        {scannerBusy ? "Processando OCR..." : "Capturar e extrair"}
+                        {scannerBusy ? "Processando foto..." : "Capturar foto e extrair dados"}
                       </button>
                     )}
                   </div>
