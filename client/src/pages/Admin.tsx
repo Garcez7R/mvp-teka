@@ -8,7 +8,7 @@ import { toast } from "sonner";
 type AdminTab = "users" | "sebos" | "books";
 
 export default function Admin() {
-  const { isAuthenticated, role, loading } = useAuth({
+  const { isAuthenticated, isServerAuthenticated, role, loading } = useAuth({
     redirectOnUnauthenticated: true,
   });
   const utils = trpc.useUtils();
@@ -19,10 +19,10 @@ export default function Admin() {
   const BOOKS_PAGE_SIZE = 50;
 
   const usersQuery = trpc.users.adminList.useQuery(undefined, {
-    enabled: isAuthenticated && role === "admin",
+    enabled: isAuthenticated && isServerAuthenticated && role === "admin",
   });
   const sebosQuery = trpc.sebos.list.useQuery(undefined, {
-    enabled: isAuthenticated && role === "admin",
+    enabled: isAuthenticated && isServerAuthenticated && role === "admin",
   });
   const booksQuery = trpc.books.list.useQuery(
     {
@@ -31,7 +31,7 @@ export default function Admin() {
       seboId: selectedSeboId ?? undefined,
     },
     {
-      enabled: isAuthenticated && role === "admin" && tab === "books",
+      enabled: isAuthenticated && isServerAuthenticated && role === "admin" && tab === "books",
       retry: 1,
       refetchOnWindowFocus: false,
     }
@@ -168,6 +168,20 @@ export default function Admin() {
         <main className="container flex-1 py-12">
           <div className="max-w-2xl mx-auto p-6 border border-red-200 bg-red-50 rounded-lg text-red-700">
             Acesso restrito ao administrador.
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isServerAuthenticated) {
+    return (
+      <div className="min-h-screen flex flex-col bg-white">
+        <Header />
+        <main className="container flex-1 py-12">
+          <div className="max-w-2xl mx-auto p-6 border border-amber-200 bg-amber-50 rounded-lg text-amber-800">
+            Sincronizando autenticação da sessão com o servidor. Se demorar, recarregue a página.
           </div>
         </main>
         <Footer />

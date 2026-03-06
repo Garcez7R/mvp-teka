@@ -84,6 +84,7 @@ export function useAuth(options?: UseAuthOptions) {
       loading: meQuery.isLoading || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
       isAuthenticated: Boolean(resolvedUser),
+      isServerAuthenticated: Boolean(meQuery.data),
       role: resolvedUser?.role ?? null,
     };
   }, [
