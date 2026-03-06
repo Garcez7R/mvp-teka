@@ -21,6 +21,7 @@ export default function AddBook() {
     category: "",
     description: "",
     price: "",
+    quantity: "1",
     condition: "Bom estado" as const,
     availabilityStatus: "ativo" as "ativo" | "reservado" | "vendido",
     pages: "",
@@ -435,6 +436,11 @@ export default function AddBook() {
       toast.error("Informe um preço válido");
       return;
     }
+    const normalizedQuantity = Number.parseInt(formData.quantity || "1", 10);
+    if (!Number.isFinite(normalizedQuantity) || normalizedQuantity < 0) {
+      toast.error("Informe uma quantidade válida (0 ou mais).");
+      return;
+    }
 
     try {
       setIsUploading(true);
@@ -461,8 +467,9 @@ export default function AddBook() {
         category: formData.category || "Outros",
         description: formData.description || undefined,
         price: normalizedPrice,
+        quantity: normalizedQuantity,
         condition: formData.condition,
-        availabilityStatus: formData.availabilityStatus,
+        availabilityStatus: normalizedQuantity === 0 ? "vendido" : formData.availabilityStatus,
         pages: formData.pages ? parseInt(formData.pages) : undefined,
         year: formData.year ? parseInt(formData.year) : undefined,
         coverUrl: finalCoverUrl || undefined,
@@ -753,6 +760,18 @@ export default function AddBook() {
                 <option value="Usado">Usado</option>
                 <option value="Desgastado">Desgastado</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quantidade disponível</label>
+              <input
+                type="number"
+                min={0}
+                value={formData.quantity}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
+                placeholder="Ex: 3"
+              />
             </div>
 
             <div>

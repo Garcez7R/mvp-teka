@@ -3,6 +3,7 @@ import { and, eq, isNull, like, or } from "drizzle-orm";
 import { router, protectedProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
 import { books, sebos, wishlistItems } from "../_schema.ts";
+import { normalizeBookTitle } from "./_utils/text.js";
 
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
 
@@ -170,7 +171,7 @@ export const wishlistRouter = router({
           results.push({
             itemId: item.id,
             bookId: book.id,
-            title: book.title,
+            title: normalizeBookTitle(book.title) ?? book.title,
             isbn: book.isbn,
             seboName: book.seboName,
             price: String(book.price),

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "./_utils/trpc.js";
+import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { sebos, books, users } from "../_schema.ts";
-import { eq } from "drizzle-orm";
+import { sebos, books, users, favorites, bookInterests } from "../_schema.ts";
+import { eq, inArray } from "drizzle-orm";
 
 export const sebosRouter = router({
   // Get all sebos
@@ -108,6 +108,79 @@ export const sebosRouter = router({
       }
 
       await db.update(sebos).set(updateData).where(eq(sebos.id, id));
+
+      return { success: true };
+    }),
+
+  adminCreate: adminProcedure
+    .input(
+      z.object({
+        userId: z.number(),
+        name: z.string(),
+        description: z.string().optional(),
+        whatsapp: z.string(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        verified: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const created = await db
+        .insert(sebos)
+        .values({
+          ...input,
+          verified: input.verified ?? false,
+        })
+        .returning({ id: sebos.id });
+
+      return created[0];
+    }),
+
+  adminUpdate: adminProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        userId: z.number().optional(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        whatsapp: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        verified: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { id, ...updateData } = input;
+      await db.update(sebos).set(updateData).where(eq(sebos.id, id));
+      return { success: true };
+    }),
+
+  adminDelete: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const existingSebo = await db
+        .select({ id: sebos.id })
+        .from(sebos)
+        .where(eq(sebos.id, input.id))
+        .then((res) => res[0] ?? null);
+
+      if (!existingSebo) {
+        throw new Error("Sebo not found");
+      }
+
+      const seboBooks = await db
+        .select({ id: books.id })
+        .from(books)
+        .where(eq(books.seboId, input.id));
+
+      const seboBookIds = seboBooks.map((row) => row.id);
+      if (seboBookIds.length > 0) {
+        await db.delete(favorites).where(inArray(favorites.bookId, seboBookIds));
+        await db.delete(bookInterests).where(inArray(bookInterests.bookId, seboBookIds));
+        await db.delete(books).where(inArray(books.id, seboBookIds));
+      }
+
+      await db.delete(sebos).where(eq(sebos.id, input.id));
 
       return { success: true };
     }),

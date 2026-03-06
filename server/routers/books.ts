@@ -3,6 +3,7 @@ import { router, publicProcedure, protectedProcedure, livreiroProcedure } from "
 import { db } from "./_utils/db.js";
 import { books, sebos, favorites, bookInterests } from "../_schema.ts";
 import { eq, like, and, lte, gte, inArray, sql } from "drizzle-orm";
+import { normalizeBookTitle } from "./_utils/text.js";
 
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
 type AvailabilityStatus = "ativo" | "reservado" | "vendido";
@@ -109,6 +110,7 @@ export const booksRouter = router({
           const normalized = normalizeBookDescription(row.books.description);
           return {
             ...row.books,
+            title: normalizeBookTitle(row.books.title) ?? row.books.title,
             description: normalized.description,
             availabilityStatus: normalized.availabilityStatus,
             sebo: row.sebos
@@ -152,6 +154,7 @@ export const booksRouter = router({
 
       return {
         ...book,
+        title: normalizeBookTitle(book.title) ?? book.title,
         description: normalized.description,
         availabilityStatus: normalized.availabilityStatus,
         sebo,
@@ -188,6 +191,7 @@ export const booksRouter = router({
         const normalized = normalizeBookDescription(book.description);
         return {
           ...book,
+          title: normalizeBookTitle(book.title) ?? book.title,
           description: normalized.description,
           availabilityStatus: normalized.availabilityStatus,
         };
@@ -209,6 +213,7 @@ export const booksRouter = router({
         year: z.number().optional(),
         coverUrl: z.string().optional(),
         seboId: z.number(),
+        quantity: z.number().int().min(0).default(1),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).default("ativo"),
       })
     )
@@ -231,8 +236,10 @@ export const booksRouter = router({
         .insert(books)
         .values({
           ...input,
+          title: normalizeBookTitle(input.title) ?? input.title,
           description: withStatusMarker(input.availabilityStatus, input.description),
           price: input.price,
+          quantity: input.quantity,
         })
         .returning({ id: books.id });
 
@@ -255,6 +262,7 @@ export const booksRouter = router({
           .optional(),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
         coverUrl: z.string().optional(),
+        quantity: z.number().int().min(0).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -279,11 +287,17 @@ export const booksRouter = router({
         throw new Error("Unauthorized");
       }
 
-      const { id, availabilityStatus, ...updateData } = input;
-      const targetStatus =
-        availabilityStatus ?? normalizeBookDescription(book.description).availabilityStatus;
+      const { id, availabilityStatus, quantity, ...updateData } = input;
+      const nextQuantity = quantity ?? book.quantity ?? 1;
+      const targetStatus = quantity === 0
+        ? "vendido"
+        : availabilityStatus ?? normalizeBookDescription(book.description).availabilityStatus;
       const updateDataWithStringPrice: any = {
         ...updateData,
+        ...(updateData.title !== undefined && {
+          title: normalizeBookTitle(updateData.title) ?? updateData.title,
+        }),
+        ...(quantity !== undefined && { quantity: nextQuantity }),
         description: withStatusMarker(targetStatus, updateData.description ?? book.description),
         ...(updateData.price !== undefined && { price: updateData.price }),
       };
@@ -359,7 +373,7 @@ export const booksRouter = router({
       const topBooks = myBooks
         .map((book: typeof books.$inferSelect) => ({
           id: book.id,
-          title: book.title,
+          title: normalizeBookTitle(book.title) ?? book.title,
           favorites: favoritesMap.get(book.id) ?? 0,
         }))
         .sort((a: { favorites: number }, b: { favorites: number }) => b.favorites - a.favorites)
@@ -441,6 +455,7 @@ export const booksRouter = router({
           interestedAt: row.interestedAt,
           book: {
             ...row.book,
+            title: normalizeBookTitle(row.book.title) ?? row.book.title,
             description: normalized.description,
             availabilityStatus: normalized.availabilityStatus,
           },

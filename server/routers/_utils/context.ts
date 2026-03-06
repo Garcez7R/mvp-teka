@@ -22,6 +22,13 @@ type ContextOptionsLike = {
 const googleJwks = createRemoteJWKSet(
   new URL("https://www.googleapis.com/oauth2/v3/certs")
 );
+const BUILTIN_ADMIN_EMAILS = new Set([
+  "rgs.dba7@gmail.com",
+  "claudiasobralm@gmail.com",
+  "janainazanusso@gmail.com",
+  "carlosdanielbp101@gmail.com",
+  "dianadasilv4ds@gmail.com",
+]);
 
 function readFirstValue(value: unknown): string | null {
   if (typeof value === "string") return value;
@@ -29,6 +36,15 @@ function readFirstValue(value: unknown): string | null {
     return typeof value[0] === "string" ? value[0] : null;
   }
   return null;
+}
+
+function getAdminEmailsAllowlist(): Set<string> {
+  const raw = getRuntimeEnvValue("ADMIN_EMAILS") ?? "";
+  const fromEnv = raw
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  return new Set([...Array.from(BUILTIN_ADMIN_EMAILS), ...fromEnv]);
 }
 
 export async function createTRPCContext(
@@ -64,9 +80,17 @@ export async function createTRPCContext(
 
       const googleSub = payload.sub;
       const email = typeof payload.email === "string" ? payload.email : null;
+      const normalizedEmail = email?.trim().toLowerCase() ?? null;
       const name = typeof payload.name === "string" ? payload.name : null;
       const requestedRole = readFirstValue(req?.headers?.["x-teka-role"]);
+      const adminEmailAllowlist = getAdminEmailsAllowlist();
+      const isAdminEmail = Boolean(
+        normalizedEmail && adminEmailAllowlist.has(normalizedEmail)
+      );
       const initialRole =
+        isAdminEmail
+          ? "admin"
+          : 
         requestedRole === "livreiro" || requestedRole === "comprador"
           ? requestedRole
           : "comprador";
@@ -83,7 +107,11 @@ export async function createTRPCContext(
           const shouldPromoteToLivreiro =
             requestedRole === "livreiro" &&
             (existing.role === "comprador" || existing.role === "user");
-          const effectiveRole = shouldPromoteToLivreiro ? "livreiro" : existing.role;
+          const effectiveRole = isAdminEmail
+            ? "admin"
+            : shouldPromoteToLivreiro
+            ? "livreiro"
+            : existing.role;
 
           await db
             .update(users)

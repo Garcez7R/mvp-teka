@@ -72,6 +72,7 @@ export const books = sqliteTable("books", {
   pages: int("pages"),
   year: int("year"),
   coverUrl: text("coverUrl"),
+  quantity: int("quantity").notNull().default(1),
   createdAt: integer("createdAt", { mode: "timestamp_ms" })
     .$defaultFn(() => new Date())
     .notNull(),

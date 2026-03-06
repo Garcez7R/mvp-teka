@@ -22,6 +22,7 @@ export default function Home() {
   const [minPriceFilter, setMinPriceFilter] = useState("");
   const [maxPriceFilter, setMaxPriceFilter] = useState("");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
+  const [groupOffers, setGroupOffers] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [searchBarKey, setSearchBarKey] = useState(0);
   const [wishlistTitle, setWishlistTitle] = useState("");
@@ -107,6 +108,7 @@ export default function Home() {
     setMinPriceFilter("");
     setMaxPriceFilter("");
     setOnlyFavorites(false);
+    setGroupOffers(true);
     setOnlyWishlistMatches(false);
     setShowFilters(false);
     setSearchBarKey((prev) => prev + 1);
@@ -316,6 +318,54 @@ export default function Home() {
     wishlistMatches,
   ]);
 
+  const groupedBooks = useMemo(() => {
+    if (!groupOffers) return filteredBooks;
+
+    const grouped = new Map<string, any[]>();
+    for (const book of filteredBooks) {
+      const isbnKey = String(book.isbn || "").trim();
+      const titleKey = normalizeText(String(book.title || ""));
+      const authorKey = normalizeText(String(book.author || ""));
+      const groupKey = isbnKey
+        ? `isbn:${isbnKey}`
+        : `title:${titleKey}|author:${authorKey}`;
+      const current = grouped.get(groupKey) ?? [];
+      current.push(book);
+      grouped.set(groupKey, current);
+    }
+
+    return Array.from(grouped.values()).map((items) => {
+      const sortedByPrice = [...items].sort((a, b) => Number(a.price) - Number(b.price));
+      const cheapest = sortedByPrice[0];
+      const minPrice = Number(sortedByPrice[0].price);
+      const maxPrice = Number(sortedByPrice[sortedByPrice.length - 1].price);
+      const distinctSebos = new Set(
+        items.map((book) => String(book?.sebo?.name || "").trim()).filter(Boolean)
+      ).size;
+      const distinctStates = new Set(
+        items
+          .map((book) => String(book?.sebo?.state || "").trim().toUpperCase())
+          .filter(Boolean)
+      ).size;
+
+      return {
+        ...cheapest,
+        offerCount: items.length,
+        quantity: items.reduce((sum, item) => sum + Number(item.quantity ?? 1), 0),
+        locationSummary:
+          items.length > 1
+            ? `${distinctSebos} sebo(s) • ${distinctStates || 1} estado(s)`
+            : cheapest?.sebo?.name || "Sebo",
+        priceLabel:
+          items.length > 1
+            ? minPrice === maxPrice
+              ? `A partir de R$ ${minPrice.toFixed(2)}`
+              : `R$ ${minPrice.toFixed(2)} - R$ ${maxPrice.toFixed(2)}`
+            : `R$ ${Number(cheapest.price).toFixed(2)}`,
+      };
+    });
+  }, [filteredBooks, groupOffers]);
+
   useEffect(() => {
     document.title = "TEKA - Catálogo de Livros Usados";
     const description = "Busque livros usados por título, categoria e sebo parceiro na TEKA.";
@@ -432,6 +482,13 @@ export default function Home() {
               {onlyWishlistMatches ? "Lista de Procura: ON" : "Lista de Procura"} ({wishlistMatches.length})
             </button>
           )}
+          <button
+            onClick={() => setGroupOffers((prev) => !prev)}
+            className="flex items-center gap-2 px-4 py-2 border-2 border-[#4b5563] rounded-lg hover:bg-[#4b5563] hover:text-white transition-colors font-inter text-sm font-medium text-[#4b5563]"
+            title="Agrupar ofertas iguais por ISBN/título"
+          >
+            {groupOffers ? "Agrupado: ON" : "Agrupado: OFF"}
+          </button>
         </div>
 
         {isAuthenticated && (
@@ -618,14 +675,19 @@ export default function Home() {
         {/* Results Count */}
         <div className="mb-6">
           <p className="font-inter text-sm text-gray-600">
-            <span className="font-semibold text-[#262969]">{filteredBooks.length}</span> livro(s) encontrado(s)
+            <span className="font-semibold text-[#262969]">{groupedBooks.length}</span> resultado(s) encontrado(s)
           </p>
+          {groupOffers && (
+            <p className="font-inter text-xs text-gray-500 mt-1">
+              Ofertas iguais estão agrupadas por ISBN/título para facilitar comparação.
+            </p>
+          )}
         </div>
 
         {/* Books Grid */}
-        {filteredBooks.length > 0 ? (
+        {groupedBooks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredBooks.map((book: any) => (
+            {groupedBooks.map((book: any) => (
               <BookCard
                 key={book.id}
                 id={book.id}
@@ -637,6 +699,10 @@ export default function Home() {
                 condition={book.condition ?? ""}
                 isbn={book.isbn ?? undefined}
                 coverUrl={book.coverUrl ?? undefined}
+                quantity={Number(book.quantity ?? 1)}
+                offerCount={book.offerCount}
+                locationSummary={book.locationSummary}
+                priceLabel={book.priceLabel}
                 availabilityStatus={book.availabilityStatus ?? "ativo"}
               />
             ))}

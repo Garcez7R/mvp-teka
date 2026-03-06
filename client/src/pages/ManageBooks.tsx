@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { ArrowLeft, Upload, Edit2, Trash2, Search as SearchIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import BookCover from "@/components/BookCover";
 
 interface EditingBook {
   id: number;
@@ -12,6 +14,7 @@ interface EditingBook {
   author?: string;
   isbn?: string;
   price: number;
+  quantity: number;
   availabilityStatus?: "ativo" | "reservado" | "vendido";
   coverUrl?: string;
   newCoverFile?: File;
@@ -24,7 +27,6 @@ type StatusHistoryEntry = {
 };
 
 export default function ManageBooks() {
-  const [, navigate] = useLocation();
   const { isAuthenticated, role } = useAuth({ redirectOnUnauthenticated: true });
   const utils = trpc.useUtils();
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,52 +84,52 @@ export default function ManageBooks() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="font-outfit font-bold text-2xl text-[#262969] mb-4">
-            Acesso Restrito
-          </h1>
-          <p className="text-gray-600 mb-6">Você precisa fazer login.</p>
-          <Link
-            href="/login"
-            className="inline-block bg-[#da4653] text-white font-outfit font-bold py-2 px-6 rounded-lg"
-          >
-            Fazer Login
-          </Link>
-        </div>
+      <div className="min-h-screen flex flex-col bg-white">
+        <Header />
+        <main className="container flex-1 py-12 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="font-outfit font-bold text-2xl text-[#262969] mb-4">
+              Acesso Restrito
+            </h1>
+            <p className="text-gray-600 mb-6">Você precisa fazer login.</p>
+            <Link
+              href="/login"
+              className="inline-block bg-[#da4653] text-white font-outfit font-bold py-2 px-6 rounded-lg"
+            >
+              Fazer Login
+            </Link>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
   if (role !== "livreiro" && role !== "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <p className="text-gray-700">Apenas livreiros e admins podem gerenciar livros.</p>
+      <div className="min-h-screen flex flex-col bg-white">
+        <Header />
+        <main className="container flex-1 py-12 flex items-center justify-center">
+          <p className="text-gray-700">Apenas livreiros e admins podem gerenciar livros.</p>
+        </main>
+        <Footer />
       </div>
     );
   }
 
   if (!mySebo) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="bg-gradient-to-br from-[#262969] to-[#1a1a4d] text-white py-6">
-          <div className="container">
-            <Link href="/">
-              <button className="flex items-center gap-2 text-white hover:opacity-80 mb-4">
-                <ArrowLeft className="w-5 h-5" />
-                Voltar
-              </button>
-            </Link>
-          </div>
-        </div>
-        <div className="container py-12 text-center">
+      <div className="min-h-screen flex flex-col bg-white">
+        <Header />
+        <main className="container flex-1 py-12 text-center">
           <p className="text-gray-600 mb-6">Você precisa criar um sebo primeiro.</p>
           <Link href="/sebo/novo">
             <button className="bg-[#da4653] text-white font-outfit font-bold py-2 px-6 rounded-lg">
               Criar Sebo
             </button>
           </Link>
-        </div>
+        </main>
+        <Footer />
       </div>
     );
   }
@@ -146,6 +148,7 @@ export default function ManageBooks() {
       author: book.author || undefined,
       isbn: book.isbn || undefined,
       price: Number(book.price),
+      quantity: Number(book.quantity ?? 1),
       availabilityStatus: book.availabilityStatus || "ativo",
       coverUrl: book.coverUrl || undefined,
     });
@@ -168,6 +171,9 @@ export default function ManageBooks() {
     try {
       setIsUploading(true);
       let coverUrl = editingBook.coverUrl;
+      const normalizedQuantity = Number.isFinite(editingBook.quantity)
+        ? Math.max(0, Math.trunc(editingBook.quantity))
+        : 0;
 
       // Upload new cover if file selected
       if (editingBook.newCoverFile) {
@@ -182,6 +188,7 @@ export default function ManageBooks() {
         title: editingBook.title,
         author: editingBook.author || undefined,
         price: editingBook.price,
+        quantity: normalizedQuantity,
         availabilityStatus: editingBook.availabilityStatus || "ativo",
         coverUrl: coverUrl || undefined,
       };
@@ -248,6 +255,21 @@ export default function ManageBooks() {
     }
   };
 
+  const adjustQuantityQuick = async (book: any, delta: number) => {
+    const currentQuantity = Number(book.quantity ?? 1);
+    const nextQuantity = Math.max(0, currentQuantity + delta);
+    try {
+      await updateBookMutation.mutateAsync({
+        id: book.id,
+        quantity: nextQuantity,
+        ...(nextQuantity === 0 ? { availabilityStatus: "vendido" as const } : {}),
+      });
+      toast.success(nextQuantity === 0 ? "Estoque zerado. Livro marcado como vendido." : "Quantidade atualizada");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar quantidade");
+    }
+  };
+
   const handleExportCsv = () => {
     const header = [
       "id",
@@ -292,23 +314,17 @@ export default function ManageBooks() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-[#262969] to-[#1a1a4d] text-white py-6">
-        <div className="container">
-          <Link href="/">
-            <button className="flex items-center gap-2 text-white hover:opacity-80 mb-4">
-              <ArrowLeft className="w-5 h-5" />
-              Voltar
-            </button>
-          </Link>
-          <h1 className="font-outfit font-bold text-3xl">Meus Livros</h1>
-          <p className="text-gray-200 mt-2">{mySebo.name}</p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="container py-12">
+    <div className="min-h-screen flex flex-col bg-white">
+      <Header />
+      <main className="container flex-1 py-12">
+        <Link href="/">
+          <button className="flex items-center gap-2 text-gray-600 hover:text-[#262969] transition-colors font-inter text-sm font-medium mb-6">
+            <ArrowLeft className="w-4 h-4" />
+            Voltar ao catálogo
+          </button>
+        </Link>
+        <h1 className="font-outfit font-bold text-3xl text-[#262969] mb-2">Meus Livros</h1>
+        <p className="text-gray-600 mb-8">{mySebo.name}</p>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="p-4 border rounded-lg bg-white">
             <p className="text-xs text-gray-500">Livros</p>
@@ -391,16 +407,16 @@ export default function ManageBooks() {
                 className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
               >
                 {/* Cover Preview */}
-                <div className="bg-gray-100 h-48 flex items-center justify-center overflow-hidden">
-                  {book.coverUrl ? (
-                    <img
-                      src={book.coverUrl}
-                      alt={book.title}
-                      className="w-full h-full object-cover"
+                <div className="bg-gray-100 p-4">
+                  <div className="rounded-lg overflow-hidden border border-gray-200 aspect-[2/3] w-1/3 mx-auto bg-white">
+                    <BookCover
+                      isbn={book.isbn ?? undefined}
+                      title={book.title}
+                      author={book.author ?? undefined}
+                      coverUrl={book.coverUrl ?? undefined}
+                      className="w-full h-full"
                     />
-                  ) : (
-                    <div className="text-gray-400">Sem capa</div>
-                  )}
+                  </div>
                 </div>
 
                 {/* Book Info */}
@@ -442,6 +458,19 @@ export default function ManageBooks() {
                           setEditingBook({
                             ...editingBook!,
                             price: parseFloat(e.target.value),
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="Quantidade"
+                        value={String(editingBook?.quantity ?? 1)}
+                        onChange={(e) =>
+                          setEditingBook({
+                            ...editingBook!,
+                            quantity: Number.parseInt(e.target.value || "0", 10),
                           })
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
@@ -532,6 +561,25 @@ export default function ManageBooks() {
                           </span>
                         </div>
                       </div>
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <p className="text-sm text-gray-700">
+                          Unidades disponíveis: <span className="font-semibold">{Number(book.quantity ?? 1)}</span>
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => void adjustQuantityQuick(book, -1)}
+                            className="px-2 py-1 text-xs rounded border border-gray-400 text-gray-700"
+                          >
+                            -1 un.
+                          </button>
+                          <button
+                            onClick={() => void adjustQuantityQuick(book, 1)}
+                            className="px-2 py-1 text-xs rounded border border-gray-400 text-gray-700"
+                          >
+                            +1 un.
+                          </button>
+                        </div>
+                      </div>
                       <div className="flex gap-2 mb-3">
                         <button
                           onClick={() => void updateStatusQuick(book.id, "ativo")}
@@ -601,7 +649,8 @@ export default function ManageBooks() {
             </Link>
           </div>
         )}
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 }

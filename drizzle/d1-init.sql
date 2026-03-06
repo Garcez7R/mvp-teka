@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS books (
   pages INTEGER,
   year INTEGER,
   coverUrl TEXT,
+  quantity INTEGER NOT NULL DEFAULT 1,
   createdAt INTEGER NOT NULL,
   updatedAt INTEGER NOT NULL
 );

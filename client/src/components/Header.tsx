@@ -10,7 +10,7 @@ export default function Header() {
   const hasToken = Boolean(getSessionIdToken());
   const displayName = user?.name?.trim() || user?.email?.trim() || "Usuário";
   const roleLabel =
-    role === "admin" ? "Admin" : role === "livreiro" ? "Livreiro" : "Comprador";
+    role === "admin" ? "Admin" : role === "livreiro" ? "Livreiro" : role === "comprador" ? "Comprador" : "Usuário";
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
@@ -27,7 +27,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#da4653] border-b border-gray-200 shadow-sm">
+    <header className="z-50 bg-[#da4653] border-b border-gray-200 shadow-sm">
       <div className="container flex items-center justify-between h-16">
         {/* Logo */}
         <Link

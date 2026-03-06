@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { users } from "../_schema.ts";
-import { eq } from "drizzle-orm";
+import { users, sebos, books, favorites, bookInterests, wishlistItems } from "../_schema.ts";
+import { eq, inArray } from "drizzle-orm";
 
 export const usersRouter = router({
   // Get current user
@@ -150,6 +150,82 @@ export const usersRouter = router({
         .update(users)
         .set({ role: input.role })
         .where(eq(users.id, input.userId));
+
+      return { success: true };
+    }),
+
+  adminCreate: adminProcedure
+    .input(
+      z.object({
+        name: z.string().optional(),
+        email: z.string().email(),
+        role: z.enum(["admin", "livreiro", "comprador", "user"]).default("comprador"),
+        openId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const newUser = await db
+        .insert(users)
+        .values({
+          openId: input.openId ?? `admin-email:${input.email.toLowerCase()}`,
+          name: input.name ?? null,
+          email: input.email,
+          role: input.role,
+          loginMethod: "admin",
+        })
+        .returning({ id: users.id });
+
+      return newUser[0];
+    }),
+
+  adminUpdate: adminProcedure
+    .input(
+      z.object({
+        userId: z.number(),
+        name: z.string().optional(),
+        email: z.string().email().optional(),
+        role: z.enum(["admin", "livreiro", "comprador", "user"]).optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { userId, ...updateData } = input;
+      await db.update(users).set(updateData).where(eq(users.id, userId));
+      return { success: true };
+    }),
+
+  adminDelete: adminProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.userId === input.userId) {
+        throw new Error("Admin cannot delete current session user");
+      }
+
+      const ownedSebos = await db
+        .select({ id: sebos.id })
+        .from(sebos)
+        .where(eq(sebos.userId, input.userId));
+
+      const ownedSeboIds = ownedSebos.map((row) => row.id);
+      if (ownedSeboIds.length > 0) {
+        const ownedBooks = await db
+          .select({ id: books.id })
+          .from(books)
+          .where(inArray(books.seboId, ownedSeboIds));
+        const ownedBookIds = ownedBooks.map((row) => row.id);
+
+        if (ownedBookIds.length > 0) {
+          await db.delete(favorites).where(inArray(favorites.bookId, ownedBookIds));
+          await db.delete(bookInterests).where(inArray(bookInterests.bookId, ownedBookIds));
+          await db.delete(books).where(inArray(books.id, ownedBookIds));
+        }
+
+        await db.delete(sebos).where(inArray(sebos.id, ownedSeboIds));
+      }
+
+      await db.delete(favorites).where(eq(favorites.userId, input.userId));
+      await db.delete(bookInterests).where(eq(bookInterests.userId, input.userId));
+      await db.delete(wishlistItems).where(eq(wishlistItems.userId, input.userId));
+      await db.delete(users).where(eq(users.id, input.userId));
 
       return { success: true };
     }),

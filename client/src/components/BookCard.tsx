@@ -9,10 +9,14 @@ interface BookCardProps {
   author?: string;
   category: string;
   price: string | number;
+  priceLabel?: string;
   sebo?: { name: string };
   condition: string;
   isbn?: string;
   coverUrl?: string;
+  quantity?: number;
+  offerCount?: number;
+  locationSummary?: string;
   availabilityStatus?: "ativo" | "reservado" | "vendido";
 }
 
@@ -22,10 +26,14 @@ export default function BookCard({
   author,
   category,
   price,
+  priceLabel,
   sebo,
   condition,
   isbn,
   coverUrl,
+  quantity,
+  offerCount,
+  locationSummary,
   availabilityStatus = "ativo",
 }: BookCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -99,12 +107,18 @@ export default function BookCard({
 
           <div className="flex items-center gap-1 text-gray-700 text-sm font-inter">
             <MapPin className="w-4 h-4 text-gray-400" />
-            <span className="truncate">{seboName}</span>
+            <span className="truncate">{locationSummary || seboName}</span>
           </div>
+          {typeof quantity === "number" && (
+            <p className="text-xs text-gray-600">Unidades: {quantity}</p>
+          )}
+          {typeof offerCount === "number" && offerCount > 1 && (
+            <p className="text-xs text-[#262969] font-medium">{offerCount} ofertas para este título</p>
+          )}
 
           <div className="flex items-center justify-between pt-2 border-t border-gray-200">
             <span className="font-outfit font-bold text-lg text-[#da4653]">
-              R$ {priceNumber.toFixed(2)}
+              {priceLabel || `R$ ${priceNumber.toFixed(2)}`}
             </span>
           </div>
         </div>
