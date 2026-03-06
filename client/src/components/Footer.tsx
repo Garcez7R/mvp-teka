@@ -1,9 +1,12 @@
 import { Link } from "wouter";
 import { MessageCircle } from "lucide-react";
 import { WHATSAPP_DEFAULT } from "@/const";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { role } = useAuth();
+  const canManageCatalog = role === "livreiro" || role === "admin";
 
   return (
     <footer className="bg-[#262969] text-white mt-16">
@@ -26,11 +29,19 @@ export default function Footer() {
                   Catálogo
                 </Link>
               </li>
-              <li>
-                <Link href="/add-book" className="text-gray-300 hover:text-white transition-colors">
-                  Cadastrar Livro
-                </Link>
-              </li>
+              {canManageCatalog ? (
+                <li>
+                  <Link href="/add-book" className="text-gray-300 hover:text-white transition-colors">
+                    Cadastrar Livro
+                  </Link>
+                </li>
+              ) : (
+                <li>
+                  <Link href="/login" className="text-gray-300 hover:text-white transition-colors">
+                    Quero vender livros
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link href="/about" className="text-gray-300 hover:text-white transition-colors">
                   Sobre
