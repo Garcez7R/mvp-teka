@@ -3,6 +3,7 @@ import {
   clearSessionIdToken,
   clearSignupRole,
   getGoogleTokenClaims,
+  isAdminEmail,
   getSessionIdToken,
   getSignupRole,
   setSessionIdToken,
@@ -58,6 +59,7 @@ export function useAuth(options?: UseAuthOptions) {
   const state = useMemo(() => {
     const claims = getGoogleTokenClaims();
     const fallbackRole = getSignupRole();
+    const fallbackIsAdmin = isAdminEmail(claims?.email ?? null);
     const fallbackUser =
       !meQuery.data && claims?.sub
         ? {
@@ -65,7 +67,10 @@ export function useAuth(options?: UseAuthOptions) {
             openId: `google:${claims.sub}`,
             name: claims.name ?? null,
             email: claims.email ?? null,
-            role: (fallbackRole ?? "comprador") as "livreiro" | "comprador",
+            role: (fallbackIsAdmin ? "admin" : fallbackRole ?? "comprador") as
+              | "admin"
+              | "livreiro"
+              | "comprador",
           }
         : null;
     const resolvedUser = meQuery.data ?? fallbackUser;

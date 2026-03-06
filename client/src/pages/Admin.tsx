@@ -8,18 +8,20 @@ import { toast } from "sonner";
 type AdminTab = "users" | "sebos" | "books";
 
 export default function Admin() {
-  const { isAuthenticated, role, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { isAuthenticated, role, loading } = useAuth({
+    redirectOnUnauthenticated: true,
+  });
   const utils = trpc.useUtils();
   const [tab, setTab] = useState<AdminTab>("users");
   const [selectedSeboId, setSelectedSeboId] = useState<number | null>(null);
 
-  const { data: users = [] } = trpc.users.adminList.useQuery(undefined, {
+  const usersQuery = trpc.users.adminList.useQuery(undefined, {
     enabled: isAuthenticated && role === "admin",
   });
-  const { data: sebos = [] } = trpc.sebos.list.useQuery(undefined, {
+  const sebosQuery = trpc.sebos.list.useQuery(undefined, {
     enabled: isAuthenticated && role === "admin",
   });
-  const { data: books = [] } = trpc.books.list.useQuery(
+  const booksQuery = trpc.books.list.useQuery(
     {
       limit: 500,
       offset: 0,
@@ -27,6 +29,9 @@ export default function Admin() {
     },
     { enabled: isAuthenticated && role === "admin" }
   );
+  const users = usersQuery.data ?? [];
+  const sebos = sebosQuery.data ?? [];
+  const books = booksQuery.data ?? [];
 
   const adminCreateUserMutation = trpc.users.adminCreate.useMutation({
     onSuccess: async () => {
@@ -122,7 +127,7 @@ export default function Admin() {
     [users]
   );
 
-  if (loading) {
+  if (loading && role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <p className="text-gray-600">Carregando...</p>
@@ -149,6 +154,29 @@ export default function Admin() {
       <Header />
       <main className="container flex-1 py-12">
         <h1 className="font-outfit text-3xl font-bold text-[#262969] mb-6">Painel Admin</h1>
+        {(usersQuery.error || sebosQuery.error || booksQuery.error) && (
+          <div className="mb-6 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+            <p className="font-semibold">Falha ao carregar dados de admin.</p>
+            <p className="mt-1">
+              {usersQuery.error?.message ||
+                sebosQuery.error?.message ||
+                booksQuery.error?.message ||
+                "Tente novamente em instantes."}
+            </p>
+            <button
+              onClick={() => {
+                void Promise.all([
+                  usersQuery.refetch(),
+                  sebosQuery.refetch(),
+                  booksQuery.refetch(),
+                ]);
+              }}
+              className="mt-3 px-3 py-2 rounded bg-[#262969] text-white"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 mb-6">
           <button onClick={() => setTab("users")} className={`px-4 py-2 rounded border ${tab === "users" ? "bg-[#262969] text-white" : "bg-white"}`}>Usuários</button>
