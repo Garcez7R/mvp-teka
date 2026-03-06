@@ -22,7 +22,7 @@ export default function Home() {
   const [minPriceFilter, setMinPriceFilter] = useState("");
   const [maxPriceFilter, setMaxPriceFilter] = useState("");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
-  const [groupOffers, setGroupOffers] = useState(true);
+  const [groupOffers, setGroupOffers] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchBarKey, setSearchBarKey] = useState(0);
   const [wishlistTitle, setWishlistTitle] = useState("");
@@ -139,114 +139,10 @@ export default function Home() {
     state: stateFilter || undefined,
     minPrice: minPriceFilter ? Number(minPriceFilter) : undefined,
     maxPrice: maxPriceFilter ? Number(maxPriceFilter) : undefined,
-    limit: 100,
+    limit: 500,
   });
 
-  // Se não houver livros e não houver filtros aplicados, exibir livros de demonstração
-  const displayBooks = useMemo(() => {
-    if (booksData.length === 0 && !searchQuery && !selectedCategory && !selectedSebo) {
-      // Livros de demonstração com capas reais
-      return [
-        {
-          id: 'demo-1',
-          title: 'Dom Casmurro',
-          author: 'Machado de Assis',
-          category: 'Literatura Brasileira',
-          price: 25.00,
-          condition: 'Bom estado',
-          isbn: undefined,
-          coverUrl: '/covers/dom-casmurro.svg',
-          availabilityStatus: 'ativo',
-          sebo: {
-            name: 'Sebo do Porto',
-            city: 'Porto Alegre',
-            state: 'RS'
-          }
-        },
-        {
-          id: 'demo-2',
-          title: '1984',
-          author: 'George Orwell',
-          category: 'Ficção Científica',
-          price: 32.50,
-          condition: 'Excelente',
-          isbn: '9788535914849',
-          coverUrl: 'https://covers.openlibrary.org/b/isbn/9788535914849-L.jpg',
-          availabilityStatus: 'ativo',
-          sebo: {
-            name: 'Sebo do Porto',
-            city: 'Porto Alegre',
-            state: 'RS'
-          }
-        },
-        {
-          id: 'demo-3',
-          title: 'Crônicas Saxônicas',
-          author: 'Bernard Cornwell',
-          category: 'História',
-          price: 35.00,
-          condition: 'Bom estado',
-          isbn: '9780007218011',
-          coverUrl: 'https://covers.openlibrary.org/b/isbn/9780007218011-L.jpg',
-          availabilityStatus: 'ativo',
-          sebo: {
-            name: 'Livraria Releitura',
-            city: 'São Paulo',
-            state: 'SP'
-          }
-        },
-        {
-          id: 'demo-4',
-          title: 'As Duas Torres',
-          author: 'J.R.R. Tolkien',
-          category: 'Fantasia',
-          price: 42.00,
-          condition: 'Excelente',
-          isbn: '9788595084759',
-          coverUrl: '/covers/as-duas-torres.svg',
-          availabilityStatus: 'ativo',
-          sebo: {
-            name: 'Livraria Releitura',
-            city: 'São Paulo',
-            state: 'SP'
-          }
-        },
-        {
-          id: 'demo-5',
-          title: 'A Quarta Asa',
-          author: 'Rebecca Yarros',
-          category: 'Fantasia',
-          price: 38.00,
-          condition: 'Bom estado',
-          isbn: '9781649374042',
-          coverUrl: 'https://covers.openlibrary.org/b/isbn/9781649374042-L.jpg',
-          availabilityStatus: 'ativo',
-          sebo: {
-            name: 'Sebo do Porto',
-            city: 'Porto Alegre',
-            state: 'RS'
-          }
-        },
-        {
-          id: 'demo-6',
-          title: 'Harry Potter e a Pedra Filosofal',
-          author: 'J.K. Rowling',
-          category: 'Fantasia',
-          price: 35.00,
-          condition: 'Bom estado',
-          isbn: '9788532511010',
-          coverUrl: 'https://covers.openlibrary.org/b/isbn/9788532511010-L.jpg',
-          availabilityStatus: 'ativo',
-          sebo: {
-            name: 'Livraria Releitura',
-            city: 'São Paulo',
-            state: 'SP'
-          }
-        }
-      ];
-    }
-    return booksData;
-  }, [booksData, searchQuery, selectedCategory, selectedSebo]);
+  const displayBooks = booksData;
 
   // Get unique categories and sebos from the displayed data
   const categories = useMemo(
