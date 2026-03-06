@@ -146,7 +146,7 @@ export const booksRouter = router({
       const favoriteCounts = db
         .select({
           bookId: favorites.bookId,
-          count: sql<number>`count(*)`,
+          count: sql<number>`count(*)`.as("count"),
         })
         .from(favorites)
         .groupBy(favorites.bookId)
@@ -245,7 +245,7 @@ export const booksRouter = router({
 
       const normalized = normalizeBookDescription(book.description);
       const seboBooksCount = await db
-        .select({ count: sql<number>`count(*)` })
+        .select({ count: sql<number>`count(*)`.as("count") })
         .from(books)
         .where(eq(books.seboId, book.seboId))
         .then((res: Array<{ count: number }>) => Number(res[0]?.count ?? 0));
@@ -546,7 +546,7 @@ export const booksRouter = router({
       const favoritesByBook = await db
         .select({
           bookId: favorites.bookId,
-          count: sql<number>`count(*)`,
+          count: sql<number>`count(*)`.as("count"),
         })
         .from(favorites)
         .where(inArray(favorites.bookId, bookIds))
@@ -568,7 +568,7 @@ export const booksRouter = router({
       const interestsByBook = await db
         .select({
           bookId: bookInterests.bookId,
-          count: sql<number>`count(*)`,
+          count: sql<number>`count(*)`.as("count"),
         })
         .from(bookInterests)
         .where(inArray(bookInterests.bookId, bookIds))
@@ -611,7 +611,7 @@ export const booksRouter = router({
         });
 
       const totalInterests = await db
-        .select({ count: sql<number>`count(*)` })
+        .select({ count: sql<number>`count(*)`.as("count") })
         .from(bookInterests)
         .where(eq(bookInterests.bookId, input.bookId))
         .then((res) => Number(res[0]?.count ?? 0));

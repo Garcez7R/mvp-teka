@@ -26,7 +26,12 @@ export default function Footer() {
             <ul className="space-y-2 font-inter text-sm">
               <li>
                 <Link href="/" className="text-gray-300 hover:text-white transition-colors">
-                  Catálogo
+                  Início
+                </Link>
+              </li>
+              <li>
+                <Link href="/sebos" className="text-gray-300 hover:text-white transition-colors">
+                  Sebos
                 </Link>
               </li>
               {canManageCatalog ? (
@@ -54,14 +59,17 @@ export default function Footer() {
           <div>
             <h4 className="font-outfit font-semibold mb-4">Contato</h4>
             <a
-              href={`https://wa.me/${WHATSAPP_DEFAULT}?text=Olá! Tenho uma dúvida sobre o TEKA`}
+              href={`https://wa.me/${WHATSAPP_DEFAULT}?text=Olá! Tenho uma dúvida sobre o app TEKA (suporte da plataforma).`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#da4653] hover:bg-[#c23a45] px-4 py-2 rounded-lg transition-colors font-inter text-sm font-medium"
             >
               <MessageCircle className="w-4 h-4" />
-              Equipe Teka - WhatsApp
+              Equipe Teka - Suporte
             </a>
+            <p className="mt-2 text-xs text-gray-400">
+              Canal exclusivo para suporte do app/site. Para negociar livros, use o WhatsApp do sebo.
+            </p>
           </div>
         </div>
 

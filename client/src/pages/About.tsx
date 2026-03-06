@@ -19,6 +19,13 @@ export default function About() {
           </p>
         </section>
 
+        <section className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-16">
+          <h2 className="font-outfit font-bold text-xl text-[#262969] mb-2">Aviso Legal</h2>
+          <p className="font-inter text-sm text-gray-700">
+            A TEKA apenas conecta leitores e sebistas; não intermediamos pagamento, entrega ou garantias da transação.
+          </p>
+        </section>
+
         {/* MVP Status */}
         <section className="bg-blue-50 border border-blue-200 rounded-lg p-8 mb-16">
           <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-4">
@@ -109,10 +116,10 @@ export default function About() {
             Comece a buscar seus livros favoritos agora mesmo. Encontre ofertas incríveis em sebos parceiros.
           </p>
           <Link href="/">
-            <button className="bg-[#da4653] hover:bg-[#c23a45] text-white font-outfit font-bold py-3 px-8 rounded-lg transition-colors">
-              Ir para o Catálogo
-            </button>
-          </Link>
+              <button className="bg-[#da4653] hover:bg-[#c23a45] text-white font-outfit font-bold py-3 px-8 rounded-lg transition-colors">
+              Ir para o Início
+              </button>
+            </Link>
         </section>
       </main>
 

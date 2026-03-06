@@ -49,7 +49,10 @@ export default function Header() {
             onClick={resetCatalog}
             className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium"
           >
-            Catálogo
+            Início
+          </Link>
+          <Link href="/sebos" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+            Sebos
           </Link>
           {isAuthenticated && (role === "livreiro" || role === "admin") && (
             <>
@@ -132,7 +135,16 @@ export default function Header() {
               className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
             >
               <BookOpen className="w-5 h-5 text-[#da4653]" />
-              Catálogo
+              Início
+            </Link>
+
+            <Link
+              href="/sebos"
+              onClick={closeMenu}
+              className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+            >
+              <Library className="w-5 h-5 text-[#da4653]" />
+              Sebos
             </Link>
             
             <Link 

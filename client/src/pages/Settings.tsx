@@ -36,6 +36,12 @@ export default function SettingsPage() {
     city: "",
     state: "",
     description: "",
+    ownerName: "",
+    documentId: "",
+    addressLine: "",
+    postalCode: "",
+    openingYear: "",
+    logoUrl: "",
   });
   const [installAvailable, setInstallAvailable] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -53,6 +59,12 @@ export default function SettingsPage() {
         city: "",
         state: "",
         description: "",
+        ownerName: "",
+        documentId: "",
+        addressLine: "",
+        postalCode: "",
+        openingYear: "",
+        logoUrl: "",
       });
       return;
     }
@@ -62,6 +74,12 @@ export default function SettingsPage() {
       city: mySebo.city || "",
       state: mySebo.state || "",
       description: mySebo.description || "",
+      ownerName: (mySebo as any).ownerName || "",
+      documentId: (mySebo as any).documentId || "",
+      addressLine: (mySebo as any).addressLine || "",
+      postalCode: (mySebo as any).postalCode || "",
+      openingYear: (mySebo as any).openingYear ? String((mySebo as any).openingYear) : "",
+      logoUrl: (mySebo as any).logoUrl || "",
     });
   }, [mySebo]);
 
@@ -236,6 +254,12 @@ export default function SettingsPage() {
       city: seboForm.city.trim() || undefined,
       state: seboForm.state.trim().toUpperCase() || undefined,
       description: seboForm.description.trim() || undefined,
+      ownerName: seboForm.ownerName.trim() || undefined,
+      documentId: seboForm.documentId.trim() || undefined,
+      addressLine: seboForm.addressLine.trim() || undefined,
+      postalCode: seboForm.postalCode.trim() || undefined,
+      openingYear: seboForm.openingYear ? Number(seboForm.openingYear) : undefined,
+      logoUrl: seboForm.logoUrl.trim() || undefined,
     });
   };
 
@@ -289,6 +313,43 @@ export default function SettingsPage() {
                       onChange={(e) => setSeboForm((prev) => ({ ...prev, state: e.target.value }))}
                       placeholder="UF"
                       maxLength={2}
+                      className="px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                    <input
+                      value={seboForm.postalCode}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, postalCode: e.target.value }))}
+                      placeholder="CEP"
+                      className="px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                    <input
+                      value={seboForm.ownerName}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, ownerName: e.target.value }))}
+                      placeholder="Nome do sebista"
+                      className="px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                    <input
+                      value={seboForm.documentId}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, documentId: e.target.value }))}
+                      placeholder="CPF/CNPJ (sem validação)"
+                      className="px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                    <input
+                      value={seboForm.addressLine}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, addressLine: e.target.value }))}
+                      placeholder="Endereço"
+                      className="px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                    <input
+                      value={seboForm.openingYear}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, openingYear: e.target.value }))}
+                      placeholder="Ano de abertura"
+                      type="number"
+                      className="px-3 py-2 border border-gray-300 rounded bg-white"
+                    />
+                    <input
+                      value={seboForm.logoUrl}
+                      onChange={(e) => setSeboForm((prev) => ({ ...prev, logoUrl: e.target.value }))}
+                      placeholder="URL do logo"
                       className="px-3 py-2 border border-gray-300 rounded bg-white"
                     />
                   </div>

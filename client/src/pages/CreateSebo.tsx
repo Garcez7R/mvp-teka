@@ -13,6 +13,12 @@ export default function CreateSebo() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    ownerName: "",
+    documentId: "",
+    addressLine: "",
+    postalCode: "",
+    openingYear: "",
+    logoUrl: "",
     whatsapp: "",
     city: "",
     state: "",
@@ -53,6 +59,12 @@ export default function CreateSebo() {
       await createSeboMutation.mutateAsync({
         name: formData.name,
         description: formData.description || undefined,
+        ownerName: formData.ownerName || undefined,
+        documentId: formData.documentId || undefined,
+        addressLine: formData.addressLine || undefined,
+        postalCode: formData.postalCode || undefined,
+        openingYear: formData.openingYear ? Number(formData.openingYear) : undefined,
+        logoUrl: formData.logoUrl || undefined,
         whatsapp: formData.whatsapp,
         city: formData.city || undefined,
         state: formData.state || undefined,
@@ -137,6 +149,87 @@ export default function CreateSebo() {
                 rows={4}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="block font-inter font-semibold text-gray-700 mb-2">
+                  Nome completo do sebista (opcional)
+                </label>
+                <input
+                  type="text"
+                  name="ownerName"
+                  value={formData.ownerName}
+                  onChange={handleChange}
+                  placeholder="Ex: Rafael Garcez dos Santos"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                />
+              </div>
+              <div>
+                <label className="block font-inter font-semibold text-gray-700 mb-2">
+                  CPF/CNPJ (opcional)
+                </label>
+                <input
+                  type="text"
+                  name="documentId"
+                  value={formData.documentId}
+                  onChange={handleChange}
+                  placeholder="Apenas preenchimento, sem validação"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                />
+              </div>
+              <div>
+                <label className="block font-inter font-semibold text-gray-700 mb-2">
+                  Endereço (opcional)
+                </label>
+                <input
+                  type="text"
+                  name="addressLine"
+                  value={formData.addressLine}
+                  onChange={handleChange}
+                  placeholder="Rua, número e bairro"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                />
+              </div>
+              <div>
+                <label className="block font-inter font-semibold text-gray-700 mb-2">
+                  CEP (opcional)
+                </label>
+                <input
+                  type="text"
+                  name="postalCode"
+                  value={formData.postalCode}
+                  onChange={handleChange}
+                  placeholder="Ex: 90000-000"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                />
+              </div>
+              <div>
+                <label className="block font-inter font-semibold text-gray-700 mb-2">
+                  Ano de abertura (opcional)
+                </label>
+                <input
+                  type="number"
+                  name="openingYear"
+                  value={formData.openingYear}
+                  onChange={handleChange}
+                  placeholder="Ex: 2018"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                />
+              </div>
+              <div>
+                <label className="block font-inter font-semibold text-gray-700 mb-2">
+                  URL do logo (opcional)
+                </label>
+                <input
+                  type="url"
+                  name="logoUrl"
+                  value={formData.logoUrl}
+                  onChange={handleChange}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                />
+              </div>
             </div>
 
             {/* WhatsApp */}

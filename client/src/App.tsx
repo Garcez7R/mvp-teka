@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 const Home = lazy(() => import("./pages/Home"));
 const Book = lazy(() => import("./pages/Book"));
 const About = lazy(() => import("./pages/About"));
+const Sebos = lazy(() => import("./pages/Sebos"));
 const AddBook = lazy(() => import("./pages/AddBook"));
 const CreateSebo = lazy(() => import("./pages/CreateSebo"));
 const ManageBooks = lazy(() => import("./pages/ManageBooks"));
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />
       <Route path="/about" component={About} />
+      <Route path="/sebos" component={Sebos} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
