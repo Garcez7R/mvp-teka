@@ -60,7 +60,7 @@ export default function Footer() {
               className="inline-flex items-center gap-2 bg-[#da4653] hover:bg-[#c23a45] px-4 py-2 rounded-lg transition-colors font-inter text-sm font-medium"
             >
               <MessageCircle className="w-4 h-4" />
-              Chat WhatsApp
+              Equipe Teka - WhatsApp
             </a>
           </div>
         </div>

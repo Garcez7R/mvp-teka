@@ -497,7 +497,7 @@ export default function Book() {
                   className="flex items-center justify-center gap-2 w-full bg-[#da4653] hover:bg-[#c23a45] text-white font-outfit font-bold py-4 px-6 rounded-lg transition-colors shadow-md hover:shadow-lg"
                 >
                   <MessageCircle className="w-5 h-5" />
-                  Contatar via WhatsApp
+                  Contato via WhatsApp
                 </a>
                 <button
                   onClick={() => {
@@ -753,7 +753,7 @@ export default function Book() {
                 <MessageCircle className="w-5 h-5" />
                 {book.availabilityStatus === "vendido"
                   ? "Livro Vendido"
-                  : "Contatar via WhatsApp"}
+                  : "Contato via WhatsApp"}
               </a>
               <button
                 onClick={() => toggleFavorite(book.id)}
