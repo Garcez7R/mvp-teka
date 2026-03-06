@@ -23,6 +23,7 @@ export default function Admin() {
   const [selectedSeboId, setSelectedSeboId] = useState<number | null>(null);
   const [booksPage, setBooksPage] = useState(0);
   const [userFilter, setUserFilter] = useState("");
+  const [booksFilter, setBooksFilter] = useState("");
   const BOOKS_PAGE_SIZE = 50;
   const canRunAdminQueries =
     isAuthenticated &&
@@ -146,6 +147,24 @@ export default function Admin() {
       : tab === "sebos"
       ? sebosQuery.error
       : booksQuery.error;
+  const normalizedBooksFilter = booksFilter.trim().toLowerCase();
+  const filteredBooks = useMemo(() => {
+    if (!normalizedBooksFilter) return books;
+    return books.filter((book: any) => {
+      const id = String(book.id ?? "");
+      const title = String(book.title ?? "").toLowerCase();
+      const author = String(book.author ?? "").toLowerCase();
+      const isbn = String(book.isbn ?? "").toLowerCase();
+      const seboName = String(book.sebo?.name ?? "").toLowerCase();
+      return (
+        id.includes(normalizedBooksFilter) ||
+        title.includes(normalizedBooksFilter) ||
+        author.includes(normalizedBooksFilter) ||
+        isbn.includes(normalizedBooksFilter) ||
+        seboName.includes(normalizedBooksFilter)
+      );
+    });
+  }, [books, normalizedBooksFilter]);
 
   if (loading && role !== "admin") {
     return (
@@ -445,27 +464,40 @@ export default function Admin() {
               </div>
             )}
             <div className="p-4 border rounded-lg bg-gray-50">
-              <label className="text-sm text-gray-700 mr-2">Filtrar por Sebo:</label>
-              <select
-                value={selectedSeboId ?? ""}
-                onChange={(e) => {
-                  setSelectedSeboId(e.target.value ? Number.parseInt(e.target.value, 10) : null);
-                  setBooksPage(0);
-                }}
-                className="px-3 py-2 border rounded"
-              >
-                <option value="">Todos</option>
-                {sebos.map((sebo: any) => (
-                  <option key={sebo.id} value={sebo.id}>
-                    #{sebo.id} - {sebo.name}
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-gray-700">Filtrar por Sebo:</label>
+                  <select
+                    value={selectedSeboId ?? ""}
+                    onChange={(e) => {
+                      setSelectedSeboId(e.target.value ? Number.parseInt(e.target.value, 10) : null);
+                      setBooksPage(0);
+                    }}
+                    className="mt-1 w-full px-3 py-2 border rounded"
+                  >
+                    <option value="">Todos</option>
+                    {sebos.map((sebo: any) => (
+                      <option key={sebo.id} value={sebo.id}>
+                        #{sebo.id} - {sebo.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-700">Buscar Livro:</label>
+                  <input
+                    value={booksFilter}
+                    onChange={(e) => setBooksFilter(e.target.value)}
+                    placeholder="ID, título, autor, ISBN ou sebo"
+                    className="mt-1 w-full px-3 py-2 border rounded"
+                  />
+                </div>
+              </div>
             </div>
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-gray-600">
                 Página {booksPage + 1}
-                {books.length > 0 ? ` • ${books.length} registro(s)` : ""}
+                {filteredBooks.length > 0 ? ` • ${filteredBooks.length} registro(s)` : ""}
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -499,7 +531,7 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {books.map((book: any) => (
+                  {filteredBooks.map((book: any) => (
                     <tr key={book.id} className="border-t">
                       <td className="px-3 py-2">{book.id}</td>
                       <td className="px-3 py-2">{book.title}</td>
