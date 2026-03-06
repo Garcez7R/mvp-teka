@@ -52,8 +52,8 @@ async function handleProxy(context) {
 }
 
 export async function onRequest(context) {
-  const mode = (context.env.TRPC_EXECUTION_MODE || "proxy").toLowerCase();
-  if (mode === "local") {
+  const mode = (context.env.TRPC_EXECUTION_MODE || "local").toLowerCase();
+  const runLocal = async () => {
     const { setRuntimeEnv } = await import("../../server/_core/runtime-env.ts");
     setRuntimeEnv(context.env);
     const [{ fetchRequestHandler }, { appRouter }, { createTRPCContext }] = await Promise.all([
@@ -86,6 +86,16 @@ export async function onRequest(context) {
       statusText: response.statusText,
       headers,
     });
+  };
+
+  if (mode === "local") {
+    return runLocal();
   }
-  return handleProxy(context);
+
+  try {
+    return await handleProxy(context);
+  } catch (error) {
+    console.error("tRPC proxy failed, falling back to local runtime", error);
+    return runLocal();
+  }
 }

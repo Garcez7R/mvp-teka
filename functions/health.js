@@ -5,7 +5,7 @@ function normalizeUpstream(raw) {
 }
 
 export async function onRequest(context) {
-  const mode = (context.env.TRPC_EXECUTION_MODE || "proxy").toLowerCase();
+  const mode = (context.env.TRPC_EXECUTION_MODE || "local").toLowerCase();
   if (mode === "local") {
     return Response.json(
       {
