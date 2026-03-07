@@ -15,24 +15,54 @@ export default function About() {
             Sobre o TEKA
           </h1>
           <p className="font-inter text-lg text-gray-700 max-w-3xl leading-relaxed">
-            TEKA é um marketplace inovador que conecta leitores a sebos parceiros, facilitando a compra e venda de livros usados com qualidade e segurança.
+            A TEKA conecta leitores e sebos para facilitar a descoberta de livros usados com preço justo, transparência e contato direto entre as partes.
           </p>
         </section>
 
         <section className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-16">
           <h2 className="font-outfit font-bold text-xl text-[#262969] mb-2">Aviso Legal</h2>
           <p className="font-inter text-sm text-gray-700">
-            A TEKA apenas conecta leitores e sebistas; não intermediamos pagamento, entrega ou garantias da transação.
+            A TEKA apenas conecta leitores e sebos; não intermediamos pagamento, entrega ou garantias da transação.
           </p>
+          <p className="font-inter text-sm text-gray-700 mt-2">
+            Por privacidade e segurança, o endereço completo do sebo é informado diretamente no atendimento com o vendedor.
+          </p>
+        </section>
+
+        <section className="mb-16">
+          <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-8">
+            Como Funciona
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                title: "1. Encontre",
+                description: "Pesquise por título, autor, categoria e compare ofertas entre sebos."
+              },
+              {
+                title: "2. Compare",
+                description: "Veja condição do exemplar, preço, sebo e cidade/UF antes de decidir."
+              },
+              {
+                title: "3. Negocie",
+                description: "Fale direto com o sebo pelo WhatsApp para confirmar disponibilidade e retirada/entrega."
+              }
+            ].map((step, idx) => (
+              <div key={idx} className="p-5 border border-gray-200 rounded-lg bg-white">
+                <h3 className="font-outfit font-semibold text-lg text-[#262969] mb-2">{step.title}</h3>
+                <p className="font-inter text-sm text-gray-700">{step.description}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* MVP Status */}
         <section className="bg-blue-50 border border-blue-200 rounded-lg p-8 mb-16">
           <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-4">
-            🚀 MVP em Validação
+            MVP em Validação
           </h2>
           <p className="font-inter text-gray-700 mb-4">
-            Estamos testando a plataforma com funcionalidades essenciais. Seu feedback é fundamental para evoluirmos.
+            Estamos validando o produto com funcionalidades essenciais para compradores e livreiros. Seu feedback é fundamental para evoluirmos com foco em uso real.
           </p>
           <p className="font-inter text-sm text-gray-600">
             <strong>Versão:</strong> 1.0.0 | <strong>Status:</strong> Beta
@@ -56,7 +86,7 @@ export default function About() {
               },
               {
                 title: "Contato Direto",
-                description: "Comunique-se diretamente com sebos via WhatsApp para negociar."
+                description: "Fale com o sebo via WhatsApp para negociar disponibilidade, retirada e envio."
               },
               {
                 title: "Interface Responsiva",
@@ -94,10 +124,10 @@ export default function About() {
           <div className="space-y-4">
             {[
               "Integração com mais sebos parceiros",
-              "Sistema de avaliações e comentários",
-              "Histórico de compras e favoritos",
+              "Sinalização de confiança e reputação dos sebos",
+              "Notificações para favoritos e lista de procura",
               "Notificações de novos livros",
-              "Opções de entrega e pagamento"
+              "Melhorias de logística de entrega e retirada"
             ].map((item, idx) => (
               <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="w-2 h-2 bg-[#da4653] rounded-full"></div>
@@ -113,13 +143,20 @@ export default function About() {
             Pronto para explorar?
           </h2>
           <p className="font-inter text-gray-200 mb-8 max-w-2xl mx-auto">
-            Comece a buscar seus livros favoritos agora mesmo. Encontre ofertas incríveis em sebos parceiros.
+            Comece agora a buscar livros no catálogo ou cadastre seu sebo para vender com mais alcance.
           </p>
-          <Link href="/">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link href="/">
               <button className="bg-[#da4653] hover:bg-[#c23a45] text-white font-outfit font-bold py-3 px-8 rounded-lg transition-colors">
               Ir para o Início
               </button>
             </Link>
+            <Link href="/sebo/novo">
+              <button className="bg-white text-[#262969] hover:bg-gray-100 font-outfit font-bold py-3 px-8 rounded-lg transition-colors">
+                Quero vender livros
+              </button>
+            </Link>
+          </div>
         </section>
       </main>
 
