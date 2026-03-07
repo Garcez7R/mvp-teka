@@ -609,8 +609,8 @@ export default function BatchScan() {
           )}
         </div>
 
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex gap-2">
+        <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setStatusFilter("todos")}
@@ -644,7 +644,7 @@ export default function BatchScan() {
             type="button"
             onClick={() => void saveDrafts()}
             disabled={saving || drafts.length === 0}
-            className="px-4 py-2 rounded bg-[#da4653] text-white disabled:opacity-50 flex items-center gap-2"
+            className="w-full md:w-auto px-4 py-2 rounded bg-[#da4653] text-white disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
             Salvar itens no catálogo
