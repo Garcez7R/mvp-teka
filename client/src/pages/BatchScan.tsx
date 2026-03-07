@@ -758,13 +758,13 @@ export default function BatchScan() {
         </div>
         {scannerOpen && (
           <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
-            <div className="w-full max-w-md md:max-w-xl">
+            <div className="w-full max-w-sm md:max-w-lg">
               <p className="text-white text-sm mb-3">
                 Aponte para o código de barras. O scanner detecta continuamente.
               </p>
               <video
                 ref={videoRef}
-                className="w-full h-[56vh] md:h-[62vh] rounded-xl bg-black border border-white/20 object-cover"
+                className="w-full h-[40vh] md:h-[48vh] rounded-xl bg-black border border-white/20 object-cover"
                 autoPlay
                 muted
                 playsInline
