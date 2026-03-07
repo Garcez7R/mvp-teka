@@ -554,7 +554,7 @@ export default function AddBook() {
     if (mode === "barcode") {
       if (barcodeSupported) return "barcode";
       if (textSupported) return "text";
-      return null;
+      return "tesseract";
     }
 
     if (textSupported) return "text";
@@ -762,7 +762,11 @@ export default function AddBook() {
       await video.play();
 
       if (engine === "tesseract") {
-        setScannerError("Pronto para foto da capa. Toque em Capturar para extrair ISBN/título/autor.");
+        setScannerError(
+          mode === "barcode"
+            ? "Modo compatível ativo. Aponte para o código de barras e toque em Capturar para extrair ISBN."
+            : "Pronto para foto da capa. Toque em Capturar para extrair ISBN/título/autor."
+        );
         setScannerBusy(false);
         return;
       }

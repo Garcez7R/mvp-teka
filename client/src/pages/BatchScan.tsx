@@ -39,6 +39,7 @@ export default function BatchScan() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerBusy, setScannerBusy] = useState(false);
   const [scannerError, setScannerError] = useState("");
+  const [scannerEngine, setScannerEngine] = useState<"barcode" | "tesseract">("barcode");
   const [manualIsbn, setManualIsbn] = useState("");
   const [defaultCondition, setDefaultCondition] = useState<DraftCondition>("Usado");
   const [defaultPrice, setDefaultPrice] = useState("");
@@ -53,6 +54,7 @@ export default function BatchScan() {
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const tesseractLoaderRef = useRef<Promise<any> | null>(null);
 
   const createBookMutation = trpc.books.create.useMutation();
   const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
@@ -324,21 +326,107 @@ export default function BatchScan() {
       streamRef.current = null;
     }
     setScannerOpen(false);
+    setScannerEngine("barcode");
+  };
+
+  const loadTesseract = async () => {
+    if (typeof window === "undefined") {
+      throw new Error("OCR indisponível neste ambiente.");
+    }
+    if ((window as any).Tesseract?.recognize) {
+      return (window as any).Tesseract;
+    }
+    if (!tesseractLoaderRef.current) {
+      tesseractLoaderRef.current = new Promise((resolve, reject) => {
+        const scriptId = "teka-tesseract-cdn";
+        const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
+        if (existingScript) {
+          existingScript.addEventListener("load", () => resolve((window as any).Tesseract));
+          existingScript.addEventListener("error", () => reject(new Error("Falha ao carregar OCR.")));
+          return;
+        }
+        const script = document.createElement("script");
+        script.id = scriptId;
+        script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+        script.async = true;
+        script.onload = () => resolve((window as any).Tesseract);
+        script.onerror = () => reject(new Error("Falha ao carregar OCR."));
+        document.head.appendChild(script);
+      });
+    }
+    return tesseractLoaderRef.current;
+  };
+
+  const captureFrameDataUrl = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) return null;
+    const sourceW = video.videoWidth;
+    const sourceH = video.videoHeight;
+    const cropW = Math.floor(sourceW * 0.82);
+    const cropH = Math.floor(sourceH * 0.62);
+    const cropX = Math.floor((sourceW - cropW) / 2);
+    const cropY = Math.floor((sourceH - cropH) / 2);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(640, cropW);
+    canvas.height = Math.max(360, cropH);
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+    context.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.92);
+  };
+
+  const extractIsbnFromRaw = (raw: string): string | null => {
+    const normalized = normalizeISBN(raw);
+    if (isValidISBN(normalized)) return normalized;
+    const candidates = raw.match(/\b(?:97[89][0-9X\- ]{10,}|[0-9X\- ]{10,})\b/g) || [];
+    for (const candidate of candidates) {
+      const clean = normalizeISBN(candidate);
+      if (isValidISBN(clean)) {
+        return clean;
+      }
+    }
+    return null;
+  };
+
+  const captureBarcodeByOcr = async () => {
+    try {
+      setScannerBusy(true);
+      setScannerError("Processando captura para ler ISBN...");
+      const frame = captureFrameDataUrl();
+      if (!frame) {
+        setScannerError("Não foi possível capturar imagem da câmera.");
+        return;
+      }
+      const tesseract = await loadTesseract();
+      const result = await tesseract.recognize(frame, "eng", {
+        tessedit_pageseg_mode: "6",
+        tessedit_char_whitelist: "0123456789Xx- ",
+      });
+      const isbnFound = extractIsbnFromRaw(String(result?.data?.text || ""));
+      if (!isbnFound) {
+        setScannerError("ISBN não identificado. Aproxime mais o código e tente novamente.");
+        return;
+      }
+      await addDraftFromIsbn(isbnFound);
+      setScannerError("ISBN capturado no modo compatível.");
+    } catch {
+      setScannerError("Falha ao capturar ISBN no modo compatível.");
+    } finally {
+      setScannerBusy(false);
+    }
   };
 
   const startScanner = async () => {
-    if (!(window as any).BarcodeDetector) {
-      setScannerError("Detector de código não suportado neste navegador. Use ISBN manual abaixo.");
-      return;
-    }
     if (!navigator.mediaDevices?.getUserMedia) {
       setScannerError("Câmera não suportada neste dispositivo.");
       return;
     }
+    const hasBarcodeDetector = Boolean((window as any).BarcodeDetector);
     try {
       setScannerError("");
       setScannerBusy(true);
       setScannerOpen(true);
+      setScannerEngine(hasBarcodeDetector ? "barcode" : "tesseract");
       await ensureAudioContextReady();
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" } },
@@ -349,6 +437,10 @@ export default function BatchScan() {
       if (!video) throw new Error("Preview indisponível");
       video.srcObject = stream;
       await video.play();
+      if (!hasBarcodeDetector) {
+        setScannerError("Detector de código não suportado neste navegador. Use Capturar ISBN (modo compatível).");
+        return;
+      }
       const detector = new (window as any).BarcodeDetector({
         formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"],
       });
@@ -769,7 +861,17 @@ export default function BatchScan() {
                 muted
                 playsInline
               />
-              <div className="mt-3">
+              <div className="mt-3 flex flex-wrap gap-2">
+                {scannerEngine === "tesseract" && (
+                  <button
+                    type="button"
+                    onClick={() => void captureBarcodeByOcr()}
+                    disabled={scannerBusy}
+                    className="px-4 py-2 rounded border border-[#8ea4ff] text-[#dce3ff] hover:bg-[#262969] disabled:opacity-50"
+                  >
+                    {scannerBusy ? "Processando..." : "Capturar ISBN (modo compatível)"}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={stopScanner}
