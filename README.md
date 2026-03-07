@@ -52,41 +52,18 @@ O TEKA foi desenhado para:
    - som/vibração ao detectar;
    - revisão em fila e publicação em lote.
 
-## Screenshots
+## Demonstração
 
-Estrutura pronta para inserir capturas futuras:
-
-- `docs/screenshots/home-desktop.png`
-- `docs/screenshots/home-mobile.png`
-- `docs/screenshots/add-book.png`
-- `docs/screenshots/batch-scan.png`
-- `docs/screenshots/manage-books.png`
-
-Quando as imagens estiverem prontas, basta adicionar no diretório e descomentar/usar as linhas abaixo:
-
-```md
-![Home Desktop](docs/screenshots/home-desktop.png)
-![Home Mobile](docs/screenshots/home-mobile.png)
-![Cadastrar Livro](docs/screenshots/add-book.png)
-![Scan em Lote](docs/screenshots/batch-scan.png)
-![Meus Livros](docs/screenshots/manage-books.png)
-```
-
-### Demo em GIF (simulação de carrossel)
-
-Quando os prints estiverem prontos, você pode gerar um GIF sequencial:
-
-- saída sugerida: `docs/screenshots/demo.gif`
-- referência no README:
+Quando o GIF estiver disponível em `docs/screenshots/demo.gif`, use:
 
 ```md
 ![Demo TEKA](docs/screenshots/demo.gif)
 ```
 
-Exemplo de comando com `ffmpeg`:
+Para gerar o GIF a partir de imagens sequenciais (`1.jpg`, `2.jpg`, `3.jpg`...), exemplo:
 
 ```bash
-ffmpeg -framerate 1.2 -i docs/screenshots/frame-%02d.png -vf "scale=1280:-1:flags=lanczos" -loop 0 docs/screenshots/demo.gif
+ffmpeg -framerate 1.2 -pattern_type glob -i "docs/screenshots/*.jpg" -vf "scale=1280:-1:flags=lanczos" -loop 0 docs/screenshots/demo.gif
 ```
 
 ## Stack Técnica
