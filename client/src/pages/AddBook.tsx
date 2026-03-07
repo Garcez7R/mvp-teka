@@ -73,6 +73,7 @@ export default function AddBook() {
   const createBookMutation = trpc.books.create.useMutation();
   const LAST_BOOK_DRAFT_KEY = "teka_last_book_draft";
   const { data: sebosList = [], isLoading: sebosLoading } = trpc.sebos.list.useQuery(undefined, {
+    enabled: isAuthenticated && role === "admin",
     staleTime: 1000 * 60 * 5,
     retry: 1,
     refetchOnWindowFocus: false,
