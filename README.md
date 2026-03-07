@@ -72,6 +72,23 @@ Quando as imagens estiverem prontas, basta adicionar no diretório e descomentar
 ![Meus Livros](docs/screenshots/manage-books.png)
 ```
 
+### Demo em GIF (simulação de carrossel)
+
+Quando os prints estiverem prontos, você pode gerar um GIF sequencial:
+
+- saída sugerida: `docs/screenshots/demo.gif`
+- referência no README:
+
+```md
+![Demo TEKA](docs/screenshots/demo.gif)
+```
+
+Exemplo de comando com `ffmpeg`:
+
+```bash
+ffmpeg -framerate 1.2 -i docs/screenshots/frame-%02d.png -vf "scale=1280:-1:flags=lanczos" -loop 0 docs/screenshots/demo.gif
+```
+
 ## Stack Técnica
 
 - Frontend: React 19 + TypeScript + Vite + Tailwind
