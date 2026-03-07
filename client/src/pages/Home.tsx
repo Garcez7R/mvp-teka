@@ -8,6 +8,7 @@ import { Filter, Heart } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
+import { ALL_BOOK_CATEGORIES } from "@/lib/book-categories";
 
 type CatalogSort =
   | "recent"
@@ -200,7 +201,13 @@ export default function Home() {
 
   // Get unique categories and sebos from the displayed data
   const categories = useMemo(
-    () => Array.from(new Set(displayBooks.map((b: any) => b.category).filter(Boolean))),
+    () =>
+      Array.from(
+        new Set([
+          ...ALL_BOOK_CATEGORIES,
+          ...displayBooks.map((b: any) => b.category).filter(Boolean),
+        ])
+      ),
     [displayBooks]
   );
   const sebos = useMemo(

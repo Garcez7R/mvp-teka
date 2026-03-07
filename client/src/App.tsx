@@ -10,6 +10,7 @@ const Book = lazy(() => import("./pages/Book"));
 const About = lazy(() => import("./pages/About"));
 const Sebos = lazy(() => import("./pages/Sebos"));
 const AddBook = lazy(() => import("./pages/AddBook"));
+const BatchScan = lazy(() => import("./pages/BatchScan"));
 const CreateSebo = lazy(() => import("./pages/CreateSebo"));
 const ManageBooks = lazy(() => import("./pages/ManageBooks"));
 const Login = lazy(() => import("./pages/Login"));
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/book/:id" component={Book} />
       <Route path="/add-book" component={AddBook} />
+      <Route path="/batch-scan" component={BatchScan} />
       <Route path="/manage-books" component={ManageBooks} />
       <Route path="/sebo/novo" component={CreateSebo} />
       <Route path="/login" component={Login} />

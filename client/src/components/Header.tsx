@@ -59,6 +59,9 @@ export default function Header() {
               <Link href="/add-book" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
                 Cadastrar Livro
               </Link>
+              <Link href="/batch-scan" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+                Scan em Lote
+              </Link>
               <Link href="/manage-books" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
                 Meus Livros
               </Link>
@@ -164,6 +167,14 @@ export default function Header() {
                 >
                   <PlusCircle className="w-5 h-5 text-[#da4653]" />
                   Cadastrar Livro
+                </Link>
+                <Link
+                  href="/batch-scan"
+                  onClick={closeMenu}
+                  className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+                >
+                  <PlusCircle className="w-5 h-5 text-[#da4653]" />
+                  Scan em Lote
                 </Link>
                 <Link
                   href="/manage-books"

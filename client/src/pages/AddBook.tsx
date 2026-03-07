@@ -13,6 +13,7 @@ import {
   parseCurrencyBRLToNumber,
   sanitizeFetchedDescription,
 } from "@/lib/book-form";
+import { ALL_BOOK_CATEGORIES } from "@/lib/book-categories";
 
 type BookSuggestion = {
   id: string;
@@ -1139,14 +1140,11 @@ export default function AddBook() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
               >
                 <option value="">Selecione uma categoria</option>
-                <option value="Literatura Brasileira">Literatura Brasileira</option>
-                <option value="Ficção Científica">Ficção Científica</option>
-                <option value="Fantasia">Fantasia</option>
-                <option value="Romance">Romance</option>
-                <option value="História">História</option>
-                <option value="Infantil">Infantil</option>
-                <option value="Técnico">Técnico</option>
-                <option value="Outros">Outros</option>
+                {ALL_BOOK_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
               </select>
             </div>
 
