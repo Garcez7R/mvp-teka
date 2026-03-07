@@ -76,16 +76,17 @@ export default function About() {
           </div>
         </section>
 
-        {/* MVP Status */}
+        {/* Product Status */}
         <section className="bg-blue-50 border border-blue-200 rounded-lg p-8 mb-16">
           <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-4">
-            MVP em Validação
+            Status do Produto
           </h2>
           <p className="font-inter text-gray-700 mb-4">
-            Estamos validando o produto com funcionalidades essenciais para compradores e livreiros. Seu feedback é fundamental para evoluirmos com foco em uso real.
+            Plataforma pronta para operação em piloto controlado, com funcionalidades essenciais para compradores e livreiros.
+            Evoluímos continuamente com base em uso real e feedback de usuários.
           </p>
           <p className="font-inter text-sm text-gray-600">
-            <strong>Versão:</strong> 1.0.0 | <strong>Status:</strong> Beta
+            <strong>Versão:</strong> 1.0.0 | <strong>Ciclo:</strong> Release contínua | <strong>Ambiente:</strong> Cloudflare Pages
           </p>
         </section>
 
@@ -98,11 +99,11 @@ export default function About() {
             {[
               {
                 title: "Busca Inteligente",
-                description: "Encontre livros por título, categoria ou sebo com filtros avançados."
+                description: "Encontre livros por título, autor, ISBN, categoria, sebo e localização."
               },
               {
                 title: "Detalhes Completos",
-                description: "Acesse informações detalhadas de cada livro: ISBN, páginas, condição e mais."
+                description: "Consulte preço, condição, disponibilidade, sebo e logística de retirada/entrega."
               },
               {
                 title: "Contato Direto",
@@ -110,15 +111,15 @@ export default function About() {
               },
               {
                 title: "Interface Responsiva",
-                description: "Acesse a plataforma em qualquer dispositivo: mobile, tablet ou desktop."
+                description: "Experiência otimizada para celular, tablet e desktop com navegação consistente."
               },
               {
                 title: "Sebos Parceiros",
-                description: "Conheça os sebos que participam da plataforma e suas ofertas."
+                description: "Descubra sebos com catálogo ativo e compare diferentes ofertas do mesmo título."
               },
               {
-                title: "Preços Justos",
-                description: "Compare preços entre sebos e encontre as melhores ofertas."
+                title: "Gestão para Livreiro",
+                description: "Cadastre por ISBN/câmera, faça scan em lote e gerencie estoque, status e visibilidade."
               }
             ].map((feature, idx) => (
               <div key={idx} className="flex gap-4">
@@ -136,6 +137,25 @@ export default function About() {
           </div>
         </section>
 
+        <section className="mb-16">
+          <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-8">
+            Instalação do App (PWA)
+          </h2>
+          <div className="p-6 border border-gray-200 rounded-lg bg-white">
+            <p className="font-inter text-gray-700 mb-3">
+              A TEKA funciona como PWA (Progressive Web App): você pode instalar no celular ou computador e abrir como aplicativo, sem loja.
+            </p>
+            <ul className="space-y-2 text-sm text-gray-700 font-inter">
+              <li>Android/Chrome: menu do navegador &gt; <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</li>
+              <li>iPhone/Safari: botão compartilhar &gt; <strong>Adicionar à Tela de Início</strong>.</li>
+              <li>Desktop/Chrome: ícone de instalação na barra de endereço.</li>
+            </ul>
+            <p className="font-inter text-xs text-gray-600 mt-3">
+              Após instalar, o acesso à câmera para escanear ISBN e capas pode ser mais estável em alguns dispositivos.
+            </p>
+          </div>
+        </section>
+
         {/* Roadmap */}
         <section className="mb-16">
           <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-8">
@@ -146,8 +166,8 @@ export default function About() {
               "Integração com mais sebos parceiros",
               "Sinalização de confiança e reputação dos sebos",
               "Notificações para favoritos e lista de procura",
-              "Notificações de novos livros",
-              "Melhorias de logística de entrega e retirada"
+              "Métricas operacionais para livreiros",
+              "Melhorias contínuas de logística e experiência mobile"
             ].map((item, idx) => (
               <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="w-2 h-2 bg-[#da4653] rounded-full"></div>
