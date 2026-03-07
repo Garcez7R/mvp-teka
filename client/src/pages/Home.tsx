@@ -587,7 +587,13 @@ export default function Home() {
                   Carregar mais
                 </button>
               ) : (
-                <p className="text-sm text-gray-400">Fim do catálogo.</p>
+                <button
+                  type="button"
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                  className="text-sm text-[#262969] hover:text-[#da4653] underline"
+                >
+                  Voltar ao topo
+                </button>
               )}
             </div>
           </>
