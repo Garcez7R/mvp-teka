@@ -34,6 +34,7 @@ export default function CreateSebo() {
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [legalAware, setLegalAware] = useState(false);
 
   const createSeboMutation = trpc.sebos.create.useMutation({
     onError: (error) => {
@@ -71,6 +72,9 @@ export default function CreateSebo() {
       }
       if (!formData.whatsapp.trim()) {
         throw new Error("WhatsApp é obrigatório para contato");
+      }
+      if (!legalAware) {
+        throw new Error("Confirme que está ciente da política legal e de privacidade.");
       }
 
       await createSeboMutation.mutateAsync({
@@ -378,10 +382,26 @@ export default function CreateSebo() {
               </div>
             </div>
 
+            <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <label className="inline-flex items-start gap-2 text-sm text-amber-900">
+                <input
+                  type="checkbox"
+                  checked={legalAware}
+                  onChange={(e) => setLegalAware(e.target.checked)}
+                />
+                <span>
+                  Estou ciente das regras de privacidade e responsabilidade da plataforma:
+                  a TEKA conecta partes e não intermedia pagamento/entrega.
+                  O tratamento de dados pessoais segue LGPD (Lei nº 13.709/2018, arts. 7º, 18 e 46)
+                  e Marco Civil da Internet (Lei nº 12.965/2014, art. 15).
+                </span>
+              </label>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !legalAware}
               className="w-full px-6 py-3 bg-[#da4653] text-white font-inter font-semibold rounded-lg hover:bg-[#c93d45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Criando sebo..." : "Criar Sebo e Cadastrar Primeiro Livro"}

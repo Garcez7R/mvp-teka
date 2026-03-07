@@ -27,6 +27,10 @@ export default function About() {
           <p className="font-inter text-sm text-gray-700 mt-2">
             Por privacidade e segurança, o endereço completo do sebo é informado diretamente no atendimento com o vendedor.
           </p>
+          <p className="font-inter text-xs text-gray-600 mt-3">
+            Referência legal informativa: LGPD (Lei nº 13.709/2018, arts. 7º, 18 e 46) e
+            Marco Civil da Internet (Lei nº 12.965/2014, art. 15).
+          </p>
         </section>
 
         <section className="mb-16">

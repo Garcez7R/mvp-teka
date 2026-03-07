@@ -8,9 +8,11 @@ import { trackEvent } from "@/lib/analytics";
 export default function Login() {
   const utils = trpc.useUtils();
   const setMyRoleMutation = trpc.users.setMyRole.useMutation();
+  const updateUserMutation = trpc.users.update.useMutation();
   const [role, setRole] = useState<"livreiro" | "comprador">("comprador");
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
   const roleRef = useRef<"livreiro" | "comprador">("comprador");
   const googleContainerRef = useRef<HTMLDivElement | null>(null);
   const googleInitializedRef = useRef(false);
@@ -97,6 +99,9 @@ export default function Login() {
             setSessionIdToken(response.credential);
             try {
               await setMyRoleMutation.mutateAsync({ role: selectedRole });
+              if (consentChecked) {
+                await updateUserMutation.mutateAsync({ lgpdConsent: true });
+              }
             } catch {
               // In some runtimes the first authenticated call may race with context creation.
               // Keep login flow non-blocking; role will be reconciled by subsequent requests.
@@ -158,9 +163,39 @@ export default function Login() {
               </select>
             </label>
 
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center relative">
               <div ref={googleContainerRef} />
+              {!consentChecked && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setError(
+                      "Para continuar, marque “Estou ciente” sobre tratamento de dados."
+                    )
+                  }
+                  className="absolute inset-0 bg-transparent"
+                  aria-label="Ative o consentimento para habilitar login"
+                />
+              )}
             </div>
+            <label className="block text-xs text-gray-700">
+              <span className="inline-flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={consentChecked}
+                  onChange={(e) => setConsentChecked(e.target.checked)}
+                />
+                <span>
+                  Estou ciente do tratamento de dados para autenticação, segurança e cumprimento de obrigação legal,
+                  conforme LGPD (Lei nº 13.709/2018, arts. 7º, 18 e 46) e Marco Civil da Internet (Lei nº 12.965/2014, art. 15).
+                </span>
+              </span>
+            </label>
+            {!consentChecked && (
+              <p className="text-xs text-amber-700">
+                Marque “Estou ciente” para habilitar o login.
+              </p>
+            )}
             {isBusy && (
               <p className="text-sm text-gray-600 text-center">Conectando...</p>
             )}
