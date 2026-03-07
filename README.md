@@ -74,32 +74,13 @@ O TEKA foi desenhado para:
 
 ## Demonstração
 
-Quando o GIF estiver disponível em `docs/screenshots/demo.gif`, use:
-
-```md
 ![Demo TEKA](docs/screenshots/demo.gif)
-```
 
-Para gerar o GIF a partir de imagens sequenciais (`1.jpg`, `2.jpg`, `3.jpg`...), exemplo:
+Para gerar/atualizar o GIF a partir das imagens sequenciais em `docs/screenshots/`, use:
 
 ```bash
-ffmpeg -framerate 1.2 -pattern_type glob -i "docs/screenshots/*.jpg" -vf "scale=1280:-1:flags=lanczos" -loop 0 docs/screenshots/demo.gif
+ffmpeg -y -framerate 0.8 -pattern_type glob -i "docs/screenshots/[0-9][0-9]-*.jpg" -vf "scale=720:-1:flags=lanczos" -loop 0 docs/screenshots/demo.gif
 ```
-
-## Screenshots
-
-![Home/Catálogo](docs/screenshots/01-home-catalogo.jpg)
-![Detalhe do Livro](docs/screenshots/02-detalhe-livro.jpg)
-![Login](docs/screenshots/03-login.jpg)
-![Sebos](docs/screenshots/04-sebos.jpg)
-![Criar Sebo](docs/screenshots/05-criar-sebo.jpg)
-![Cadastrar Livro](docs/screenshots/06-cadastrar-livro.jpg)
-![Scan em Lote](docs/screenshots/07-scan-em-lote.jpg)
-![Meu Catálogo](docs/screenshots/08-meu-catalogo.jpg)
-![Meus Interesses/Favoritos](docs/screenshots/09-meus-interesses-favoritos.jpg)
-![Configurações do Sebo](docs/screenshots/10-configuracoes-sebo.jpg)
-![Admin](docs/screenshots/11-admin.jpg)
-![Sobre](docs/screenshots/12-sobre.jpg)
 
 ## Stack Técnica
 
