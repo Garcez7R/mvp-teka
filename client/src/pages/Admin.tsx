@@ -73,6 +73,7 @@ export default function Admin() {
     ],
     [adminMetrics]
   );
+  const formatChartNumber = (value: unknown) => Number(value || 0).toLocaleString("pt-BR");
 
   const adminCreateUserMutation = trpc.users.adminCreate.useMutation({
     onSuccess: async () => {
@@ -277,7 +278,7 @@ export default function Admin() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="label" />
                       <YAxis allowDecimals={false} />
-                      <Tooltip />
+                      <Tooltip formatter={(value) => [formatChartNumber(value), "Quantidade"]} />
                       <Bar dataKey="value" fill="#262969" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -293,7 +294,7 @@ export default function Admin() {
                           <Cell key={entry.label} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip formatter={(value) => [formatChartNumber(value), "Livros"]} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>

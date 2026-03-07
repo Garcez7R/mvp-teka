@@ -168,6 +168,7 @@ export default function ManageBooks() {
       })),
     [metrics]
   );
+  const formatChartNumber = (value: unknown) => Number(value || 0).toLocaleString("pt-BR");
 
   const handleEdit = (book: typeof myBooks[0]) => {
     setEditingId(book.id);
@@ -617,7 +618,7 @@ export default function ManageBooks() {
                       <Cell key={entry.label} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip formatter={(value) => [formatChartNumber(value), "Livros"]} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -630,7 +631,7 @@ export default function ManageBooks() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="label" />
                   <YAxis allowDecimals={false} />
-                  <Tooltip />
+                  <Tooltip formatter={(value) => [formatChartNumber(value), "Favoritos"]} />
                   <Bar dataKey="value" fill="#da4653" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

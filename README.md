@@ -38,6 +38,12 @@ O TEKA foi desenhado para:
 - edição e ações de gestão centralizadas;
 - controle por role.
 
+## Métricas e Dashboards
+
+- **Livreiro**: cards operacionais + gráficos de status do catálogo e top livros por favoritos.
+- **Admin**: visão consolidada da plataforma com usuários por perfil, status de livros, crescimento 7d e ações recentes de auditoria.
+- Gráficos implementados com `recharts`, mantendo identidade visual do produto.
+
 ## Privacidade e Compliance
 
 - dados de comprador são privados por padrão;
