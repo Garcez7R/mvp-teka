@@ -317,16 +317,16 @@ export default function Home() {
       <Header />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-[#262969] to-[#1a1a4d] text-white py-12 md:py-16">
+      <section className="bg-gradient-to-br from-[#262969] to-[#1a1a4d] text-white py-8 md:py-10">
         <div className="container">
-          <h1 className="font-outfit font-bold text-3xl md:text-4xl mb-3">
+          <h1 className="font-outfit font-bold text-2xl md:text-3xl mb-2">
             Encontre Livros Usados de Qualidade
           </h1>
-          <p className="font-inter text-gray-200 max-w-2xl mb-8">
+          <p className="font-inter text-sm md:text-base text-gray-200 max-w-xl mb-5">
             Busque entre milhares de títulos em sebos parceiros. Preços justos, qualidade garantida.
           </p>
           
-          <div className="max-w-2xl">
+          <div className="max-w-xl">
             <SearchBar key={searchBarKey} onSearch={setSearchQuery} />
           </div>
         </div>
