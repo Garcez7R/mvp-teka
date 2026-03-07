@@ -37,6 +37,10 @@ Rotas principais:
 - Use o botão de visualização para alternar entre:
   - Compacta (padrão)
   - Detalhada
+- Use o botão `Próximos: ON/OFF` para priorizar ofertas locais.
+- Se seus dados de comprador tiverem cidade/UF em `Configurações`, o catálogo pode mostrar:
+  - selo `Na sua cidade`
+  - selo `No seu estado`
 
 ### 2.2 Card e Detalhe do Livro (`/book/:id`)
 - No card: veja capa, título, condição, status, preço e sebo.
@@ -159,6 +163,14 @@ Admin:
 1. Abrir painel.
 2. Gerir usuários/sebos/livros.
 3. Validar métricas e auditoria.
+
+## 9. Checklist de Teste com Usuários
+
+1. Comprador consegue encontrar um livro em até 3 ações (buscar, abrir detalhe, contatar sebo).
+2. Livreiro consegue cadastrar via ISBN e via scan em lote sem erro.
+3. Livreiro consegue alterar quantidade/status e ocultar item no catálogo.
+4. Admin consegue editar/excluir entidades e trocar capa de livro.
+5. Em mobile, câmera abre e o scanner funciona com leitura contínua.
 
 ---
 

@@ -6,6 +6,16 @@
 
 Plataforma para conectar leitores e sebos, com foco em catálogo de livros (usados e novos), gestão de estoque por livreiro e experiência de compra simples.
 
+## Status Atual
+
+`Pronto para validação com usuários de teste (Beta controlado)`
+
+Escopo recomendado para teste:
+- fluxo de comprador (busca, filtros, detalhe, WhatsApp);
+- fluxo de livreiro (criação do sebo, cadastro por ISBN/scan, gestão de catálogo);
+- fluxo admin (gestão de usuários/sebos/livros + métricas);
+- fluxo mobile (scanner, OCR, menu e responsividade).
+
 ## Guia de Uso
 
 Acesse o guia completo de operação:
@@ -29,6 +39,7 @@ O TEKA foi desenhado para:
 - busca por título, autor e ISBN;
 - favoritos e lista de interesses;
 - visualização de variações de oferta por estado/preço.
+- priorização opcional de ofertas próximas (`Próximos: ON/OFF`) com selo `Na sua cidade` / `No seu estado`.
 
 ### Livreiro
 
