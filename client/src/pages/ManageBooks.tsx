@@ -34,6 +34,7 @@ export default function ManageBooks() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingBook, setEditingBook] = useState<EditingBook | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [editingCoverOptions, setEditingCoverOptions] = useState<string[]>([]);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [statusHistoryByBook, setStatusHistoryByBook] = useState<Record<number, StatusHistoryEntry[]>>({});
   const [selectedBookIds, setSelectedBookIds] = useState<number[]>([]);
@@ -164,6 +165,62 @@ export default function ManageBooks() {
       isVisible: book.isVisible ?? true,
       coverUrl: book.coverUrl || undefined,
     });
+    setEditingCoverOptions(book.coverUrl ? [book.coverUrl] : []);
+  };
+
+  const dedupeCoverUrls = (values: Array<string | null | undefined>) => {
+    const seen = new Set<string>();
+    const normalized: string[] = [];
+    for (const value of values) {
+      if (!value) continue;
+      const safeValue = String(value).replace("http://", "https://");
+      if (seen.has(safeValue)) continue;
+      seen.add(safeValue);
+      normalized.push(safeValue);
+    }
+    return normalized;
+  };
+
+  const fetchCoverOptionsByIsbn = async (isbnRaw?: string) => {
+    const isbn = String(isbnRaw || "").replace(/[^0-9Xx]/g, "").toUpperCase();
+    if (!isbn) {
+      toast.error("Informe um ISBN para buscar capas.");
+      return;
+    }
+    try {
+      const options: Array<string | null | undefined> = [
+        `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
+        `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`,
+      ];
+      const gb = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=5`
+      );
+      if (gb.ok) {
+        const data = await gb.json();
+        const items = Array.isArray(data?.items) ? data.items : [];
+        for (const item of items) {
+          const links = item?.volumeInfo?.imageLinks;
+          options.push(
+            links?.extraLarge,
+            links?.large,
+            links?.medium,
+            links?.small,
+            links?.thumbnail,
+            links?.smallThumbnail
+          );
+        }
+      }
+      const unique = dedupeCoverUrls(options);
+      if (!unique.length) {
+        toast.error("Nenhuma capa encontrada para este ISBN.");
+        return;
+      }
+      setEditingCoverOptions(unique);
+      setEditingBook((prev) => (prev ? { ...prev, coverUrl: unique[0] } : prev));
+      toast.success(`Encontradas ${unique.length} opção(ões) de capa.`);
+    } catch {
+      toast.error("Falha ao buscar opções de capa.");
+    }
   };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,6 +283,7 @@ export default function ManageBooks() {
       toast.success("Livro atualizado com sucesso!");
       setEditingId(null);
       setEditingBook(null);
+      setEditingCoverOptions([]);
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar livro");
     } finally {
@@ -705,6 +763,48 @@ export default function ManageBooks() {
                         />
                         Visível para compradores
                       </label>
+                      <input
+                        type="text"
+                        placeholder="URL da capa (https://...)"
+                        value={editingBook?.coverUrl || ""}
+                        onChange={(e) =>
+                          setEditingBook({
+                            ...editingBook!,
+                            coverUrl: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void fetchCoverOptionsByIsbn(editingBook?.isbn)}
+                        className="w-full px-3 py-2 border border-[#262969] text-[#262969] rounded hover:bg-[#262969] hover:text-white text-sm"
+                      >
+                        Buscar opções de capa por ISBN
+                      </button>
+                      {editingCoverOptions.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2">
+                          {editingCoverOptions.slice(0, 6).map((coverOption) => (
+                            <button
+                              key={coverOption}
+                              type="button"
+                              onClick={() =>
+                                setEditingBook({
+                                  ...editingBook!,
+                                  coverUrl: coverOption,
+                                })
+                              }
+                              className={`rounded border-2 overflow-hidden ${
+                                editingBook?.coverUrl === coverOption
+                                  ? "border-[#da4653]"
+                                  : "border-gray-200 hover:border-gray-400"
+                              }`}
+                            >
+                              <img src={coverOption} alt="Opção de capa" className="w-full h-20 object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
                       {/* Cover Upload */}
                       <div>

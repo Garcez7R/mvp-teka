@@ -26,6 +26,7 @@ type BatchDraft = {
   quantity: string;
   status: DraftStatus;
   coverUrl?: string;
+  coverOptions: string[];
   notes: string;
 };
 
@@ -127,6 +128,21 @@ export default function BatchScan() {
   };
 
   const normalizeISBN = (raw: string) => raw.toUpperCase().replace(/[^0-9X]/g, "");
+  const normalizeCoverUrl = (value?: string | null): string | null => {
+    if (!value) return null;
+    return String(value).replace("http://", "https://");
+  };
+  const dedupeCoverUrls = (values: Array<string | null | undefined>) => {
+    const seen = new Set<string>();
+    const normalized: string[] = [];
+    for (const value of values) {
+      const safeValue = normalizeCoverUrl(value);
+      if (!safeValue || seen.has(safeValue)) continue;
+      seen.add(safeValue);
+      normalized.push(safeValue);
+    }
+    return normalized;
+  };
   const isValidISBN = (raw: string) => {
     const clean = normalizeISBN(raw);
     return (/^\d{13}$/).test(clean) || (/^\d{9}[\dX]$/).test(clean);
@@ -142,6 +158,7 @@ export default function BatchScan() {
       pages: "",
       year: "",
       coverUrl: "",
+      coverOptions: [] as string[],
     };
     try {
       const olRes = await fetch(
@@ -151,6 +168,13 @@ export default function BatchScan() {
         const data = await olRes.json();
         const info = data[`ISBN:${clean}`];
         if (info) {
+          const coverOptions = dedupeCoverUrls([
+            info.cover?.large,
+            info.cover?.medium,
+            info.cover?.small,
+            `https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`,
+            `https://covers.openlibrary.org/b/isbn/${clean}-M.jpg`,
+          ]);
           return {
             title: String(info.title || fallback.title),
             author: String(info.authors?.[0]?.name || fallback.author),
@@ -158,7 +182,8 @@ export default function BatchScan() {
             description: sanitizeFetchedDescription(typeof info.notes === "string" ? info.notes : "") || "",
             pages: info.number_of_pages ? String(info.number_of_pages) : "",
             year: String(info.publish_date?.match(/\d{4}/)?.[0] || ""),
-            coverUrl: String(info.cover?.large || info.cover?.medium || ""),
+            coverUrl: String(coverOptions[0] || ""),
+            coverOptions,
           };
         }
       }
@@ -169,6 +194,15 @@ export default function BatchScan() {
         const data = await gbRes.json();
         const info = data?.items?.[0]?.volumeInfo;
         if (info) {
+          const coverOptions = dedupeCoverUrls([
+            info.imageLinks?.extraLarge,
+            info.imageLinks?.large,
+            info.imageLinks?.medium,
+            info.imageLinks?.small,
+            info.imageLinks?.thumbnail,
+            info.imageLinks?.smallThumbnail,
+            `https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`,
+          ]);
           return {
             title: String(info.title || fallback.title),
             author: String(info.authors?.[0] || fallback.author),
@@ -176,7 +210,8 @@ export default function BatchScan() {
             description: sanitizeFetchedDescription(info.description) || "",
             pages: info.pageCount ? String(info.pageCount) : "",
             year: String(info.publishedDate?.match(/\d{4}/)?.[0] || ""),
-            coverUrl: String(info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || "").replace("http://", "https://"),
+            coverUrl: String(coverOptions[0] || ""),
+            coverOptions,
           };
         }
       }
@@ -187,6 +222,15 @@ export default function BatchScan() {
         const data = await gbLooseRes.json();
         const info = data?.items?.[0]?.volumeInfo;
         if (info) {
+          const coverOptions = dedupeCoverUrls([
+            info.imageLinks?.extraLarge,
+            info.imageLinks?.large,
+            info.imageLinks?.medium,
+            info.imageLinks?.small,
+            info.imageLinks?.thumbnail,
+            info.imageLinks?.smallThumbnail,
+            `https://covers.openlibrary.org/b/isbn/${clean}-L.jpg`,
+          ]);
           return {
             title: String(info.title || fallback.title),
             author: String(info.authors?.[0] || fallback.author),
@@ -194,7 +238,8 @@ export default function BatchScan() {
             description: sanitizeFetchedDescription(info.description) || "",
             pages: info.pageCount ? String(info.pageCount) : "",
             year: String(info.publishedDate?.match(/\d{4}/)?.[0] || ""),
-            coverUrl: String(info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || "").replace("http://", "https://"),
+            coverUrl: String(coverOptions[0] || ""),
+            coverOptions,
           };
         }
       }
@@ -253,6 +298,7 @@ export default function BatchScan() {
           pages: meta.pages,
           year: meta.year,
           coverUrl: meta.coverUrl || undefined,
+          coverOptions: meta.coverOptions || [],
           condition: defaultCondition,
           price: defaultPriceValue,
           quantity: "1",
@@ -611,6 +657,22 @@ export default function BatchScan() {
                   className="px-2 py-2 border rounded text-sm md:col-span-2"
                   placeholder="Observações do exemplar (opcional)"
                 />
+              </div>
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                {draft.coverOptions?.slice(0, 6).map((coverOption) => (
+                  <button
+                    key={coverOption}
+                    type="button"
+                    onClick={() => updateDraft(draft.id, { coverUrl: coverOption })}
+                    className={`rounded border-2 overflow-hidden ${
+                      draft.coverUrl === coverOption
+                        ? "border-[#da4653]"
+                        : "border-gray-200 hover:border-gray-400"
+                    }`}
+                  >
+                    <img src={coverOption} alt="Opção de capa" className="w-full h-24 object-cover" />
+                  </button>
+                ))}
               </div>
               <div className="flex justify-end mt-2">
                 <button
