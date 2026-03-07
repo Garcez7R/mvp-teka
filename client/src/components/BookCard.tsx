@@ -19,6 +19,7 @@ interface BookCardProps {
   locationSummary?: string;
   availabilityStatus?: "ativo" | "reservado" | "vendido";
   matchReason?: "titulo" | "autor" | "isbn" | "titulo_aprox";
+  compact?: boolean;
 }
 
 export default function BookCard({
@@ -37,6 +38,7 @@ export default function BookCard({
   locationSummary,
   availabilityStatus = "ativo",
   matchReason,
+  compact = false,
 }: BookCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = isFavorite(id);
@@ -73,29 +75,33 @@ export default function BookCard({
 
       <Link href={`/book/${id}`}>
         <div
-          className={`rounded-lg overflow-hidden border group-hover:border-[#da4653] group-hover:shadow-lg transition-all duration-300 aspect-[2/3] w-1/3 mx-auto ${
+          className={`rounded-lg overflow-hidden border group-hover:border-[#da4653] group-hover:shadow-lg transition-all duration-300 aspect-[2/3] ${
+            compact ? "w-full" : "w-1/3 mx-auto"
+          } ${
             availabilityStatus === "vendido" ? "border-gray-300 opacity-80" : "border-gray-200"
           }`}
         >
           <BookCover isbn={isbn} title={title} author={author} coverUrl={coverUrl} className="w-full h-full" />
         </div>
 
-        <div className="mt-4 space-y-2">
-          <h3 className="font-outfit font-bold text-[#262969] line-clamp-2 group-hover:text-[#da4653] transition-colors">
+        <div className={`${compact ? "mt-2 space-y-1" : "mt-4 space-y-2"}`}>
+          <h3 className={`font-outfit font-bold text-[#262969] line-clamp-2 group-hover:text-[#da4653] transition-colors ${compact ? "text-sm" : ""}`}>
             {title}
           </h3>
           
           {author && (
-            <p className="font-inter text-xs text-gray-600 line-clamp-1">
+            <p className={`font-inter text-gray-600 line-clamp-1 ${compact ? "text-[11px]" : "text-xs"}`}>
               por {author}
             </p>
           )}
           
-          <div className="flex items-center gap-2 text-gray-600">
-            <span className="text-xs font-inter bg-gray-100 px-2 py-1 rounded">{category}</span>
-            <span className="text-xs font-inter px-2 py-1 rounded bg-[#da4653] text-white font-semibold">{condition}</span>
+          <div className={`flex items-center text-gray-600 ${compact ? "gap-1 flex-wrap" : "gap-2"}`}>
+            <span className={`font-inter bg-gray-100 rounded ${compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-1"}`}>{category}</span>
+            <span className={`font-inter rounded bg-[#da4653] text-white font-semibold ${compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-1"}`}>{condition}</span>
             <span
-              className={`text-xs font-inter px-2 py-1 rounded font-semibold ${
+              className={`font-inter rounded font-semibold ${
+                compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-1"
+              } ${
                 availabilityStatus === "vendido"
                   ? "bg-gray-800 text-white"
                   : availabilityStatus === "reservado"
@@ -107,7 +113,7 @@ export default function BookCard({
             </span>
           </div>
 
-          <div className="flex items-center gap-1 text-gray-700 text-sm font-inter">
+          <div className={`flex items-center gap-1 text-gray-700 font-inter ${compact ? "text-xs" : "text-sm"}`}>
             <MapPin className="w-4 h-4 text-gray-400" />
             <span className="truncate">{locationSummary || seboName}</span>
             {sebo?.verified && (
@@ -116,7 +122,7 @@ export default function BookCard({
               </span>
             )}
           </div>
-          {matchReason && (
+          {!compact && matchReason && (
             <p className="text-[11px] text-[#262969]">
               Match por{" "}
               <span className="font-semibold">
@@ -130,15 +136,15 @@ export default function BookCard({
               </span>
             </p>
           )}
-          {typeof quantity === "number" && (
+          {!compact && typeof quantity === "number" && (
             <p className="text-xs text-gray-600">Unidades: {quantity}</p>
           )}
-          {typeof offerCount === "number" && offerCount > 1 && (
+          {!compact && typeof offerCount === "number" && offerCount > 1 && (
             <p className="text-xs text-[#262969] font-medium">{offerCount} ofertas para este título</p>
           )}
 
-          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-            <span className="font-outfit font-bold text-lg text-[#da4653]">
+          <div className={`flex items-center justify-between border-t border-gray-200 ${compact ? "pt-1" : "pt-2"}`}>
+            <span className={`font-outfit font-bold text-[#da4653] ${compact ? "text-base" : "text-lg"}`}>
               {priceLabel || `R$ ${priceNumber.toFixed(2)}`}
             </span>
           </div>

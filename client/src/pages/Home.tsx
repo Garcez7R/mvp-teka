@@ -16,6 +16,7 @@ type CatalogSort =
   | "title_asc"
   | "price_asc"
   | "price_desc";
+type CatalogView = "compact" | "detailed";
 
 function normalizeSearchValue(value: string): string {
   return value
@@ -72,6 +73,7 @@ export default function Home() {
   const [maxPriceFilter, setMaxPriceFilter] = useState("");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [catalogView, setCatalogView] = useState<CatalogView>("compact");
   const [searchBarKey, setSearchBarKey] = useState(0);
   const [page, setPage] = useState(0);
   const [loadedBooks, setLoadedBooks] = useState<any[]>([]);
@@ -368,30 +370,41 @@ export default function Home() {
         )}
 
         <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSortBy("recent")}
+                className={`px-3 py-2 rounded-full border text-sm ${
+                  sortBy === "recent" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+                }`}
+              >
+                Recentes
+              </button>
+              <button
+                onClick={() => setSortBy("price_asc")}
+                className={`px-3 py-2 rounded-full border text-sm ${
+                  sortBy === "price_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+                }`}
+              >
+                Menor preço
+              </button>
+              <button
+                onClick={() => setSortBy("price_desc")}
+                className={`px-3 py-2 rounded-full border text-sm ${
+                  sortBy === "price_desc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+                }`}
+              >
+                Maior preço
+              </button>
+            </div>
             <button
-              onClick={() => setSortBy("recent")}
-              className={`px-3 py-2 rounded-full border text-sm ${
-                sortBy === "recent" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
-              }`}
+              type="button"
+              onClick={() =>
+                setCatalogView((prev) => (prev === "compact" ? "detailed" : "compact"))
+              }
+              className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white"
             >
-              Recentes
-            </button>
-            <button
-              onClick={() => setSortBy("price_asc")}
-              className={`px-3 py-2 rounded-full border text-sm ${
-                sortBy === "price_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
-              }`}
-            >
-              Menor preço
-            </button>
-            <button
-              onClick={() => setSortBy("price_desc")}
-              className={`px-3 py-2 rounded-full border text-sm ${
-                sortBy === "price_desc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
-              }`}
-            >
-              Maior preço
+              {catalogView === "compact" ? "Visualização: Compacta" : "Visualização: Detalhada"}
             </button>
           </div>
         </div>
@@ -569,7 +582,13 @@ export default function Home() {
         {/* Books Grid */}
         {groupedBooks.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div
+              className={
+                catalogView === "compact"
+                  ? "grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
+                  : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              }
+            >
               {groupedBooks.map((book: any) => (
                 <BookCard
                   key={book.id}
@@ -588,6 +607,7 @@ export default function Home() {
                   priceLabel={book.priceLabel}
                   availabilityStatus={book.availabilityStatus ?? "ativo"}
                   matchReason={book.matchReason}
+                  compact={catalogView === "compact"}
                 />
               ))}
             </div>
