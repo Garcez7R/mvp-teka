@@ -52,6 +52,26 @@ O TEKA foi desenhado para:
    - som/vibração ao detectar;
    - revisão em fila e publicação em lote.
 
+## Screenshots
+
+Estrutura pronta para inserir capturas futuras:
+
+- `docs/screenshots/home-desktop.png`
+- `docs/screenshots/home-mobile.png`
+- `docs/screenshots/add-book.png`
+- `docs/screenshots/batch-scan.png`
+- `docs/screenshots/manage-books.png`
+
+Quando as imagens estiverem prontas, basta adicionar no diretório e descomentar/usar as linhas abaixo:
+
+```md
+![Home Desktop](docs/screenshots/home-desktop.png)
+![Home Mobile](docs/screenshots/home-mobile.png)
+![Cadastrar Livro](docs/screenshots/add-book.png)
+![Scan em Lote](docs/screenshots/batch-scan.png)
+![Meus Livros](docs/screenshots/manage-books.png)
+```
+
 ## Stack Técnica
 
 - Frontend: React 19 + TypeScript + Vite + Tailwind
