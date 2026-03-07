@@ -4,6 +4,13 @@ function normalizeUpstream(raw) {
   return value.replace(/\/+$/, "");
 }
 
+function applySecurityHeaders(headers) {
+  headers.set("x-content-type-options", "nosniff");
+  headers.set("x-frame-options", "DENY");
+  headers.set("referrer-policy", "strict-origin-when-cross-origin");
+  headers.set("permissions-policy", "camera=(self), microphone=(), geolocation=()");
+}
+
 function buildUpstreamUrl(requestUrl, upstreamBase) {
   const incoming = new URL(requestUrl);
   const base = normalizeUpstream(upstreamBase);
@@ -43,6 +50,7 @@ async function handleProxy(context) {
   const responseHeaders = new Headers(upstreamResponse.headers);
   responseHeaders.set("cache-control", "no-store");
   responseHeaders.set("x-teka-trpc-mode", "proxy");
+  applySecurityHeaders(responseHeaders);
 
   return new Response(upstreamResponse.body, {
     status: upstreamResponse.status,
@@ -80,6 +88,7 @@ export async function onRequest(context) {
     const headers = new Headers(response.headers);
     headers.set("x-teka-trpc-mode", "local");
     headers.set("cache-control", "no-store");
+    applySecurityHeaders(headers);
 
     return new Response(response.body, {
       status: response.status,

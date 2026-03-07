@@ -139,6 +139,23 @@ export const wishlistItems = sqliteTable("wishlist_items", {
 export type WishlistItem = typeof wishlistItems.$inferSelect;
 export type InsertWishlistItem = typeof wishlistItems.$inferInsert;
 
+// Auditoria mínima de ações sensíveis (admin/livreiro)
+export const auditLogs = sqliteTable("audit_logs", {
+  id: int("id").primaryKey({ autoIncrement: true }),
+  actorUserId: int("actorUserId"),
+  actorRole: text("actorRole"),
+  action: text("action").notNull(),
+  entityType: text("entityType").notNull(),
+  entityId: text("entityId"),
+  metadata: text("metadata"),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
 // Relacoes
 export const usersRelations = relations(users, ({ many }) => ({
   sebos: many(sebos),

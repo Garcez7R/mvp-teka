@@ -1,9 +1,38 @@
+const ocrRateBuckets = new Map();
+
+function getClientIp(request) {
+  return (
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-forwarded-for") ||
+    "unknown"
+  );
+}
+
+function isRateLimited(ip, maxRequests = 15, windowMs = 60_000) {
+  const now = Date.now();
+  const current = ocrRateBuckets.get(ip);
+  if (!current || now >= current.resetAt) {
+    ocrRateBuckets.set(ip, { count: 1, resetAt: now + windowMs });
+    return false;
+  }
+  if (current.count >= maxRequests) {
+    return true;
+  }
+  current.count += 1;
+  ocrRateBuckets.set(ip, current);
+  return false;
+}
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "permissions-policy": "camera=(self), microphone=(), geolocation=()",
     },
   });
 }
@@ -62,6 +91,11 @@ export async function onRequestPost(context) {
     return json({ error: "OCR service is not configured." }, 503);
   }
 
+  const ip = getClientIp(context.request);
+  if (isRateLimited(ip)) {
+    return json({ error: "Too many OCR requests. Please try again shortly." }, 429);
+  }
+
   let body;
   try {
     body = await context.request.json();
@@ -72,6 +106,9 @@ export async function onRequestPost(context) {
   const imageDataUrl = String(body?.image || "").trim();
   if (!imageDataUrl.startsWith("data:image/")) {
     return json({ error: "Invalid image payload." }, 400);
+  }
+  if (imageDataUrl.length > 12_000_000) {
+    return json({ error: "Image too large for OCR." }, 413);
   }
 
   const result = await runOcr({ imageDataUrl, apiKey, timeoutMs: 20000 });
@@ -88,6 +125,9 @@ export async function onRequestOptions() {
     headers: {
       allow: "POST, OPTIONS",
       "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "referrer-policy": "strict-origin-when-cross-origin",
     },
   });
 }

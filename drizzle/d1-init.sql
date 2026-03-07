@@ -80,6 +80,17 @@ CREATE TABLE IF NOT EXISTS wishlist_items (
   createdAt INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  actorUserId INTEGER,
+  actorRole TEXT,
+  action TEXT NOT NULL,
+  entityType TEXT NOT NULL,
+  entityId TEXT,
+  metadata TEXT,
+  createdAt INTEGER NOT NULL
+);
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_favorites_user_book ON favorites(userId, bookId);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_book_interests_user_book ON book_interests(userId, bookId);
 CREATE INDEX IF NOT EXISTS idx_book_interests_book ON book_interests(bookId);
@@ -89,3 +100,6 @@ CREATE INDEX IF NOT EXISTS idx_books_sebo ON books(seboId);
 CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
 CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
 CREATE INDEX IF NOT EXISTS idx_sebos_user ON sebos(userId);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(createdAt);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_user_id ON audit_logs(actorUserId);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entityType, entityId);

@@ -13,7 +13,15 @@ export async function onRequest(context) {
         mode: "local",
         timestamp: new Date().toISOString(),
       },
-      { status: 200 }
+      {
+        status: 200,
+        headers: {
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+          "x-frame-options": "DENY",
+          "referrer-policy": "strict-origin-when-cross-origin",
+        },
+      }
     );
   }
 
@@ -37,6 +45,10 @@ export async function onRequest(context) {
   const headers = {
     "content-type": res.headers.get("content-type") || "application/json",
     "x-teka-trpc-mode": "proxy",
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "referrer-policy": "strict-origin-when-cross-origin",
   };
 
   return new Response(text, {

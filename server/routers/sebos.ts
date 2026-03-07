@@ -3,6 +3,7 @@ import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_
 import { db } from "./_utils/db.js";
 import { sebos, books, users, favorites, bookInterests } from "../_schema.ts";
 import { eq, inArray } from "drizzle-orm";
+import { logAuditEvent } from "./_utils/audit.js";
 
 export const sebosRouter = router({
   // Get all sebos
@@ -93,6 +94,18 @@ export const sebosRouter = router({
       })
       .returning({ id: sebos.id });
 
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "sebo.create",
+        entityType: "sebo",
+        entityId: newSebo[0]?.id ?? null,
+        metadata: {
+          ownerUserId: ctx.userId,
+          name: input.name,
+        },
+      });
+
       return newSebo;
     }),
 
@@ -139,6 +152,17 @@ export const sebosRouter = router({
 
       await db.update(sebos).set(updateData).where(eq(sebos.id, id));
 
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "sebo.update",
+        entityType: "sebo",
+        entityId: id,
+        metadata: {
+          changedFields: Object.keys(updateData),
+        },
+      });
+
       return { success: true };
     }),
 
@@ -169,7 +193,7 @@ export const sebosRouter = router({
         verified: z.boolean().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const created = await db
         .insert(sebos)
         .values({
@@ -177,6 +201,18 @@ export const sebosRouter = router({
           verified: input.verified ?? false,
         })
         .returning({ id: sebos.id });
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "admin.sebo.create",
+        entityType: "sebo",
+        entityId: created[0]?.id ?? null,
+        metadata: {
+          targetUserId: input.userId,
+          verified: input.verified ?? false,
+        },
+      });
 
       return created[0];
     }),
@@ -209,15 +245,25 @@ export const sebosRouter = router({
         verified: z.boolean().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { id, ...updateData } = input;
       await db.update(sebos).set(updateData).where(eq(sebos.id, id));
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "admin.sebo.update",
+        entityType: "sebo",
+        entityId: id,
+        metadata: {
+          changedFields: Object.keys(updateData),
+        },
+      });
       return { success: true };
     }),
 
   adminDelete: adminProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const existingSebo = await db
         .select({ id: sebos.id })
         .from(sebos)
@@ -241,6 +287,17 @@ export const sebosRouter = router({
       }
 
       await db.delete(sebos).where(eq(sebos.id, input.id));
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "admin.sebo.delete",
+        entityType: "sebo",
+        entityId: input.id,
+        metadata: {
+          deletedBooks: seboBookIds.length,
+        },
+      });
 
       return { success: true };
     }),

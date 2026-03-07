@@ -4,6 +4,7 @@ import { db } from "./_utils/db.js";
 import { books, sebos, favorites, bookInterests } from "../_schema.ts";
 import { eq, like, and, lte, gte, inArray, sql, asc, desc } from "drizzle-orm";
 import { normalizeBookTitle } from "./_utils/text.js";
+import { logAuditEvent } from "./_utils/audit.js";
 
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
 const HIDDEN_MARKER = /^\[HIDDEN\]\s*/i;
@@ -392,6 +393,19 @@ export const booksRouter = router({
         })
         .returning({ id: books.id });
 
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "book.create",
+        entityType: "book",
+        entityId: newBook[0]?.id ?? null,
+        metadata: {
+          seboId: input.seboId,
+          quantity: input.quantity,
+          availabilityStatus: input.availabilityStatus,
+        },
+      });
+
       return newBook;
     }),
 
@@ -457,6 +471,21 @@ export const booksRouter = router({
           quantity,
         })
         .returning({ id: books.id });
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "book.clone",
+        entityType: "book",
+        entityId: created[0]?.id ?? null,
+        metadata: {
+          sourceBookId: input.id,
+          condition: input.condition ?? original.condition,
+          quantity,
+          availabilityStatus,
+          isVisible,
+        },
+      });
 
       return created[0];
     }),
@@ -526,6 +555,20 @@ export const booksRouter = router({
       // cast to any because drizzle expects price string and our union could still
       // include number otherwise
       await db.update(books).set(updateDataWithStringPrice as any).where(eq(books.id, id));
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "book.update",
+        entityType: "book",
+        entityId: id,
+        metadata: {
+          changedFields: Object.keys(input).filter((field) => field !== "id"),
+          quantity,
+          availabilityStatus: targetStatus,
+          isVisible: targetVisibility,
+        },
+      });
 
       return { success: true };
     }),
@@ -720,6 +763,18 @@ export const booksRouter = router({
       }
 
       await db.delete(books).where(eq(books.id, input));
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "book.delete",
+        entityType: "book",
+        entityId: input,
+        metadata: {
+          seboId: book.seboId,
+          title: book.title,
+        },
+      });
 
       return { success: true };
     }),

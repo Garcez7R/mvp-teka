@@ -3,6 +3,7 @@ import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_
 import { db } from "./_utils/db.js";
 import { users, sebos, books, favorites, bookInterests, wishlistItems } from "../_schema.ts";
 import { eq, inArray } from "drizzle-orm";
+import { logAuditEvent } from "./_utils/audit.js";
 
 export const usersRouter = router({
   // Get current user
@@ -145,11 +146,20 @@ export const usersRouter = router({
         role: z.enum(["admin", "livreiro", "comprador", "user"]),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       await db
         .update(users)
         .set({ role: input.role })
         .where(eq(users.id, input.userId));
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "admin.user.update_role",
+        entityType: "user",
+        entityId: input.userId,
+        metadata: { role: input.role },
+      });
 
       return { success: true };
     }),
@@ -163,7 +173,7 @@ export const usersRouter = router({
         openId: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const newUser = await db
         .insert(users)
         .values({
@@ -174,6 +184,18 @@ export const usersRouter = router({
           loginMethod: "admin",
         })
         .returning({ id: users.id });
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "admin.user.create",
+        entityType: "user",
+        entityId: newUser[0]?.id ?? null,
+        metadata: {
+          role: input.role,
+          email: input.email,
+        },
+      });
 
       return newUser[0];
     }),
@@ -187,9 +209,19 @@ export const usersRouter = router({
         role: z.enum(["admin", "livreiro", "comprador", "user"]).optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { userId, ...updateData } = input;
       await db.update(users).set(updateData).where(eq(users.id, userId));
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "admin.user.update",
+        entityType: "user",
+        entityId: userId,
+        metadata: {
+          changedFields: Object.keys(updateData),
+        },
+      });
       return { success: true };
     }),
 
@@ -226,6 +258,17 @@ export const usersRouter = router({
       await db.delete(bookInterests).where(eq(bookInterests.userId, input.userId));
       await db.delete(wishlistItems).where(eq(wishlistItems.userId, input.userId));
       await db.delete(users).where(eq(users.id, input.userId));
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "admin.user.delete",
+        entityType: "user",
+        entityId: input.userId,
+        metadata: {
+          deletedSebos: ownedSeboIds.length,
+        },
+      });
 
       return { success: true };
     }),

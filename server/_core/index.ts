@@ -18,6 +18,17 @@ app.set("trust proxy", true);
 
 type RateBucket = { count: number; resetAt: number };
 const rateBuckets = new Map<string, RateBucket>();
+const allowedOrigins = new Set(
+  String(process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+allowedOrigins.add("http://localhost:3777");
+allowedOrigins.add("http://localhost:5173");
+allowedOrigins.add("http://127.0.0.1:3777");
+allowedOrigins.add("http://127.0.0.1:5173");
+allowedOrigins.add("https://mvp-teka.pages.dev");
 
 function createRateLimiter(pathPrefix: string, maxRequests: number, windowMs: number) {
   return (req: Request, res: Response, next: () => void) => {
@@ -70,6 +81,10 @@ app.use((req: Request, res: Response, next) => {
   res.header("X-Content-Type-Options", "nosniff");
   res.header("X-Frame-Options", "DENY");
   res.header("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.header("Permissions-Policy", "camera=(self), microphone=(), geolocation=()");
+  if (req.secure || req.headers["x-forwarded-proto"] === "https") {
+    res.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  }
   if (req.path.startsWith("/trpc")) {
     res.header("Cache-Control", "no-store");
   }
@@ -78,7 +93,12 @@ app.use((req: Request, res: Response, next) => {
 
 // CORS
 app.use((req: Request, res: Response, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const origin = String(req.headers.origin || "");
+  const allowOrigin = !origin || allowedOrigins.has(origin);
+  if (allowOrigin && origin) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Vary", "Origin");
+  }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header(
     "Access-Control-Allow-Headers",
@@ -86,7 +106,13 @@ app.use((req: Request, res: Response, next) => {
   );
 
   if (req.method === "OPTIONS") {
+    if (!allowOrigin) {
+      return res.sendStatus(403);
+    }
     return res.sendStatus(200);
+  }
+  if (!allowOrigin) {
+    return res.status(403).json({ error: "Origin not allowed." });
   }
   next();
 });
