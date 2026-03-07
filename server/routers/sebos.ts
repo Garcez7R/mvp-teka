@@ -11,6 +11,11 @@ export const sebosRouter = router({
     return await db.select().from(sebos);
   }),
 
+  // Get all sebos owned by current user
+  listMine: protectedProcedure.query(async ({ ctx }) => {
+    return await db.select().from(sebos).where(eq(sebos.userId, ctx.userId!));
+  }),
+
   // Get sebo by ID with books
   getById: publicProcedure
     .input(z.number())
@@ -35,7 +40,7 @@ export const sebosRouter = router({
 
   // Get current user's sebo
   getMySebo: protectedProcedure.query(async ({ ctx }) => {
-      const mySebo = await db
+    const mySebo = await db
       .select()
       .from(sebos)
       .where(eq(sebos.userId, ctx.userId!))

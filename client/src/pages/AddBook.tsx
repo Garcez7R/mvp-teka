@@ -77,15 +77,14 @@ export default function AddBook() {
     retry: 1,
     refetchOnWindowFocus: false,
   });
-  const {
-    data: mySebo,
-    isLoading: seboLoading,
-    error: mySeboError,
-  } = trpc.sebos.getMySebo.useQuery(undefined, {
-    retry: false,
+  const { data: mySebos = [], isLoading: mySebosLoading } = trpc.sebos.listMine.useQuery(undefined, {
+    enabled: isAuthenticated && role !== "admin",
+    staleTime: 1000 * 60 * 5,
+    retry: 1,
     refetchOnWindowFocus: false,
   });
-  const canSubmit = Boolean(mySebo || formData.seboId);
+  const availableSebos = role === "admin" ? sebosList : mySebos;
+  const canSubmit = Boolean(formData.seboId);
 
   const normalizeISBN = (isbn: string): string =>
     isbn.toUpperCase().replace(/[^0-9X]/g, "");
@@ -195,6 +194,19 @@ export default function AddBook() {
     const hasDraft = Boolean(window.localStorage.getItem(LAST_BOOK_DRAFT_KEY));
     setHasLastDraft(hasDraft);
   }, []);
+
+  useEffect(() => {
+    if (!availableSebos.length) return;
+    const selectedId = Number.parseInt(formData.seboId || "", 10);
+    const stillExists = Number.isFinite(selectedId)
+      ? availableSebos.some((sebo: any) => Number(sebo.id) === selectedId)
+      : false;
+    if (stillExists) return;
+    setFormData((prev) => ({
+      ...prev,
+      seboId: String(availableSebos[0].id),
+    }));
+  }, [availableSebos, formData.seboId]);
 
   const searchBookByISBN = async (isbnInput?: string) => {
     const isbnValue = isbnInput ?? formData.isbn;
@@ -844,7 +856,7 @@ export default function AddBook() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.price || (!formData.seboId && !mySebo)) {
+    if (!formData.title || !formData.price || !formData.seboId) {
       toast.error("Preencha os campos obrigatórios");
       return;
     }
@@ -870,11 +882,11 @@ export default function AddBook() {
         return;
       }
 
-      let seboIdToUse: number;
-      if (mySebo) {
-        seboIdToUse = mySebo.id;
-      } else {
-        seboIdToUse = parseInt(formData.seboId);
+      const seboIdToUse = parseInt(formData.seboId);
+      if (!Number.isFinite(seboIdToUse)) {
+        toast.error("Selecione um sebo válido.");
+        setIsUploading(false);
+        return;
       }
 
       await createBookMutation.mutateAsync({
@@ -1016,60 +1028,60 @@ export default function AddBook() {
             {/* Seção do Sebo */}
             <div className="md:col-span-2">
               <h2 className="font-outfit font-semibold text-lg text-[#262969] mb-4">Informações do Sebo</h2>
-              {mySebo ? (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
-                  <p className="text-green-800 font-inter text-sm">
-                    Você está cadastrando livros para o sebo: <strong>{mySebo.name}</strong>
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {seboLoading && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-blue-800 font-inter text-sm">
-                        Verificando se você já possui um sebo...
-                      </p>
-                    </div>
-                  )}
-                  {mySeboError && (
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-gray-700 font-inter text-sm">
-                        Sessão não autenticada. Selecione um sebo na lista para continuar.
-                      </p>
-                    </div>
-                  )}
+              <div className="space-y-4">
+                {(sebosLoading || mySebosLoading) && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-blue-800 font-inter text-sm">Carregando sebos disponíveis...</p>
+                  </div>
+                )}
+                {!availableSebos.length ? (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <p className="text-yellow-800 font-inter text-sm">
-                      <strong>Atenção:</strong> Selecione um sebo para vincular este livro.
+                      <strong>Atenção:</strong>{" "}
+                      {role === "admin"
+                        ? "Não há sebos cadastrados no sistema para vincular este livro."
+                        : "Você ainda não possui sebo. Crie um sebo para começar o cadastro."}
                     </p>
-                    <Link href="/sebo/novo">
-                      <button className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white font-inter font-medium py-2 px-4 rounded-lg">
-                        Criar Sebo
-                      </button>
-                    </Link>
+                    {role !== "admin" && (
+                      <Link href="/sebo/novo">
+                        <button className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white font-inter font-medium py-2 px-4 rounded-lg">
+                          Criar Sebo
+                        </button>
+                      </Link>
+                    )}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Sebo *
-                    </label>
-                    <select
-                      required={!mySebo}
-                      value={formData.seboId}
-                      onChange={(e) => setFormData({ ...formData, seboId: e.target.value })}
-                      disabled={sebosLoading}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
-                    >
-                      <option value="">Selecione um sebo</option>
-                      {sebosList.map((sebo: any) => (
-                        <option key={sebo.id} value={String(sebo.id)}>
-                          {sebo.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
+                ) : (
+                  <>
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-green-800 font-inter text-sm">
+                        Cadastrando livro para:{" "}
+                        <strong>
+                          {availableSebos.find((sebo: any) => String(sebo.id) === String(formData.seboId))?.name || "-"}
+                        </strong>
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Selecione o sebo *
+                      </label>
+                      <select
+                        required
+                        value={formData.seboId}
+                        onChange={(e) => setFormData({ ...formData, seboId: e.target.value })}
+                        disabled={sebosLoading || mySebosLoading}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
+                      >
+                        <option value="">Selecione um sebo</option>
+                        {availableSebos.map((sebo: any) => (
+                          <option key={sebo.id} value={String(sebo.id)}>
+                            {sebo.name} {(sebo.city || sebo.state) ? `(${sebo.city || "-"} / ${sebo.state || "-"})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Seção do Livro - ISBN PRIMEIRO */}

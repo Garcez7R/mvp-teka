@@ -256,6 +256,14 @@ export default function Admin() {
     () => new Map(users.map((user: any) => [Number(user.id), user])),
     [users]
   );
+  const seboCountByUserId = useMemo(() => {
+    const counters = new Map<number, number>();
+    for (const sebo of sebos as any[]) {
+      const userId = Number(sebo.userId);
+      counters.set(userId, (counters.get(userId) || 0) + 1);
+    }
+    return counters;
+  }, [sebos]);
   const normalizedUserFilter = userFilter.trim().toLowerCase();
   const filteredUsers = useMemo(() => {
     if (!normalizedUserFilter) return users;
@@ -520,6 +528,7 @@ export default function Admin() {
                     <th className="text-left px-3 py-2">Cidade/UF</th>
                     <th className="text-left px-3 py-2">Consent. LGPD</th>
                     <th className="text-left px-3 py-2">Role</th>
+                    <th className="text-left px-3 py-2">Sebos</th>
                     <th className="text-left px-3 py-2">Ações</th>
                   </tr>
                 </thead>
@@ -554,6 +563,11 @@ export default function Admin() {
                           <option value="admin">admin</option>
                           <option value="user">user</option>
                         </select>
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="inline-flex px-2 py-1 text-xs rounded bg-indigo-50 text-indigo-700">
+                          {seboCountByUserId.get(Number(user.id)) || 0}
+                        </span>
                       </td>
                       <td className="px-3 py-2">
                         <button

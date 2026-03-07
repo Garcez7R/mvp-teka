@@ -34,6 +34,7 @@ export default function ManageBooks() {
   const utils = trpc.useUtils();
   const [searchQuery, setSearchQuery] = useState("");
   const [coverFilter, setCoverFilter] = useState<"all" | "with-cover" | "no-cover">("all");
+  const [selectedSeboId, setSelectedSeboId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingBook, setEditingBook] = useState<EditingBook | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -43,21 +44,41 @@ export default function ManageBooks() {
   const [selectedBookIds, setSelectedBookIds] = useState<number[]>([]);
   const [showCharts, setShowCharts] = useState(false);
 
-  const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
-    enabled: isAuthenticated
+  const { data: mySebos = [] } = trpc.sebos.listMine.useQuery(undefined, {
+    enabled: isAuthenticated && role !== "admin",
   });
+  const { data: allSebos = [] } = trpc.sebos.list.useQuery(undefined, {
+    enabled: isAuthenticated && role === "admin",
+  });
+  const availableSebos = role === "admin" ? allSebos : mySebos;
+  const selectedSebo = useMemo(
+    () => availableSebos.find((sebo: any) => Number(sebo.id) === Number(selectedSeboId)) ?? null,
+    [availableSebos, selectedSeboId]
+  );
+
+  useEffect(() => {
+    if (!availableSebos.length) {
+      setSelectedSeboId(null);
+      return;
+    }
+    if (selectedSeboId && availableSebos.some((sebo: any) => Number(sebo.id) === Number(selectedSeboId))) {
+      return;
+    }
+    setSelectedSeboId(Number(availableSebos[0].id));
+  }, [availableSebos, selectedSeboId]);
+
   const { data: myBooks = [] } = trpc.books.listBySebo.useQuery(
-    mySebo?.id || 0,
-    { enabled: !!mySebo }
+    selectedSeboId || 0,
+    { enabled: Boolean(selectedSeboId) }
   );
   const { data: metrics } = trpc.books.sellerMetrics.useQuery(
-    { seboId: mySebo?.id },
-    { enabled: !!mySebo }
+    { seboId: selectedSeboId || undefined },
+    { enabled: Boolean(selectedSeboId) }
   );
 
   const statusHistoryStorageKey = useMemo(
-    () => (mySebo?.id ? `teka_status_history_${mySebo.id}` : "teka_status_history_unknown"),
-    [mySebo?.id]
+    () => (selectedSeboId ? `teka_status_history_${selectedSeboId}` : "teka_status_history_unknown"),
+    [selectedSeboId]
   );
   const statusChartData = useMemo(
     () => [
@@ -145,17 +166,23 @@ export default function ManageBooks() {
     );
   }
 
-  if (!mySebo) {
+  if (!availableSebos.length) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
         <Header />
         <main className="container flex-1 py-12 text-center">
-          <p className="text-gray-600 mb-6">Você precisa criar um sebo primeiro.</p>
-          <Link href="/sebo/novo">
-            <button className="bg-[#da4653] text-white font-outfit font-bold py-2 px-6 rounded-lg">
-              Criar Sebo
-            </button>
-          </Link>
+          <p className="text-gray-600 mb-6">
+            {role === "admin"
+              ? "Nenhum sebo cadastrado no sistema para gerenciar."
+              : "Você precisa criar um sebo primeiro."}
+          </p>
+          {role !== "admin" && (
+            <Link href="/sebo/novo">
+              <button className="bg-[#da4653] text-white font-outfit font-bold py-2 px-6 rounded-lg">
+                Criar Sebo
+              </button>
+            </Link>
+          )}
         </main>
         <Footer />
       </div>
@@ -570,7 +597,7 @@ export default function ManageBooks() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `teka-catalogo-${mySebo?.name?.replace(/\s+/g, "-").toLowerCase() || "sebo"}.csv`;
+    a.download = `teka-catalogo-${selectedSebo?.name?.replace(/\s+/g, "-").toLowerCase() || "sebo"}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -589,7 +616,25 @@ export default function ManageBooks() {
           </button>
         </Link>
         <h1 className="font-outfit font-bold text-3xl text-[#262969] mb-2">Meu Catálogo</h1>
-        <p className="text-gray-600 mb-8">{mySebo.name}</p>
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Sebo em gestão</p>
+            <select
+              value={String(selectedSeboId || "")}
+              onChange={(e) => setSelectedSeboId(Number.parseInt(e.target.value, 10))}
+              className="w-full md:max-w-md px-3 py-2 border border-gray-300 rounded-lg"
+            >
+              {availableSebos.map((sebo: any) => (
+                <option key={sebo.id} value={String(sebo.id)}>
+                  {sebo.name} {(sebo.city || sebo.state) ? `(${sebo.city || "-"} / ${sebo.state || "-"})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-gray-600 md:text-right md:self-end">
+            {selectedSebo?.name || "-"}
+          </p>
+        </div>
         <section className="mb-8 space-y-4">
           <div className="flex justify-end">
             <button
