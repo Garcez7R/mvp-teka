@@ -90,6 +90,8 @@ Regras úteis:
 - Ajuste quantidade rapidamente (+/-).
 - Altere status: ativo, reservado, vendido.
 - Oculte/exiba livro para compradores.
+- Use o filtro de capa: `Todos`, `Sem capa`, `Com capa`.
+- Itens sem imagem exibem badge `Sem capa` e ação rápida `Adicionar capa`.
 - Duplique livro para criar novo item de mesmo título com outra condição/preço.
 - Exporte CSV do catálogo.
 - Use gráficos (colapsáveis) para visão operacional.
@@ -109,6 +111,7 @@ Abas principais:
 - Usuários: criar, editar role e excluir.
 - Sebos: criar, editar e excluir.
 - Livros: editar preço, quantidade, status, capa e excluir.
+- Livros: filtro de capa (`Todos`, `Sem capa`, `Com capa`) e badge `Sem capa`.
 
 Capas no Admin:
 - Trocar capa (ISBN)

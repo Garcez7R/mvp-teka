@@ -47,12 +47,15 @@ O TEKA foi desenhado para:
 - scanner por código de barras/ISBN;
 - **scan em lote** com revisão antes de publicar;
 - gestão de estoque (quantidade, status, visibilidade, edição e exclusão);
+- identificação rápida de itens sem capa (badge `Sem capa`);
+- filtro de capa no catálogo do livreiro (`Todos`, `Sem capa`, `Com capa`);
 - exportação CSV do catálogo.
 
 ### Admin
 
 - visão administrativa de usuários, sebos e livros;
 - edição e ações de gestão centralizadas;
+- gestão de capas com filtros (`Sem capa` / `Com capa`) e troca por ISBN/título;
 - controle por role.
 
 ## Métricas e Dashboards
