@@ -57,6 +57,22 @@ export default function ManageBooks() {
     () => (mySebo?.id ? `teka_status_history_${mySebo.id}` : "teka_status_history_unknown"),
     [mySebo?.id]
   );
+  const statusChartData = useMemo(
+    () => [
+      { label: "Ativos", value: metrics?.activeBooks ?? 0, color: "#059669" },
+      { label: "Reservados", value: metrics?.reservedBooks ?? 0, color: "#d97706" },
+      { label: "Vendidos", value: metrics?.soldBooks ?? 0, color: "#334155" },
+    ],
+    [metrics]
+  );
+  const topFavoritesChartData = useMemo(
+    () =>
+      (metrics?.topBooks ?? []).slice(0, 5).map((item: any) => ({
+        label: String(item.title || "Livro").slice(0, 18),
+        value: Number(item.favorites ?? 0),
+      })),
+    [metrics]
+  );
 
   useEffect(() => {
     try {
@@ -153,22 +169,6 @@ export default function ManageBooks() {
   const allFilteredSelected =
     filteredBooks.length > 0 &&
     filteredBooks.every((book: any) => selectedBookIds.includes(Number(book.id)));
-  const statusChartData = useMemo(
-    () => [
-      { label: "Ativos", value: metrics?.activeBooks ?? 0, color: "#059669" },
-      { label: "Reservados", value: metrics?.reservedBooks ?? 0, color: "#d97706" },
-      { label: "Vendidos", value: metrics?.soldBooks ?? 0, color: "#334155" },
-    ],
-    [metrics]
-  );
-  const topFavoritesChartData = useMemo(
-    () =>
-      (metrics?.topBooks ?? []).slice(0, 5).map((item: any) => ({
-        label: String(item.title || "Livro").slice(0, 18),
-        value: Number(item.favorites ?? 0),
-      })),
-    [metrics]
-  );
   const formatChartNumber = (value: unknown) => Number(value || 0).toLocaleString("pt-BR");
 
   const handleEdit = (book: typeof myBooks[0]) => {
