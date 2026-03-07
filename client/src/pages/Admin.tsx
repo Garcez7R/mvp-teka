@@ -749,6 +749,7 @@ export default function Admin() {
                     <th className="text-left px-3 py-2">Preço</th>
                     <th className="text-left px-3 py-2">Qtd</th>
                     <th className="text-left px-3 py-2">Status</th>
+                    <th className="text-left px-3 py-2">Visível</th>
                     <th className="text-left px-3 py-2">Capa</th>
                     <th className="text-left px-3 py-2">Ações</th>
                   </tr>
@@ -805,6 +806,21 @@ export default function Admin() {
                           <option value="reservado">reservado</option>
                           <option value="vendido">vendido</option>
                         </select>
+                      </td>
+                      <td className="px-3 py-2">
+                        <label className="inline-flex items-center gap-2 text-xs text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={book.isVisible ?? true}
+                            onChange={(e) => {
+                              void adminUpdateBookMutation.mutateAsync({
+                                id: Number(book.id),
+                                isVisible: e.target.checked,
+                              });
+                            }}
+                          />
+                          {(book.isVisible ?? true) ? "Sim" : "Não"}
+                        </label>
                       </td>
                       <td className="px-3 py-2 min-w-[280px]">
                         <div className="space-y-2">
