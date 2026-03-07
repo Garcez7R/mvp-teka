@@ -91,11 +91,18 @@ O TEKA foi desenhado para:
 
 ## Demonstração
 
-Mobile:
-<img src="docs/screenshots/demo.gif" alt="Demo TEKA" width="180" />
-
-Web/Desktop:
-- adicione `docs/screenshots/demo-web.gif` para exibir uma demo específica da versão web.
+<table>
+  <tr>
+    <td align="center">
+      <strong>Mobile</strong><br />
+      <img src="docs/screenshots/demo.gif" alt="Demo TEKA Mobile" height="180" />
+    </td>
+    <td align="center">
+      <strong>Web/Desktop</strong><br />
+      <img src="docs/screenshots/demo-web.gif" alt="Demo TEKA Web" height="180" />
+    </td>
+  </tr>
+</table>
 
 ## Stack Técnica
 
