@@ -1,5 +1,5 @@
 import { useParams, Link } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
@@ -51,6 +51,7 @@ export default function Book() {
   const registerInterestMutation = trpc.books.registerInterest.useMutation();
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = favoriteId ? isFavorite(favoriteId) : false;
+  const [showSeboDetails, setShowSeboDetails] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -201,6 +202,7 @@ export default function Book() {
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${liveWhatsappMessage}`;
   const normalizedBookIsbn = String(book.isbn || "").replace(/\D/g, "");
   const normalizedBookTitle = String(book.title || "").trim().toLowerCase();
+  const seboLogoUrl = String((book.sebo as any)?.logoUrl || "").trim() || undefined;
   const sameBookOffers = offersForComparison
     .filter((candidate: any) => Number(candidate.id) !== Number(book.id))
     .filter((candidate: any) => {
@@ -357,64 +359,85 @@ export default function Book() {
 
             {/* Seller Info */}
             {book.sebo && (
-              <div className="bg-gradient-to-br from-[#da4653] to-[#c23a45] rounded-lg p-6 mb-8 border border-[#da4653] text-white">
-                <h3 className="font-outfit font-semibold text-lg mb-4">Informações do Sebo</h3>
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <span className="text-xs bg-white/20 px-2 py-1 rounded">Sebo: {book.sebo.name}</span>
-                  {book.sebo.verified && (
-                    <span className="text-xs bg-emerald-600 px-2 py-1 rounded font-semibold">Verificado</span>
-                  )}
-                  {(book.sebo.city || book.sebo.state) && (
-                    <span className="text-xs bg-white/20 px-2 py-1 rounded">
-                      {book.sebo.city || "-"} / {book.sebo.state || "-"}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 mb-6">
-                  <MapPin className="w-5 h-5" />
-                  <div>
-                    <p className="font-inter text-sm opacity-90">Sebo</p>
-                    <p className="font-inter font-semibold text-base">{book.sebo.name}</p>
+              <div className="rounded-lg p-4 mb-8 border border-[#f1d7da] bg-[#fff7f8]">
+                <h3 className="font-outfit font-semibold text-base text-[#262969] mb-3">Informações do Sebo</h3>
+                <div className="flex gap-3">
+                  <div className="w-14 h-14 rounded-md overflow-hidden border border-gray-200 bg-white shrink-0 flex items-center justify-center">
+                    {seboLogoUrl ? (
+                      <img
+                        src={seboLogoUrl}
+                        alt={`Logo de ${book.sebo.name}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-[10px] font-semibold text-[#262969]">TEKA</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-inter font-semibold text-[#262969] truncate">{book.sebo.name}</p>
+                      {book.sebo.verified && (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-semibold">
+                          Verificado
+                        </span>
+                      )}
+                      {(book.sebo.city || book.sebo.state) && (
+                        <span className="text-[10px] bg-white text-gray-700 px-2 py-0.5 rounded border border-gray-200">
+                          {book.sebo.city || "-"} / {book.sebo.state || "-"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className="bg-white text-gray-700 px-2 py-0.5 rounded border border-gray-200">
+                        Catálogo: {book.seboStats?.totalBooks ?? "-"}
+                      </span>
+                      <span className="bg-white text-gray-700 px-2 py-0.5 rounded border border-gray-200">
+                        {book.sebo.supportsPickup ? "Retirada no local" : "Sem retirada presencial"}
+                      </span>
+                    </div>
+                    <p className="font-inter text-xs text-gray-700 mt-2">
+                      Contato e negociação direto com o sebo via WhatsApp.
+                    </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 mb-4 text-center">
-                  <div className="bg-white/20 rounded p-2">
-                    <p className="text-xs opacity-90">Catálogo</p>
-                    <p className="font-bold">{book.seboStats?.totalBooks ?? "-"}</p>
+                <button
+                  type="button"
+                  onClick={() => setShowSeboDetails((prev) => !prev)}
+                  className="mt-3 text-xs font-semibold text-[#262969] hover:text-[#da4653] underline"
+                >
+                  {showSeboDetails ? "Ocultar detalhes do sebo" : "Ver mais detalhes do sebo"}
+                </button>
+                {showSeboDetails ? (
+                  <div className="mt-3 p-3 rounded border border-gray-200 bg-white text-gray-700">
+                    <p className="text-sm font-semibold mb-2 text-[#262969]">Logística de entrega</p>
+                    <p className="text-xs">
+                      {[
+                        book.sebo.supportsPickup ? "Retirada no local" : null,
+                        book.sebo.shipsNeighborhood ? "Entrega no bairro" : null,
+                        book.sebo.shipsCity ? "Entrega na cidade" : null,
+                        book.sebo.shipsState ? "Entrega no estado" : null,
+                        book.sebo.shipsNationwide ? "Envio nacional" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" • ") || "Não informado"}
+                    </p>
+                    {book.sebo.shippingAreas && (
+                      <p className="text-xs mt-1">Áreas: {book.sebo.shippingAreas}</p>
+                    )}
+                    {book.sebo.shippingFeeNotes && (
+                      <p className="text-xs mt-1">Frete: {book.sebo.shippingFeeNotes}</p>
+                    )}
+                    {book.sebo.shippingEta && (
+                      <p className="text-xs mt-1">Prazo: {book.sebo.shippingEta}</p>
+                    )}
+                    {book.sebo.shippingNotes && (
+                      <p className="text-xs mt-1">Obs.: {book.sebo.shippingNotes}</p>
+                    )}
+                    <p className="text-xs mt-2 text-gray-600">
+                      Por privacidade e segurança, o endereço completo é informado somente no atendimento direto com o sebo.
+                    </p>
                   </div>
-                </div>
-                <p className="font-inter text-sm opacity-90">
-                  Entre em contato diretamente via WhatsApp para confirmar disponibilidade e negociar o melhor preço.
-                </p>
-                <p className="font-inter text-xs opacity-90 mt-2">
-                  Por privacidade e segurança, o endereço completo é informado somente no atendimento direto com o sebo.
-                </p>
-                <div className="mt-4 p-3 rounded bg-white/15">
-                  <p className="text-sm font-semibold mb-2">Logística de entrega</p>
-                  <p className="text-xs">
-                    {[
-                      book.sebo.supportsPickup ? "Retirada no local" : null,
-                      book.sebo.shipsNeighborhood ? "Entrega no bairro" : null,
-                      book.sebo.shipsCity ? "Entrega na cidade" : null,
-                      book.sebo.shipsState ? "Entrega no estado" : null,
-                      book.sebo.shipsNationwide ? "Envio nacional" : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" • ") || "Não informado"}
-                  </p>
-                  {book.sebo.shippingAreas && (
-                    <p className="text-xs mt-1">Áreas: {book.sebo.shippingAreas}</p>
-                  )}
-                  {book.sebo.shippingFeeNotes && (
-                    <p className="text-xs mt-1">Frete: {book.sebo.shippingFeeNotes}</p>
-                  )}
-                  {book.sebo.shippingEta && (
-                    <p className="text-xs mt-1">Prazo: {book.sebo.shippingEta}</p>
-                  )}
-                  {book.sebo.shippingNotes && (
-                    <p className="text-xs mt-1">Obs.: {book.sebo.shippingNotes}</p>
-                  )}
-                </div>
+                ) : null}
               </div>
             )}
 
@@ -437,9 +460,13 @@ export default function Book() {
               </a>
               <button
                 onClick={() => void handleInterest(book.id, book.title)}
-                className="text-sm text-[#262969] hover:underline text-left"
+                disabled={registerInterestMutation.isPending}
+                className="flex items-center justify-center gap-2 w-full border border-[#262969] text-[#262969] font-inter font-semibold py-3 px-4 rounded-lg bg-white hover:bg-[#262969] hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Registrar interesse neste livro
+                <Heart className="w-4 h-4" />
+                {registerInterestMutation.isPending
+                  ? "Registrando interesse..."
+                  : "Registrar interesse neste livro"}
               </button>
             </div>
 
