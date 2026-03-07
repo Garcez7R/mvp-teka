@@ -28,6 +28,7 @@ export default function Admin() {
   const [booksFilter, setBooksFilter] = useState("");
   const [bookCoverOptions, setBookCoverOptions] = useState<Record<number, string[]>>({});
   const [coverLoadingId, setCoverLoadingId] = useState<number | null>(null);
+  const [showCharts, setShowCharts] = useState(false);
   const BOOKS_PAGE_SIZE = 50;
   const canRunAdminQueries =
     isAuthenticated &&
@@ -347,6 +348,15 @@ export default function Admin() {
         <h1 className="font-outfit text-3xl font-bold text-[#262969] mb-6">Painel Admin</h1>
         {adminMetrics && (
           <section className="mb-8 space-y-4">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowCharts((prev) => !prev)}
+                className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white"
+              >
+                {showCharts ? "Ocultar gráficos" : "Exibir gráficos"}
+              </button>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div className="p-4 border rounded-lg bg-white">
                 <p className="text-xs text-gray-500">Usuários</p>
@@ -371,37 +381,39 @@ export default function Admin() {
                 <p className="text-xs text-gray-700">Livros: {adminMetrics.growth7d.books}</p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border rounded-lg bg-white">
-                <h2 className="font-semibold text-[#262969] mb-3">Perfis de usuário</h2>
-                <div className="w-full h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={roleChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="label" />
-                      <YAxis allowDecimals={false} />
-                      <Tooltip formatter={(value) => [formatChartNumber(value), "Quantidade"]} />
-                      <Bar dataKey="value" fill="#262969" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+            {showCharts ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 border rounded-lg bg-white">
+                  <h2 className="font-semibold text-[#262969] mb-3">Perfis de usuário</h2>
+                  <div className="w-full h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={roleChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="label" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip formatter={(value) => [formatChartNumber(value), "Quantidade"]} />
+                        <Bar dataKey="value" fill="#262969" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="p-4 border rounded-lg bg-white">
+                  <h2 className="font-semibold text-[#262969] mb-3">Status dos livros</h2>
+                  <div className="w-full h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={booksStatusChartData} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={80} label>
+                          {booksStatusChartData.map((entry) => (
+                            <Cell key={entry.label} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [formatChartNumber(value), "Livros"]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
-              <div className="p-4 border rounded-lg bg-white">
-                <h2 className="font-semibold text-[#262969] mb-3">Status dos livros</h2>
-                <div className="w-full h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={booksStatusChartData} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={80} label>
-                        {booksStatusChartData.map((entry) => (
-                          <Cell key={entry.label} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => [formatChartNumber(value), "Livros"]} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
+            ) : null}
             {adminMetrics.recentAudit.length > 0 && (
               <div className="p-4 border rounded-lg bg-white">
                 <h2 className="font-semibold text-[#262969] mb-2">Ações recentes (auditoria)</h2>
