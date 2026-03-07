@@ -48,7 +48,8 @@ Rotas principais:
 - Clique no livro para abrir detalhes.
 - Na tela de detalhe:
   - confirme preço e status;
-  - veja informações do sebo;
+  - veja informações do sebo em bloco compacto;
+  - use `Ver mais detalhes do sebo` para abrir logística e observações;
   - clique em Contato via WhatsApp para negociar.
 
 ### 2.3 Favoritos e Interesses (`/my-interests`)

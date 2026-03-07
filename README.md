@@ -41,6 +41,7 @@ O TEKA foi desenhado para:
 - visualização de variações de oferta por estado/preço.
 - priorização opcional de ofertas próximas (`Ver perto de mim: ON/OFF`) com selo `Na sua cidade` / `No seu estado`.
 - na Home, livros sem capa são posicionados no final para manter vitrine visual mais consistente.
+- no detalhe do livro, o bloco do sebo está compacto com opção `Ver mais detalhes do sebo`.
 
 ### Livreiro
 
