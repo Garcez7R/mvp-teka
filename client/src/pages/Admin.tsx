@@ -832,14 +832,14 @@ export default function Admin() {
                               onClick={() => void fetchCoverOptionsByIsbn(book)}
                               className="px-2 py-1 text-xs rounded border border-[#262969] text-[#262969]"
                             >
-                              {coverLoadingId === Number(book.id) ? "Buscando..." : "Buscar ISBN"}
+                              {coverLoadingId === Number(book.id) ? "Buscando..." : "Trocar capa (ISBN)"}
                             </button>
                             <button
                               type="button"
                               onClick={() => void fetchCoverOptionsByText(book)}
                               className="px-2 py-1 text-xs rounded border border-[#262969] text-[#262969]"
                             >
-                              Buscar título/autor
+                              Trocar capa (título/autor)
                             </button>
                             <button
                               type="button"
@@ -861,7 +861,11 @@ export default function Admin() {
                                       coverUrl: coverOption,
                                     })
                                   }
-                                  className="rounded border-2 border-gray-200 hover:border-[#da4653] overflow-hidden"
+                                  className={`rounded border-2 overflow-hidden ${
+                                    (book.coverUrl || "") === coverOption
+                                      ? "border-[#da4653]"
+                                      : "border-gray-200 hover:border-[#da4653]"
+                                  }`}
                                   title="Selecionar capa"
                                 >
                                   <img src={coverOption} alt="Opção de capa" className="w-full h-16 object-cover" />
