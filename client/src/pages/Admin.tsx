@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
+import BookCover from "@/components/BookCover";
 
 type AdminTab = "users" | "sebos" | "books";
 
@@ -25,6 +26,8 @@ export default function Admin() {
   const [booksPage, setBooksPage] = useState(0);
   const [userFilter, setUserFilter] = useState("");
   const [booksFilter, setBooksFilter] = useState("");
+  const [bookCoverOptions, setBookCoverOptions] = useState<Record<number, string[]>>({});
+  const [coverLoadingId, setCoverLoadingId] = useState<number | null>(null);
   const BOOKS_PAGE_SIZE = 50;
   const canRunAdminQueries =
     isAuthenticated &&
@@ -74,6 +77,105 @@ export default function Admin() {
     [adminMetrics]
   );
   const formatChartNumber = (value: unknown) => Number(value || 0).toLocaleString("pt-BR");
+  const dedupeCoverUrls = (values: Array<string | null | undefined>) => {
+    const seen = new Set<string>();
+    const normalized: string[] = [];
+    for (const value of values) {
+      if (!value) continue;
+      const safeValue = String(value).replace("http://", "https://");
+      if (seen.has(safeValue)) continue;
+      seen.add(safeValue);
+      normalized.push(safeValue);
+    }
+    return normalized;
+  };
+
+  const fetchCoverOptionsByIsbn = async (book: any) => {
+    const isbn = String(book?.isbn || "").replace(/[^0-9Xx]/g, "").toUpperCase();
+    if (!isbn) {
+      toast.error("Livro sem ISBN para buscar capas.");
+      return;
+    }
+    try {
+      setCoverLoadingId(Number(book.id));
+      const options: Array<string | null | undefined> = [
+        `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
+        `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`,
+      ];
+      const response = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}&maxResults=6`
+      );
+      if (response.ok) {
+        const payload = await response.json();
+        const items = Array.isArray(payload?.items) ? payload.items : [];
+        for (const item of items) {
+          const links = item?.volumeInfo?.imageLinks;
+          options.push(
+            links?.extraLarge,
+            links?.large,
+            links?.medium,
+            links?.small,
+            links?.thumbnail,
+            links?.smallThumbnail
+          );
+        }
+      }
+      const unique = dedupeCoverUrls(options);
+      if (!unique.length) {
+        toast.error("Nenhuma capa encontrada por ISBN.");
+        return;
+      }
+      setBookCoverOptions((prev) => ({ ...prev, [Number(book.id)]: unique }));
+      toast.success(`Encontradas ${unique.length} opção(ões) de capa.`);
+    } catch {
+      toast.error("Falha ao buscar capas por ISBN.");
+    } finally {
+      setCoverLoadingId(null);
+    }
+  };
+
+  const fetchCoverOptionsByText = async (book: any) => {
+    const query = [book?.title, book?.author].filter(Boolean).join(" ").trim();
+    if (!query) {
+      toast.error("Livro sem título/autor para buscar capas.");
+      return;
+    }
+    try {
+      setCoverLoadingId(Number(book.id));
+      const response = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6`
+      );
+      if (!response.ok) {
+        toast.error("Não foi possível buscar capas agora.");
+        return;
+      }
+      const payload = await response.json();
+      const items = Array.isArray(payload?.items) ? payload.items : [];
+      const unique = dedupeCoverUrls(
+        items.flatMap((item: any) => {
+          const links = item?.volumeInfo?.imageLinks;
+          return [
+            links?.extraLarge,
+            links?.large,
+            links?.medium,
+            links?.small,
+            links?.thumbnail,
+            links?.smallThumbnail,
+          ];
+        })
+      );
+      if (!unique.length) {
+        toast.error("Nenhuma capa encontrada por título/autor.");
+        return;
+      }
+      setBookCoverOptions((prev) => ({ ...prev, [Number(book.id)]: unique }));
+      toast.success(`Encontradas ${unique.length} opção(ões) de capa.`);
+    } catch {
+      toast.error("Falha ao buscar capas por título/autor.");
+    } finally {
+      setCoverLoadingId(null);
+    }
+  };
 
   const adminCreateUserMutation = trpc.users.adminCreate.useMutation({
     onSuccess: async () => {
@@ -634,6 +736,7 @@ export default function Admin() {
                     <th className="text-left px-3 py-2">Preço</th>
                     <th className="text-left px-3 py-2">Qtd</th>
                     <th className="text-left px-3 py-2">Status</th>
+                    <th className="text-left px-3 py-2">Capa</th>
                     <th className="text-left px-3 py-2">Ações</th>
                   </tr>
                 </thead>
@@ -689,6 +792,72 @@ export default function Admin() {
                           <option value="reservado">reservado</option>
                           <option value="vendido">vendido</option>
                         </select>
+                      </td>
+                      <td className="px-3 py-2 min-w-[280px]">
+                        <div className="space-y-2">
+                          <div className="w-16 h-24 rounded overflow-hidden border border-gray-200 bg-white">
+                            <BookCover
+                              isbn={book.isbn ?? undefined}
+                              title={book.title}
+                              author={book.author ?? undefined}
+                              coverUrl={book.coverUrl ?? undefined}
+                              className="w-full h-full"
+                            />
+                          </div>
+                          <input
+                            defaultValue={book.coverUrl || ""}
+                            placeholder="URL da capa"
+                            className="w-full px-2 py-1 border rounded"
+                            onBlur={(e) => {
+                              const nextCoverUrl = e.target.value?.trim() || undefined;
+                              if ((book.coverUrl || undefined) === nextCoverUrl) return;
+                              void adminUpdateBookMutation.mutateAsync({ id: book.id, coverUrl: nextCoverUrl });
+                            }}
+                          />
+                          <div className="flex flex-wrap gap-1">
+                            <button
+                              type="button"
+                              onClick={() => void fetchCoverOptionsByIsbn(book)}
+                              className="px-2 py-1 text-xs rounded border border-[#262969] text-[#262969]"
+                            >
+                              {coverLoadingId === Number(book.id) ? "Buscando..." : "Buscar ISBN"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void fetchCoverOptionsByText(book)}
+                              className="px-2 py-1 text-xs rounded border border-[#262969] text-[#262969]"
+                            >
+                              Buscar título/autor
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void adminUpdateBookMutation.mutateAsync({ id: book.id, coverUrl: undefined })}
+                              className="px-2 py-1 text-xs rounded border border-gray-400 text-gray-700"
+                            >
+                              Remover capa
+                            </button>
+                          </div>
+                          {bookCoverOptions[Number(book.id)]?.length ? (
+                            <div className="grid grid-cols-4 gap-1">
+                              {bookCoverOptions[Number(book.id)].slice(0, 8).map((coverOption) => (
+                                <button
+                                  key={`${book.id}-${coverOption}`}
+                                  type="button"
+                                  onClick={() =>
+                                    void adminUpdateBookMutation.mutateAsync({
+                                      id: Number(book.id),
+                                      coverUrl: coverOption,
+                                    })
+                                  }
+                                  className="rounded border-2 border-gray-200 hover:border-[#da4653] overflow-hidden"
+                                  title="Selecionar capa"
+                                >
+                                  <img src={coverOption} alt="Opção de capa" className="w-full h-16 object-cover" />
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-3 py-2">
                         <button
