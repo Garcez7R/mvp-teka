@@ -8,7 +8,7 @@ function json(data, status = 200) {
   });
 }
 
-async function runOcr({ imageDataUrl, apiKey, timeoutMs = 8000 }) {
+async function runOcr({ imageDataUrl, apiKey, timeoutMs = 20000 }) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -74,7 +74,7 @@ export async function onRequestPost(context) {
     return json({ error: "Invalid image payload." }, 400);
   }
 
-  const result = await runOcr({ imageDataUrl, apiKey, timeoutMs: 8000 });
+  const result = await runOcr({ imageDataUrl, apiKey, timeoutMs: 20000 });
   if (!result.ok) {
     return json({ error: result.error }, result.status);
   }

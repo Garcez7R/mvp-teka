@@ -499,7 +499,7 @@ export default function AddBook() {
       }
 
       const remoteAbort = new AbortController();
-      const remoteTimeout = window.setTimeout(() => remoteAbort.abort(), 9_000);
+      const remoteTimeout = window.setTimeout(() => remoteAbort.abort(), 22_000);
       let remoteOcrResponse: Response | null = null;
       try {
         remoteOcrResponse = await fetch("/api/ocr", {
