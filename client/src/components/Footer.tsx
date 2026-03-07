@@ -2,11 +2,29 @@ import { Link } from "wouter";
 import { MessageCircle } from "lucide-react";
 import { WHATSAPP_DEFAULT } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  const { role } = useAuth();
+  const { role, hasSessionToken } = useAuth();
   const canManageCatalog = role === "livreiro" || role === "admin";
+  const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
+    enabled: canManageCatalog || hasSessionToken,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const sellerCtaHref = canManageCatalog
+    ? mySebo?.id
+      ? "/add-book"
+      : "/sebo/novo"
+    : hasSessionToken
+    ? "/add-book"
+    : "/login";
+  const sellerCtaLabel = canManageCatalog
+    ? mySebo?.id
+      ? "Cadastrar Livro"
+      : "Criar Sebo"
+    : "Quero vender livros";
 
   return (
     <footer className="bg-[#262969] text-white mt-16">
@@ -36,14 +54,14 @@ export default function Footer() {
               </li>
               {canManageCatalog ? (
                 <li>
-                  <Link href="/add-book" className="text-gray-300 hover:text-white transition-colors">
-                    Cadastrar Livro
+                  <Link href={sellerCtaHref} className="text-gray-300 hover:text-white transition-colors">
+                    {sellerCtaLabel}
                   </Link>
                 </li>
               ) : (
                 <li>
-                  <Link href="/login" className="text-gray-300 hover:text-white transition-colors">
-                    Quero vender livros
+                  <Link href={sellerCtaHref} className="text-gray-300 hover:text-white transition-colors">
+                    {sellerCtaLabel}
                   </Link>
                 </li>
               )}
