@@ -64,6 +64,18 @@ function normalizeLocation(value: unknown): string {
   return String(value || "").trim().toLowerCase();
 }
 
+function sortBooksWithCoverFirst<T extends { coverUrl?: string | null }>(books: T[]): T[] {
+  return [...books]
+    .map((book, index) => ({ book, index }))
+    .sort((a, b) => {
+      const aHasCover = Boolean(String(a.book.coverUrl ?? "").trim());
+      const bHasCover = Boolean(String(b.book.coverUrl ?? "").trim());
+      if (aHasCover !== bHasCover) return aHasCover ? -1 : 1;
+      return a.index - b.index;
+    })
+    .map((entry) => entry.book);
+}
+
 export default function Home() {
   const { isAuthenticated, role } = useAuth();
   const PAGE_SIZE = 24;
@@ -289,9 +301,9 @@ export default function Home() {
       );
     });
 
-    if (!prioritizeNearby) return baseFiltered;
-    if (!buyerCity && !buyerState) return baseFiltered;
-    return [...baseFiltered]
+    const sortedByProximity = !prioritizeNearby || (!buyerCity && !buyerState)
+      ? baseFiltered
+      : [...baseFiltered]
       .map((book: any, index: number) => ({ book, index }))
       .sort((a, b) => {
         const scoreDiff = Number(b.book.proximityScore || 0) - Number(a.book.proximityScore || 0);
@@ -299,6 +311,8 @@ export default function Home() {
         return a.index - b.index;
       })
       .map((entry) => entry.book);
+
+    return sortBooksWithCoverFirst(sortedByProximity);
   }, [
     displayBooks,
     selectedSebo,
@@ -342,17 +356,18 @@ export default function Home() {
       })
       .filter(Boolean);
 
-    if (!prioritizeNearby) return baseFallback.slice(0, PAGE_SIZE);
-    if (!buyerCity && !buyerState) return baseFallback.slice(0, PAGE_SIZE);
-    return [...baseFallback]
-      .map((book: any, index: number) => ({ book, index }))
-      .sort((a, b) => {
-        const scoreDiff = Number(b.book.proximityScore || 0) - Number(a.book.proximityScore || 0);
-        if (scoreDiff !== 0) return scoreDiff;
-        return a.index - b.index;
-      })
-      .map((entry) => entry.book)
-      .slice(0, PAGE_SIZE);
+    const sortedByProximity = !prioritizeNearby || (!buyerCity && !buyerState)
+      ? baseFallback
+      : [...baseFallback]
+        .map((book: any, index: number) => ({ book, index }))
+        .sort((a, b) => {
+          const scoreDiff = Number(b.book.proximityScore || 0) - Number(a.book.proximityScore || 0);
+          if (scoreDiff !== 0) return scoreDiff;
+          return a.index - b.index;
+        })
+        .map((entry) => entry.book);
+
+    return sortBooksWithCoverFirst(sortedByProximity).slice(0, PAGE_SIZE);
   }, [filteredBooks.length, fuzzyFallbackBooks, normalizedSearchQuery, PAGE_SIZE, prioritizeNearby, (meProfile as any)?.city, (meProfile as any)?.state]);
 
   const groupedBooks = filteredBooks.length > 0 ? filteredBooks : fallbackBooks;
