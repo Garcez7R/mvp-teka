@@ -38,6 +38,20 @@ O TEKA foi desenhado para:
 - edição e ações de gestão centralizadas;
 - controle por role.
 
+## Privacidade e Compliance
+
+- dados de comprador são privados por padrão;
+- visualização de dados sensíveis restrita ao admin;
+- consentimento informado no onboarding de comprador e livreiro;
+- referência legal informativa: LGPD (Lei nº 13.709/2018, arts. 7º, 18 e 46) e Marco Civil da Internet (Lei nº 12.965/2014, art. 15).
+
+## Segurança (Hardening)
+
+- proteção de headers de segurança em rotas críticas;
+- rate limit em endpoints sensíveis (ex.: OCR);
+- sanitização de erros internos para não expor SQL/infra;
+- trilha de auditoria para ações administrativas e de gestão.
+
 ## Fluxos de Cadastro de Livro
 
 1. **ISBN manual**: preenche metadados e capa automaticamente.
@@ -101,6 +115,7 @@ Variáveis importantes de produção (Cloudflare Pages > Settings > Variables an
 - `books`: título, autor, ISBN, categoria, preço, condição, quantidade, capa
 - `sebos`: dados da loja + logística de entrega
 - `favorites`, `wishlist`, `book_interests`: suporte a descoberta e interesse do comprador
+- `audit_logs`: trilha de ações sensíveis (admin/livreiro)
 
 ## Observações Operacionais
 
@@ -117,3 +132,7 @@ Variáveis importantes de produção (Cloudflare Pages > Settings > Variables an
    - login e catálogo
    - cadastro por ISBN/scanner
 4. se houve alteração de banco, aplicar migrações D1 conforme estratégia do ambiente.
+   - exemplo:
+   ```bash
+   npx wrangler d1 migrations apply teka-db --remote
+   ```
