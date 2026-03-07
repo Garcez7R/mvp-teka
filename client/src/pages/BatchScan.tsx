@@ -601,7 +601,7 @@ export default function BatchScan() {
 
           {scannerOpen && (
             <p className="mt-3 text-sm text-blue-700 font-medium">
-              Scanner aberto em tela cheia para melhor leitura.
+              Scanner aberto em tamanho otimizado para melhor leitura.
             </p>
           )}
           {scannerError && (
@@ -758,13 +758,13 @@ export default function BatchScan() {
         </div>
         {scannerOpen && (
           <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
-            <div className="w-full max-w-2xl">
+            <div className="w-full max-w-md md:max-w-xl">
               <p className="text-white text-sm mb-3">
                 Aponte para o código de barras. O scanner detecta continuamente.
               </p>
               <video
                 ref={videoRef}
-                className="w-full max-h-[70vh] rounded-xl bg-black border border-white/20"
+                className="w-full h-[56vh] md:h-[62vh] rounded-xl bg-black border border-white/20 object-cover"
                 autoPlay
                 muted
                 playsInline

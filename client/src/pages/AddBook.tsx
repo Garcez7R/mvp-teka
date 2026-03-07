@@ -1141,7 +1141,7 @@ export default function AddBook() {
                 {scannerOpen && (
                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-900">
-                      Câmera aberta em tela cheia para facilitar o enquadramento.
+                      Câmera aberta em tamanho otimizado para facilitar o enquadramento.
                     </p>
                   </div>
                 )}
@@ -1416,7 +1416,7 @@ export default function AddBook() {
         </form>
         {scannerOpen && (
           <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
-            <div className="w-full max-w-2xl">
+            <div className="w-full max-w-md md:max-w-xl">
               <p className="text-white text-sm mb-3">
                 {scannerEngine === "text" || scannerEngine === "tesseract"
                   ? "Aponte para capa/lombada ou área com texto/ISBN."
@@ -1424,7 +1424,7 @@ export default function AddBook() {
               </p>
               <video
                 ref={videoRef}
-                className="w-full max-h-[70vh] rounded-xl bg-black border border-white/20"
+                className="w-full h-[56vh] md:h-[62vh] rounded-xl bg-black border border-white/20 object-cover"
                 autoPlay
                 muted
                 playsInline
