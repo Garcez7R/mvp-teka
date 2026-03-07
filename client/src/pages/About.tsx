@@ -33,6 +33,22 @@ export default function About() {
           </p>
         </section>
 
+        <section className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-16">
+          <h2 className="font-outfit font-bold text-xl text-[#262969] mb-3">
+            Governança, Privacidade e Segurança
+          </h2>
+          <ul className="space-y-2 text-sm text-gray-700 font-inter">
+            <li>Privacidade por padrão: dados pessoais não são exibidos publicamente.</li>
+            <li>Controle de acesso por perfil e registro de ações administrativas sensíveis.</li>
+            <li>Minimização de dados: coleta limitada ao necessário para operação, suporte e segurança.</li>
+            <li>Direitos do titular: canal para solicitar acesso, correção e exclusão de dados.</li>
+            <li>Segurança técnica: uso de HTTPS, proteção contra abuso e monitoramento de falhas.</li>
+          </ul>
+          <p className="font-inter text-xs text-gray-600 mt-3">
+            Base legal informativa: LGPD (Lei nº 13.709/2018, arts. 7º, 18 e 46) e Marco Civil da Internet (Lei nº 12.965/2014, art. 15).
+          </p>
+        </section>
+
         <section className="mb-16">
           <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-8">
             Como Funciona
