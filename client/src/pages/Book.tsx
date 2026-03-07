@@ -386,6 +386,9 @@ export default function Book() {
                 <p className="font-inter text-sm opacity-90">
                   Entre em contato diretamente via WhatsApp para confirmar disponibilidade e negociar o melhor preço.
                 </p>
+                <p className="font-inter text-xs opacity-90 mt-2">
+                  Por privacidade e segurança, o endereço completo é informado somente no atendimento direto com o sebo.
+                </p>
                 <div className="mt-4 p-3 rounded bg-white/15">
                   <p className="text-sm font-semibold mb-2">Logística de entrega</p>
                   <p className="text-xs">
