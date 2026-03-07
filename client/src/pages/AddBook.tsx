@@ -68,6 +68,7 @@ export default function AddBook() {
   const scanFrameRef = useRef<number | null>(null);
   const autoScanTriggeredRef = useRef(false);
   const tesseractLoaderRef = useRef<Promise<any> | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const createBookMutation = trpc.books.create.useMutation();
   const LAST_BOOK_DRAFT_KEY = "teka_last_book_draft";
@@ -484,6 +485,55 @@ export default function AddBook() {
     }, 50);
   };
 
+  const ensureAudioContextReady = async () => {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return null;
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioCtx();
+      }
+      const ctx = audioContextRef.current;
+      if (!ctx) return null;
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+      return ctx;
+    } catch {
+      return null;
+    }
+  };
+
+  const beepAndVibrate = async () => {
+    try {
+      const ctx = await ensureAudioContextReady();
+      if (ctx) {
+        const pulse = (when: number, frequency: number) => {
+          const oscillator = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+          oscillator.type = "square";
+          oscillator.frequency.value = frequency;
+          gainNode.gain.value = 0.0001;
+          oscillator.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          const startAt = ctx.currentTime + when;
+          gainNode.gain.exponentialRampToValueAtTime(0.16, startAt + 0.004);
+          gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.085);
+          oscillator.start(startAt);
+          oscillator.stop(startAt + 0.09);
+        };
+        pulse(0, 980);
+        pulse(0.1, 1240);
+      }
+    } catch {
+      // Ignore sound errors.
+    }
+    try {
+      navigator.vibrate?.(120);
+    } catch {
+      // Ignore vibration errors.
+    }
+  };
+
   const chooseScannerEngine = (mode: "barcode" | "cover"): "barcode" | "text" | "tesseract" | null => {
     if (typeof window === "undefined") return null;
     const barcodeSupported = typeof (window as any).BarcodeDetector === "function";
@@ -674,6 +724,7 @@ export default function AddBook() {
       setScannerError("");
       setScannerOpen(true);
       setScannerBusy(true);
+      await ensureAudioContextReady();
 
       const stream = await openBackCameraStream();
       streamRef.current = stream;
@@ -723,6 +774,7 @@ export default function AddBook() {
             const isbnFound = extractISBNFromDetectedItems(detectedItems);
             if (isbnFound) {
               setFormData((prev) => ({ ...prev, isbn: isbnFound }));
+              void beepAndVibrate();
               toast.success(`ISBN detectado: ${isbnFound}`);
               stopScanner();
               await searchBookByISBN(isbnFound);
