@@ -59,6 +59,10 @@ function titleMatchesWithTolerance(title: string, query: string): boolean {
   return words.some((word) => Math.abs(word.length - normalizedQuery.length) <= 1 && levenshteinDistance(word, normalizedQuery) <= 1);
 }
 
+function normalizeLocation(value: unknown): string {
+  return String(value || "").trim().toLowerCase();
+}
+
 export default function Home() {
   const { isAuthenticated, role } = useAuth();
   const PAGE_SIZE = 24;
@@ -75,6 +79,7 @@ export default function Home() {
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [catalogView, setCatalogView] = useState<CatalogView>("compact");
+  const [prioritizeNearby, setPrioritizeNearby] = useState(true);
   const [searchBarKey, setSearchBarKey] = useState(0);
   const [page, setPage] = useState(0);
   const [loadedBooks, setLoadedBooks] = useState<any[]>([]);
@@ -89,6 +94,11 @@ export default function Home() {
   });
   const { data: mySeboBooks = [], isLoading: isMySeboBooksLoading } = trpc.books.listBySebo.useQuery(mySebo?.id || 0, {
     enabled: Boolean(mySebo?.id),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const { data: meProfile } = trpc.users.me.useQuery(undefined, {
+    enabled: isAuthenticated,
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -220,10 +230,14 @@ export default function Home() {
 
   // Client-only filters (sebo/favoritos/lista de procura) on top of server query
   const filteredBooks = useMemo(() => {
+    const buyerCity = normalizeLocation((meProfile as any)?.city);
+    const buyerState = normalizeLocation((meProfile as any)?.state);
     const withReason = displayBooks.map((book: any) => {
       const normalizedTitle = normalizeSearchValue(String(book.title ?? ""));
       const normalizedAuthor = normalizeSearchValue(String(book.author ?? ""));
       const normalizedIsbn = normalizeSearchValue(String(book.isbn ?? ""));
+      const seboCity = normalizeLocation(book?.sebo?.city);
+      const seboState = normalizeLocation(book?.sebo?.state);
       let matchReason: "titulo" | "autor" | "isbn" | "titulo_aprox" | undefined;
       if (!normalizedSearchQuery) {
         matchReason = undefined;
@@ -236,10 +250,22 @@ export default function Home() {
       } else if (titleMatchesWithTolerance(String(book.title ?? ""), normalizedSearchQuery)) {
         matchReason = "titulo_aprox";
       }
-      return { ...book, matchReason };
+      const proximityLabel =
+        buyerCity && seboCity && buyerCity === seboCity
+          ? ("na_sua_cidade" as const)
+          : buyerState && seboState && buyerState === seboState
+          ? ("no_seu_estado" as const)
+          : undefined;
+      const proximityScore =
+        proximityLabel === "na_sua_cidade"
+          ? 2
+          : proximityLabel === "no_seu_estado"
+          ? 1
+          : 0;
+      return { ...book, matchReason, proximityLabel, proximityScore };
     });
 
-    return withReason.filter((book: any) => {
+    const baseFiltered = withReason.filter((book: any) => {
       const matchesSebo = !selectedSebo || book.sebo?.name === selectedSebo;
       const favoriteKey = String(book.id);
       const matchesFavorites = !onlyFavorites || isFavorite(favoriteKey);
@@ -250,31 +276,72 @@ export default function Home() {
         matchesSearch
       );
     });
+
+    if (!prioritizeNearby) return baseFiltered;
+    if (!buyerCity && !buyerState) return baseFiltered;
+    return [...baseFiltered]
+      .map((book: any, index: number) => ({ book, index }))
+      .sort((a, b) => {
+        const scoreDiff = Number(b.book.proximityScore || 0) - Number(a.book.proximityScore || 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        return a.index - b.index;
+      })
+      .map((entry) => entry.book);
   }, [
     displayBooks,
     selectedSebo,
     isFavorite,
     onlyFavorites,
     normalizedSearchQuery,
+    prioritizeNearby,
+    (meProfile as any)?.city,
+    (meProfile as any)?.state,
   ]);
   const fallbackBooks = useMemo(() => {
     if (filteredBooks.length > 0 || normalizedSearchQuery.length < 4) return [];
-    return fuzzyFallbackBooks
+    const buyerCity = normalizeLocation((meProfile as any)?.city);
+    const buyerState = normalizeLocation((meProfile as any)?.state);
+    const baseFallback = fuzzyFallbackBooks
       .map((book: any) => {
         const normalizedTitle = normalizeSearchValue(String(book.title ?? ""));
         const normalizedAuthor = normalizeSearchValue(String(book.author ?? ""));
         const normalizedIsbn = normalizeSearchValue(String(book.isbn ?? ""));
-        if (normalizedIsbn.includes(normalizedSearchQuery)) return { ...book, matchReason: "isbn" as const };
-        if (normalizedAuthor.includes(normalizedSearchQuery)) return { ...book, matchReason: "autor" as const };
-        if (normalizedTitle.includes(normalizedSearchQuery)) return { ...book, matchReason: "titulo" as const };
+        const seboCity = normalizeLocation(book?.sebo?.city);
+        const seboState = normalizeLocation(book?.sebo?.state);
+        const proximityLabel =
+          buyerCity && seboCity && buyerCity === seboCity
+            ? ("na_sua_cidade" as const)
+            : buyerState && seboState && buyerState === seboState
+            ? ("no_seu_estado" as const)
+            : undefined;
+        const proximityScore =
+          proximityLabel === "na_sua_cidade"
+            ? 2
+            : proximityLabel === "no_seu_estado"
+            ? 1
+            : 0;
+        if (normalizedIsbn.includes(normalizedSearchQuery)) return { ...book, matchReason: "isbn" as const, proximityLabel, proximityScore };
+        if (normalizedAuthor.includes(normalizedSearchQuery)) return { ...book, matchReason: "autor" as const, proximityLabel, proximityScore };
+        if (normalizedTitle.includes(normalizedSearchQuery)) return { ...book, matchReason: "titulo" as const, proximityLabel, proximityScore };
         if (titleMatchesWithTolerance(String(book.title ?? ""), normalizedSearchQuery)) {
-          return { ...book, matchReason: "titulo_aprox" as const };
+          return { ...book, matchReason: "titulo_aprox" as const, proximityLabel, proximityScore };
         }
         return null;
       })
-      .filter(Boolean)
+      .filter(Boolean);
+
+    if (!prioritizeNearby) return baseFallback.slice(0, PAGE_SIZE);
+    if (!buyerCity && !buyerState) return baseFallback.slice(0, PAGE_SIZE);
+    return [...baseFallback]
+      .map((book: any, index: number) => ({ book, index }))
+      .sort((a, b) => {
+        const scoreDiff = Number(b.book.proximityScore || 0) - Number(a.book.proximityScore || 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        return a.index - b.index;
+      })
+      .map((entry) => entry.book)
       .slice(0, PAGE_SIZE);
-  }, [filteredBooks.length, fuzzyFallbackBooks, normalizedSearchQuery, PAGE_SIZE]);
+  }, [filteredBooks.length, fuzzyFallbackBooks, normalizedSearchQuery, PAGE_SIZE, prioritizeNearby, (meProfile as any)?.city, (meProfile as any)?.state]);
 
   const groupedBooks = filteredBooks.length > 0 ? filteredBooks : fallbackBooks;
   const lastCatalogUpdate = useMemo(() => {
@@ -411,6 +478,13 @@ export default function Home() {
               className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white"
             >
               {catalogView === "compact" ? "Visualização: Compacta" : "Visualização: Detalhada"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPrioritizeNearby((prev) => !prev)}
+              className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white"
+            >
+              {prioritizeNearby ? "Próximos: ON" : "Próximos: OFF"}
             </button>
           </div>
         </div>
@@ -614,6 +688,7 @@ export default function Home() {
                   availabilityStatus={book.availabilityStatus ?? "ativo"}
                   matchReason={book.matchReason}
                   compact={catalogView === "compact"}
+                  proximityLabel={book.proximityLabel}
                 />
               ))}
             </div>

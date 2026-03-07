@@ -20,6 +20,7 @@ interface BookCardProps {
   availabilityStatus?: "ativo" | "reservado" | "vendido";
   matchReason?: "titulo" | "autor" | "isbn" | "titulo_aprox";
   compact?: boolean;
+  proximityLabel?: "na_sua_cidade" | "no_seu_estado";
 }
 
 export default function BookCard({
@@ -39,6 +40,7 @@ export default function BookCard({
   availabilityStatus = "ativo",
   matchReason,
   compact = false,
+  proximityLabel,
 }: BookCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = isFavorite(id);
@@ -116,6 +118,17 @@ export default function BookCard({
           <div className={`flex items-center gap-1 text-gray-700 font-inter ${compact ? "text-xs" : "text-sm"}`}>
             <MapPin className="w-4 h-4 text-gray-400" />
             <span className="truncate">{locationSummary || seboName}</span>
+            {proximityLabel && (
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
+                  proximityLabel === "na_sua_cidade"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-indigo-100 text-indigo-700"
+                }`}
+              >
+                {proximityLabel === "na_sua_cidade" ? "Na sua cidade" : "No seu estado"}
+              </span>
+            )}
             {sebo?.verified && (
               <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">
                 Verificado
