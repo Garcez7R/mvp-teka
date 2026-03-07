@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="client/public/teka-logo.png" alt="Logo TEKA" width="220" />
+</p>
+
 # TEKA
 
 Plataforma para conectar leitores e sebos, com foco em catálogo de livros (usados e novos), gestão de estoque por livreiro e experiência de compra simples.
