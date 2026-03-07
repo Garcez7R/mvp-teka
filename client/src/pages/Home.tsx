@@ -82,12 +82,12 @@ export default function Home() {
   const { getFavoriteCount, isFavorite } = useFavorites();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
+  const { data: mySebo, isLoading: isMySeboLoading } = trpc.sebos.getMySebo.useQuery(undefined, {
     enabled: isAuthenticated && (role === "livreiro" || role === "admin"),
     retry: false,
     refetchOnWindowFocus: false,
   });
-  const { data: mySeboBooks = [] } = trpc.books.listBySebo.useQuery(mySebo?.id || 0, {
+  const { data: mySeboBooks = [], isLoading: isMySeboBooksLoading } = trpc.books.listBySebo.useQuery(mySebo?.id || 0, {
     enabled: Boolean(mySebo?.id),
     retry: false,
     refetchOnWindowFocus: false,
@@ -314,7 +314,9 @@ export default function Home() {
 
   const hasBooksQueryError = Boolean(booksError);
   const showSellerOnboarding =
-    role === "livreiro" && (!mySebo || mySeboBooks.length === 0);
+    role === "livreiro" &&
+    !isMySeboLoading &&
+    (!mySebo || (!isMySeboBooksLoading && mySeboBooks.length === 0));
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
