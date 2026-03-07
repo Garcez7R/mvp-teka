@@ -1,10 +1,10 @@
-# Deploy no Cloudflare Pages com migracao segura (sem quebrar legado)
+# Deploy no Cloudflare Pages com migracao segura
 
 ## Resumo da arquitetura recomendada hoje
 
 - Frontend React/Vite: **Cloudflare Pages**
 - API tRPC + MySQL atual: **manter ativa enquanto migra**
-- Bridge Cloudflare: Pages Functions em `/trpc` para proxy do backend legado
+- Bridge Cloudflare: Pages Functions em `/trpc` para proxy do backend em modo compatibilidade
 
 Motivo: o backend atual usa `mysql2` com pool TCP e isso nao e migracao direta para Pages Functions sem adaptar banco (ex.: Hyperdrive/D1).
 
@@ -25,10 +25,9 @@ Valor:
 
 - `TRPC_EXECUTION_MODE`: `proxy` (padrao seguro) ou `local` (Cloudflare-only backend)
 
-- `TRPC_UPSTREAM_URL`: URL do backend legado (com ou sem `/trpc`)
+- `TRPC_UPSTREAM_URL`: URL do backend em modo compatibilidade (com ou sem `/trpc`)
   - exemplo: `https://api.seudominio.com/trpc`
-  - exemplo: `https://mvp-teka.netlify.app/trpc`
-- `API_UPSTREAM_URL`: URL base do backend legado
+- `API_UPSTREAM_URL`: URL base do backend em modo compatibilidade
   - exemplo: `https://api.seudominio.com`
 
 Opcional para transicao sem downtime:
@@ -75,3 +74,7 @@ No dashboard da Cloudflare:
 1. Security -> Bots -> ativar Bot Fight Mode.
 2. Security -> WAF -> criar regra para challenge em paths sensiveis quando necessario.
 3. Caching -> respeitar headers para assets estaticos (o projeto publica `/_headers` com cache imutavel para bundles).
+4. Cache Rules (obrigatorio para evitar deploy antigo preso):
+   - Bypass cache para `/*` quando `http.request.uri.path` NAO iniciar com `/assets/`
+   - Bypass cache para `/index.html`
+   - Nunca usar "Cache Everything" para HTML da SPA
