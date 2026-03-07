@@ -59,11 +59,11 @@ export default function Header() {
               <Link href="/add-book" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
                 Cadastrar Livro
               </Link>
-              <Link href="/batch-scan" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
-                Scan em Lote
-              </Link>
               <Link href="/manage-books" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
                 Meus Livros
+              </Link>
+              <Link href="/batch-scan" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+                Scan em Lote
               </Link>
             </>
           )}
@@ -72,16 +72,19 @@ export default function Header() {
               Meus Interesses
             </Link>
           )}
-          {isAuthenticated && (
-            <Link href="/settings" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
-              Configurações
-            </Link>
-          )}
           {isAuthenticated && role === "admin" && (
             <Link href="/admin" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
               Admin
             </Link>
           )}
+          {isAuthenticated && (
+            <Link href="/settings" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+              Configurações
+            </Link>
+          )}
+          <Link href="/about" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
+            Sobre
+          </Link>
           {!isAuthenticated ? (
             <Link href="/login" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
               Entrar
@@ -104,13 +107,10 @@ export default function Header() {
                 onClick={() => void handleLogout()}
                 className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium"
               >
-                Sair
+                Sair da conta
               </button>
             </div>
           )}
-          <Link href="/about" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
-            Sobre
-          </Link>
         </nav>
 
         {/* Mobile Menu Button */}
@@ -150,14 +150,6 @@ export default function Header() {
               Sebos
             </Link>
             
-            <Link 
-              href="/about" 
-              onClick={closeMenu}
-              className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
-            >
-              <Info className="w-5 h-5 text-[#da4653]" />
-              Sobre
-            </Link>
             {isAuthenticated && (role === "livreiro" || role === "admin") && (
               <>
                 <Link
@@ -169,20 +161,20 @@ export default function Header() {
                   Cadastrar Livro
                 </Link>
                 <Link
-                  href="/batch-scan"
-                  onClick={closeMenu}
-                  className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
-                >
-                  <PlusCircle className="w-5 h-5 text-[#da4653]" />
-                  Scan em Lote
-                </Link>
-                <Link
                   href="/manage-books"
                   onClick={closeMenu}
                   className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
                 >
                   <Library className="w-5 h-5 text-[#da4653]" />
                   Meus Livros
+                </Link>
+                <Link
+                  href="/batch-scan"
+                  onClick={closeMenu}
+                  className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+                >
+                  <PlusCircle className="w-5 h-5 text-[#da4653]" />
+                  Scan em Lote
                 </Link>
               </>
             )}
@@ -196,16 +188,6 @@ export default function Header() {
                 Meus Interesses
               </Link>
             )}
-            {isAuthenticated && (
-              <Link
-                href="/settings"
-                onClick={closeMenu}
-                className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
-              >
-                <Settings className="w-5 h-5 text-[#da4653]" />
-                Configurações
-              </Link>
-            )}
             {isAuthenticated && role === "admin" && (
               <Link
                 href="/admin"
@@ -216,6 +198,24 @@ export default function Header() {
                 Admin
               </Link>
             )}
+            {isAuthenticated && (
+              <Link
+                href="/settings"
+                onClick={closeMenu}
+                className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+              >
+                <Settings className="w-5 h-5 text-[#da4653]" />
+                Configurações
+              </Link>
+            )}
+            <Link
+              href="/about"
+              onClick={closeMenu}
+              className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
+            >
+              <Info className="w-5 h-5 text-[#da4653]" />
+              Sobre
+            </Link>
             {!isAuthenticated ? (
               <Link
                 href="/login"
@@ -239,6 +239,7 @@ export default function Header() {
                     Perfil: {roleLabel}
                   </p>
                 </div>
+                <div className="border-t border-gray-200 my-1" />
                 <button
                   onClick={() => {
                     closeMenu();
@@ -247,7 +248,7 @@ export default function Header() {
                   className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
                 >
                   <LogOut className="w-5 h-5 text-[#da4653]" />
-                  Sair
+                  Sair da conta
                 </button>
               </>
             )}
