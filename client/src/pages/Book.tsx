@@ -370,7 +370,11 @@ export default function Book() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-[10px] font-semibold text-[#262969]">TEKA</span>
+                      <img
+                        src="/teka-logo.png"
+                        alt="Logo TEKA"
+                        className="w-full h-full object-contain p-1"
+                      />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">

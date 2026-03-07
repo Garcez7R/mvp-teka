@@ -582,9 +582,11 @@ export default function SettingsPage() {
                           className="w-16 h-16 object-cover rounded border border-gray-200 bg-white"
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded border border-gray-200 bg-white flex items-center justify-center text-xs text-gray-500">
-                          Sem logo
-                        </div>
+                        <img
+                          src="/teka-logo.png"
+                          alt="Logo TEKA padrão"
+                          className="w-16 h-16 object-contain rounded border border-gray-200 bg-white p-1"
+                        />
                       )}
                       <div className="min-w-0">
                         <p className="font-semibold text-[#262969]">{seboForm.name || "Nome do sebo"}</p>
