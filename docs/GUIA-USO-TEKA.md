@@ -34,6 +34,7 @@ Rotas principais:
 - Use a barra de busca para procurar por título, autor ou ISBN.
 - Use ordenação: Recentes, Menor preço, Maior preço.
 - Use filtros: categoria, sebo, condição, status, cidade/UF e faixa de preço.
+- Livros sem capa aparecem por último na listagem, para manter a vitrine mais uniforme.
 - Use o botão de visualização para alternar entre:
   - Compacta (padrão)
   - Detalhada
