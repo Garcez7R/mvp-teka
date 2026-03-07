@@ -27,6 +27,7 @@ export default function Admin() {
   const [booksPage, setBooksPage] = useState(0);
   const [userFilter, setUserFilter] = useState("");
   const [booksFilter, setBooksFilter] = useState("");
+  const [booksCoverFilter, setBooksCoverFilter] = useState<"all" | "with-cover" | "no-cover">("all");
   const [bookCoverOptions, setBookCoverOptions] = useState<Record<number, string[]>>({});
   const [coverLoadingId, setCoverLoadingId] = useState<number | null>(null);
   const [showCharts, setShowCharts] = useState(false);
@@ -276,13 +277,16 @@ export default function Admin() {
       : booksQuery.error;
   const normalizedBooksFilter = booksFilter.trim().toLowerCase();
   const filteredBooks = useMemo(() => {
-    if (!normalizedBooksFilter) return books;
     return books.filter((book: any) => {
+      const hasCover = Boolean(String(book.coverUrl ?? "").trim());
+      if (booksCoverFilter === "no-cover" && hasCover) return false;
+      if (booksCoverFilter === "with-cover" && !hasCover) return false;
       const id = String(book.id ?? "");
       const title = String(book.title ?? "").toLowerCase();
       const author = String(book.author ?? "").toLowerCase();
       const isbn = String(book.isbn ?? "").toLowerCase();
       const seboName = String(book.sebo?.name ?? "").toLowerCase();
+      if (!normalizedBooksFilter) return true;
       return (
         id.includes(normalizedBooksFilter) ||
         title.includes(normalizedBooksFilter) ||
@@ -291,7 +295,7 @@ export default function Admin() {
         seboName.includes(normalizedBooksFilter)
       );
     });
-  }, [books, normalizedBooksFilter]);
+  }, [books, booksCoverFilter, normalizedBooksFilter]);
 
   if (loading && role !== "admin") {
     return (
@@ -714,6 +718,18 @@ export default function Admin() {
                     className="mt-1 w-full px-3 py-2 border rounded"
                   />
                 </div>
+                <div>
+                  <label className="text-sm text-gray-700">Filtro de Capa:</label>
+                  <select
+                    value={booksCoverFilter}
+                    onChange={(e) => setBooksCoverFilter(e.target.value as "all" | "with-cover" | "no-cover")}
+                    className="mt-1 w-full px-3 py-2 border rounded"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="no-cover">Sem capa</option>
+                    <option value="with-cover">Com capa</option>
+                  </select>
+                </div>
               </div>
             </div>
             <div className="flex items-center justify-between gap-3">
@@ -758,7 +774,16 @@ export default function Admin() {
                   {filteredBooks.map((book: any) => (
                     <tr key={book.id} className="border-t">
                       <td className="px-3 py-2">{book.id}</td>
-                      <td className="px-3 py-2">{book.title}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex flex-col gap-1">
+                          <span>{book.title}</span>
+                          {!book.coverUrl ? (
+                            <span className="inline-flex w-fit text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                              Sem capa
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
                       <td className="px-3 py-2">{book.sebo?.name || "-"}</td>
                       <td className="px-3 py-2">
                         <input

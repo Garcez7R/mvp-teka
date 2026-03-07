@@ -33,6 +33,7 @@ export default function ManageBooks() {
   const { isAuthenticated, role } = useAuth({ redirectOnUnauthenticated: true });
   const utils = trpc.useUtils();
   const [searchQuery, setSearchQuery] = useState("");
+  const [coverFilter, setCoverFilter] = useState<"all" | "with-cover" | "no-cover">("all");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingBook, setEditingBook] = useState<EditingBook | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -161,11 +162,17 @@ export default function ManageBooks() {
     );
   }
 
-  const filteredBooks = myBooks.filter(
-    (book: any) =>
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (book.author?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
-  );
+  const normalizedSearchQuery = searchQuery.toLowerCase();
+  const filteredBooks = myBooks.filter((book: any) => {
+    const matchesText =
+      book.title.toLowerCase().includes(normalizedSearchQuery) ||
+      (book.author?.toLowerCase().includes(normalizedSearchQuery) ?? false);
+    if (!matchesText) return false;
+    const hasCover = Boolean(String(book.coverUrl ?? "").trim());
+    if (coverFilter === "no-cover") return !hasCover;
+    if (coverFilter === "with-cover") return hasCover;
+    return true;
+  });
   const selectedBooksCount = selectedBookIds.length;
   const allFilteredSelected =
     filteredBooks.length > 0 &&
@@ -690,15 +697,26 @@ export default function ManageBooks() {
 
         {/* Search */}
         <div className="mb-8">
-          <div className="relative">
-            <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar por título ou autor..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="relative">
+              <SearchIcon className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por título ou autor..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
+              />
+            </div>
+            <select
+              value={coverFilter}
+              onChange={(e) => setCoverFilter(e.target.value as "all" | "with-cover" | "no-cover")}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
+            >
+              <option value="all">Filtro de capa: Todos</option>
+              <option value="no-cover">Filtro de capa: Sem capa</option>
+              <option value="with-cover">Filtro de capa: Com capa</option>
+            </select>
           </div>
         </div>
         {filteredBooks.length > 0 && (
@@ -973,6 +991,11 @@ export default function ManageBooks() {
                       {book.author && (
                         <p className="text-sm text-gray-600 mb-2">por {book.author}</p>
                       )}
+                      {!book.coverUrl ? (
+                        <span className="inline-flex text-[11px] px-2 py-1 rounded bg-slate-100 text-slate-700 mb-2">
+                          Sem capa
+                        </span>
+                      ) : null}
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-xl font-bold text-[#da4653]">
                           R$ {Number(book.price).toFixed(2)}
@@ -1051,6 +1074,14 @@ export default function ManageBooks() {
                         >
                           {(book.isVisible ?? true) ? "Ocultar" : "Exibir"}
                         </button>
+                        {!book.coverUrl ? (
+                          <button
+                            onClick={() => handleEdit(book)}
+                            className="px-2 py-1 text-xs rounded border border-[#262969] text-[#262969]"
+                          >
+                            Adicionar capa
+                          </button>
+                        ) : null}
                       </div>
                       <p className="text-xs text-gray-500 mb-3">
                         Última atualização: {formatDateTimePtBr(book.updatedAt || Date.now())}
