@@ -9,6 +9,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { ALL_BOOK_CATEGORIES } from "@/lib/book-categories";
+import { parseDateValue } from "@/lib/datetime";
 
 type CatalogSort =
   | "recent"
@@ -280,9 +281,10 @@ export default function Home() {
     if (!groupedBooks.length) return null;
     let latest = 0;
     for (const book of groupedBooks) {
-      const raw = Number((book as any)?.updatedAt ?? (book as any)?.createdAt ?? 0);
-      if (Number.isFinite(raw) && raw > latest) {
-        latest = raw;
+      const parsed = parseDateValue((book as any)?.updatedAt ?? (book as any)?.createdAt ?? 0);
+      const timestamp = parsed ? parsed.getTime() : 0;
+      if (timestamp > latest) {
+        latest = timestamp;
       }
     }
     return latest > 0 ? new Date(latest) : null;

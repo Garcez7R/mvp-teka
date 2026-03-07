@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 import BookCover from "@/components/BookCover";
+import { formatDatePtBr, formatDateTimePtBr } from "@/lib/datetime";
 
 type AdminTab = "users" | "sebos" | "books";
 
@@ -420,7 +421,7 @@ export default function Admin() {
                 <div className="space-y-1 text-sm text-gray-700">
                   {adminMetrics.recentAudit.slice(0, 6).map((item: any, idx: number) => (
                     <p key={`${item.action}-${item.createdAt}-${idx}`}>
-                      {new Date(Number(item.createdAt)).toLocaleString("pt-BR")} • {item.action} • {item.entityType}
+                      {formatDateTimePtBr(item.createdAt)} • {item.action} • {item.entityType}
                       {item.entityId ? ` #${item.entityId}` : ""} • {item.actorRole || "sistema"}
                     </p>
                   ))}
@@ -530,7 +531,7 @@ export default function Admin() {
                       </td>
                       <td className="px-3 py-2">
                         {user.lgpdConsentAt
-                          ? new Date(Number(user.lgpdConsentAt)).toLocaleDateString("pt-BR")
+                          ? formatDatePtBr(user.lgpdConsentAt)
                           : "Não"}
                       </td>
                       <td className="px-3 py-2">

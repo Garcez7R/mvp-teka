@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ArrowLeft, Loader2, Heart } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
+import { formatDatePtBr } from "@/lib/datetime";
 
 export default function MyInterests() {
   const [activeTab, setActiveTab] = useState<"interests" | "favorites">("interests");
@@ -257,7 +258,7 @@ export default function MyInterests() {
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
                           Interesse em{" "}
-                          {new Date(Number(item.interestedAt)).toLocaleDateString("pt-BR")}
+                          {formatDatePtBr(item.interestedAt)}
                         </p>
                         {(book.availabilityStatus === "reservado" ||
                           book.availabilityStatus === "vendido") && (

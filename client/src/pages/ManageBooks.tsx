@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
+import { formatDateTimePtBr } from "@/lib/datetime";
 
 interface EditingBook {
   id: number;
@@ -548,7 +549,7 @@ export default function ManageBooks() {
       Number(book.price).toFixed(2),
       book.condition || "",
       book.availabilityStatus || "ativo",
-      new Date(Number(book.updatedAt || Date.now())).toLocaleString("pt-BR"),
+      formatDateTimePtBr(book.updatedAt || Date.now()),
     ]);
     const csv = [header, ...rows]
       .map((row) =>
@@ -1043,7 +1044,7 @@ export default function ManageBooks() {
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 mb-3">
-                        Última atualização: {new Date(Number(book.updatedAt || Date.now())).toLocaleString("pt-BR")}
+                        Última atualização: {formatDateTimePtBr(book.updatedAt || Date.now())}
                       </p>
                       {statusHistoryByBook[book.id]?.length ? (
                         <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded">
