@@ -59,6 +59,11 @@ export default function BookCard({
       : availabilityStatus === "vendido"
       ? "Vendido"
       : "Disponivel";
+  const compactLocationLabel = proximityLabel
+    ? proximityLabel === "na_sua_cidade"
+      ? "Na sua cidade"
+      : "No seu estado"
+    : (locationSummary || seboName);
 
   return (
     <div className="group cursor-pointer relative">
@@ -91,15 +96,19 @@ export default function BookCard({
             {title}
           </h3>
           
-          {author && (
+          {!compact && author && (
             <p className={`font-inter text-gray-600 line-clamp-1 ${compact ? "text-[11px]" : "text-xs"}`}>
               por {author}
             </p>
           )}
           
           <div className={`flex items-center text-gray-600 ${compact ? "gap-1 flex-wrap" : "gap-2"}`}>
-            <span className={`font-inter bg-gray-100 rounded ${compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-1"}`}>{category}</span>
-            <span className={`font-inter rounded bg-[#da4653] text-white font-semibold ${compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-1"}`}>{condition}</span>
+            {!compact && (
+              <>
+                <span className={`font-inter bg-gray-100 rounded ${compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-1"}`}>{category}</span>
+                <span className={`font-inter rounded bg-[#da4653] text-white font-semibold ${compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-1"}`}>{condition}</span>
+              </>
+            )}
             <span
               className={`font-inter rounded font-semibold ${
                 compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-1"
@@ -115,10 +124,10 @@ export default function BookCard({
             </span>
           </div>
 
-          <div className={`flex items-center gap-1 text-gray-700 font-inter ${compact ? "text-xs" : "text-sm"}`}>
+          <div className={`flex items-center gap-1 text-gray-700 font-inter ${compact ? "text-[11px]" : "text-sm"}`}>
             <MapPin className="w-4 h-4 text-gray-400" />
-            <span className="truncate">{locationSummary || seboName}</span>
-            {proximityLabel && (
+            <span className="truncate">{compact ? compactLocationLabel : (locationSummary || seboName)}</span>
+            {!compact && proximityLabel && (
               <span
                 className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
                   proximityLabel === "na_sua_cidade"
@@ -126,10 +135,10 @@ export default function BookCard({
                     : "bg-indigo-100 text-indigo-700"
                 }`}
               >
-                {proximityLabel === "na_sua_cidade" ? "Na sua cidade" : "No seu estado"}
+                {compactLocationLabel}
               </span>
             )}
-            {sebo?.verified && (
+            {!compact && sebo?.verified && (
               <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">
                 Verificado
               </span>
@@ -160,6 +169,11 @@ export default function BookCard({
             <span className={`font-outfit font-bold text-[#da4653] ${compact ? "text-base" : "text-lg"}`}>
               {priceLabel || `R$ ${priceNumber.toFixed(2)}`}
             </span>
+            {!compact && (
+              <span className="text-xs font-semibold text-[#262969] group-hover:text-[#da4653]">
+                Ver detalhes
+              </span>
+            )}
           </div>
         </div>
       </Link>
