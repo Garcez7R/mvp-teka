@@ -100,6 +100,7 @@ Variáveis importantes de produção (Cloudflare Pages > Settings > Variables an
 - `TRPC_UPSTREAM_URL` / `API_UPSTREAM_URL` (quando aplicável)
 - `GOOGLE_CLIENT_ID`
 - `VITE_GOOGLE_CLIENT_ID`
+- `ALLOWED_ORIGINS` (origens permitidas no servidor Express local, separado por vírgula)
 
 ## Scripts
 
@@ -136,3 +137,11 @@ Variáveis importantes de produção (Cloudflare Pages > Settings > Variables an
    ```bash
    npx wrangler d1 migrations apply teka-db --remote
    ```
+
+## Checklist Pré-Banca (10 minutos)
+
+1. Comprador: abrir catálogo, filtrar, abrir detalhe e acionar WhatsApp do sebo.
+2. Livreiro: criar/editar sebo, cadastrar livro por ISBN e por scan em lote.
+3. Admin: listar usuários/sebos/livros e validar ações de edição/exclusão.
+4. Mobile: validar menu sanduíche, câmera fullscreen e instalação PWA.
+5. Segurança/compliance: confirmar consentimento LGPD no login e criação de sebo.
