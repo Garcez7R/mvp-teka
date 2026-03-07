@@ -97,6 +97,7 @@ O TEKA foi desenhado para:
       <strong>Mobile</strong><br />
       <img src="docs/screenshots/demo.gif" alt="Demo TEKA Mobile" height="180" />
     </td>
+    <td width="40">&nbsp;</td>
     <td align="center">
       <strong>Web/Desktop</strong><br />
       <img src="docs/screenshots/demo-web.gif" alt="Demo TEKA Web" height="180" />
