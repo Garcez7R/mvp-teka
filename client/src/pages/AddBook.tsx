@@ -676,6 +676,7 @@ export default function AddBook() {
       stopScanner();
 
       if (isbnFound) {
+        await beepAndVibrate();
         setFormData((prev) => ({ ...prev, isbn: isbnFound }));
         toast.success(`ISBN detectado por OCR: ${isbnFound}`);
         await searchBookByISBN(isbnFound);
@@ -786,7 +787,7 @@ export default function AddBook() {
             const isbnFound = extractISBNFromDetectedItems(detectedItems);
             if (isbnFound) {
               setFormData((prev) => ({ ...prev, isbn: isbnFound }));
-              void beepAndVibrate();
+              await beepAndVibrate();
               toast.success(`ISBN detectado: ${isbnFound}`);
               stopScanner();
               await searchBookByISBN(isbnFound);
