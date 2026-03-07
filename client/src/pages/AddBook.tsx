@@ -14,6 +14,17 @@ import {
   sanitizeFetchedDescription,
 } from "@/lib/book-form";
 
+type BookSuggestion = {
+  id: string;
+  title: string;
+  author: string;
+  isbn: string;
+  pages: string;
+  year: string;
+  description: string;
+  coverOptions: string[];
+};
+
 export default function AddBook() {
   const [, navigate] = useLocation();
   const { isAuthenticated, role, loading } = useAuth({ redirectOnUnauthenticated: true });
@@ -37,6 +48,7 @@ export default function AddBook() {
   const [coverUrl, setCoverUrl] = useState<string>("");
   const [coverCandidates, setCoverCandidates] = useState<string[]>([]);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [bookSuggestions, setBookSuggestions] = useState<BookSuggestion[]>([]);
   const [searchingBook, setSearchingBook] = useState(false);
   const [coverError, setCoverError] = useState("");
   const [isbnValid, setIsbnValid] = useState<boolean | null>(null);
@@ -89,6 +101,51 @@ export default function AddBook() {
       normalized.push(safeValue);
     }
     return normalized;
+  };
+  const extractIsbnFromIdentifiers = (identifiers: any[]): string => {
+    if (!Array.isArray(identifiers)) return "";
+    const isbn13 = identifiers.find((identifier) => identifier?.type === "ISBN_13")?.identifier;
+    const isbn10 = identifiers.find((identifier) => identifier?.type === "ISBN_10")?.identifier;
+    return normalizeISBN(String(isbn13 || isbn10 || ""));
+  };
+  const toBookSuggestion = (item: any): BookSuggestion | null => {
+    const info = item?.volumeInfo;
+    if (!info?.title) return null;
+    const coverOptions = dedupeCoverUrls([
+      info.imageLinks?.extraLarge,
+      info.imageLinks?.large,
+      info.imageLinks?.medium,
+      info.imageLinks?.small,
+      info.imageLinks?.thumbnail,
+      info.imageLinks?.smallThumbnail,
+    ]);
+    return {
+      id: String(item?.id || info.title),
+      title: String(info.title || ""),
+      author: String(info.authors?.[0] || ""),
+      isbn: extractIsbnFromIdentifiers(info.industryIdentifiers),
+      pages: info.pageCount ? String(info.pageCount) : "",
+      year: String(info.publishedDate?.match(/\d{4}/)?.[0] || ""),
+      description: sanitizeFetchedDescription(info.description) || "",
+      coverOptions,
+    };
+  };
+  const applyBookSuggestion = (suggestion: BookSuggestion) => {
+    setFormData((prev) => ({
+      ...prev,
+      title: suggestion.title || prev.title,
+      author: suggestion.author || prev.author,
+      isbn: suggestion.isbn || prev.isbn,
+      pages: suggestion.pages || prev.pages,
+      year: suggestion.year || prev.year,
+      description: suggestion.description || prev.description,
+    }));
+    if (suggestion.coverOptions[0]) {
+      setCoverUrl(suggestion.coverOptions[0]);
+      setCoverCandidates(suggestion.coverOptions);
+      setCoverFile(null);
+    }
+    setCoverError("");
   };
   const curatedCoverByIsbn: Record<string, string> = {
     "9788595084759": "/covers/as-duas-torres.svg",
@@ -151,6 +208,7 @@ export default function AddBook() {
 
     setSearchingBook(true);
     setCoverError("");
+    setBookSuggestions([]);
     trackEvent("isbn_lookup_started");
 
     try {
@@ -282,11 +340,12 @@ export default function AddBook() {
 
     setSearchingBook(true);
     setCoverError("");
+    setBookSuggestions([]);
     trackEvent("text_lookup_started");
 
     try {
       const googleResp = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1`
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8`
       );
       if (!googleResp.ok) {
         setCoverError("Não foi possível buscar livro por texto neste momento.");
@@ -294,38 +353,18 @@ export default function AddBook() {
       }
 
       const googleData = await googleResp.json();
-      const item = googleData?.items?.[0];
-      const info = item?.volumeInfo;
-      if (!info) {
+      const items = Array.isArray(googleData?.items) ? googleData.items : [];
+      const suggestions = items
+        .map((item: any) => toBookSuggestion(item))
+        .filter((item: BookSuggestion | null): item is BookSuggestion => Boolean(item));
+      if (!suggestions.length) {
         setCoverError("OCR concluído, mas não encontrei um livro confiável por título/autor.");
         setCoverCandidates([]);
         return false;
       }
-
-      setFormData((prev) => ({
-        ...prev,
-        title: info.title || prev.title,
-        author: info.authors?.[0] || prev.author,
-        pages: info.pageCount ? String(info.pageCount) : prev.pages,
-        year: info.publishedDate?.match(/\d{4}/)?.[0] || prev.year,
-        description: sanitizeFetchedDescription(info.description) || prev.description,
-      }));
-
-      const options = dedupeCoverUrls([
-        info.imageLinks?.extraLarge,
-        info.imageLinks?.large,
-        info.imageLinks?.medium,
-        info.imageLinks?.small,
-        info.imageLinks?.thumbnail,
-        info.imageLinks?.smallThumbnail,
-      ]);
-      if (options[0]) {
-        setCoverUrl(options[0]);
-        setCoverCandidates(options);
-        setCoverFile(null);
-      }
-
-      toast.success("Livro sugerido por OCR de capa.");
+      setBookSuggestions(suggestions);
+      applyBookSuggestion(suggestions[0]);
+      toast.success(`Encontramos ${suggestions.length} opção(ões) de livro. Se precisar, escolha outra abaixo.`);
       trackEvent("text_lookup_success");
       return true;
     } catch {
@@ -1039,6 +1078,31 @@ export default function AddBook() {
                 {scannerError && (
                   <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-amber-700 text-sm font-medium">{scannerError}</p>
+                  </div>
+                )}
+                {bookSuggestions.length > 0 && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-blue-800 text-sm font-semibold mb-2">
+                      Opções de livro encontradas ({bookSuggestions.length})
+                    </p>
+                    <div className="space-y-2 max-h-56 overflow-auto pr-1">
+                      {bookSuggestions.map((suggestion) => (
+                        <button
+                          key={suggestion.id}
+                          type="button"
+                          onClick={() => applyBookSuggestion(suggestion)}
+                          className="w-full text-left p-2 rounded border border-blue-200 bg-white hover:border-blue-400"
+                        >
+                          <p className="text-sm font-semibold text-[#262969]">{suggestion.title}</p>
+                          <p className="text-xs text-gray-600">
+                            {suggestion.author || "Autor não informado"}
+                            {suggestion.year ? ` • ${suggestion.year}` : ""}
+                            {suggestion.isbn ? ` • ISBN ${suggestion.isbn}` : ""}
+                          </p>
+                          <p className="text-xs text-blue-700 mt-1">Usar este livro</p>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
