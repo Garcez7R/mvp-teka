@@ -74,12 +74,12 @@ O TEKA foi desenhado para:
 
 ## Demonstração
 
-![Demo TEKA](docs/screenshots/demo.gif)
+<img src="docs/screenshots/demo.gif" alt="Demo TEKA" width="360" />
 
 Para gerar/atualizar o GIF a partir das imagens sequenciais em `docs/screenshots/`, use:
 
 ```bash
-ffmpeg -y -framerate 0.8 -pattern_type glob -i "docs/screenshots/[0-9][0-9]-*.jpg" -vf "scale=720:-1:flags=lanczos" -loop 0 docs/screenshots/demo.gif
+ffmpeg -y -framerate 0.2667 -pattern_type glob -i "docs/screenshots/[0-9][0-9]-*.jpg" -vf "scale=360:-1:flags=lanczos" -loop 0 docs/screenshots/demo.gif
 ```
 
 ## Stack Técnica
