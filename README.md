@@ -39,7 +39,7 @@ O TEKA foi desenhado para:
 - busca por título, autor e ISBN;
 - favoritos e lista de interesses;
 - visualização de variações de oferta por estado/preço.
-- priorização opcional de ofertas próximas (`Próximos: ON/OFF`) com selo `Na sua cidade` / `No seu estado`.
+- priorização opcional de ofertas próximas (`Ver perto de mim: ON/OFF`) com selo `Na sua cidade` / `No seu estado`.
 
 ### Livreiro
 
@@ -91,7 +91,11 @@ O TEKA foi desenhado para:
 
 ## Demonstração
 
+Mobile:
 <img src="docs/screenshots/demo.gif" alt="Demo TEKA" width="180" />
+
+Web/Desktop:
+- adicione `docs/screenshots/demo-web.gif` para exibir uma demo específica da versão web.
 
 ## Stack Técnica
 

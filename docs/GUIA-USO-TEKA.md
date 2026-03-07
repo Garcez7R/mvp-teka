@@ -37,7 +37,7 @@ Rotas principais:
 - Use o botão de visualização para alternar entre:
   - Compacta (padrão)
   - Detalhada
-- Use o botão `Próximos: ON/OFF` para priorizar ofertas locais.
+- Use o botão `Ver perto de mim: ON/OFF` para priorizar ofertas locais.
 - Se seus dados de comprador tiverem cidade/UF em `Configurações`, o catálogo pode mostrar:
   - selo `Na sua cidade`
   - selo `No seu estado`
