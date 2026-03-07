@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 
 interface EditingBook {
   id: number;
@@ -151,6 +152,22 @@ export default function ManageBooks() {
   const allFilteredSelected =
     filteredBooks.length > 0 &&
     filteredBooks.every((book: any) => selectedBookIds.includes(Number(book.id)));
+  const statusChartData = useMemo(
+    () => [
+      { label: "Ativos", value: metrics?.activeBooks ?? 0, color: "#059669" },
+      { label: "Reservados", value: metrics?.reservedBooks ?? 0, color: "#d97706" },
+      { label: "Vendidos", value: metrics?.soldBooks ?? 0, color: "#334155" },
+    ],
+    [metrics]
+  );
+  const topFavoritesChartData = useMemo(
+    () =>
+      (metrics?.topBooks ?? []).slice(0, 5).map((item: any) => ({
+        label: String(item.title || "Livro").slice(0, 18),
+        value: Number(item.favorites ?? 0),
+      })),
+    [metrics]
+  );
 
   const handleEdit = (book: typeof myBooks[0]) => {
     setEditingId(book.id);
@@ -587,6 +604,37 @@ export default function ManageBooks() {
           <div className="p-4 border rounded-lg bg-white">
             <p className="text-xs text-gray-500">Interesses</p>
             <p className="text-xl font-bold text-[#262969]">{metrics?.totalInterests ?? 0}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="p-4 border rounded-lg bg-white">
+            <h3 className="font-semibold text-[#262969] mb-3">Distribuição por status</h3>
+            <div className="w-full h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={statusChartData} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={80} label>
+                    {statusChartData.map((entry) => (
+                      <Cell key={entry.label} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="p-4 border rounded-lg bg-white">
+            <h3 className="font-semibold text-[#262969] mb-3">Top livros por favoritos</h3>
+            <div className="w-full h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topFavoritesChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#da4653" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
         {metrics?.topBooks?.length ? (

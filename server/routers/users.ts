@@ -1,11 +1,114 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { users, sebos, books, favorites, bookInterests, wishlistItems } from "../_schema.ts";
-import { eq, inArray } from "drizzle-orm";
+import { users, sebos, books, favorites, bookInterests, wishlistItems, auditLogs } from "../_schema.ts";
+import { eq, inArray, sql, desc, gte } from "drizzle-orm";
 import { logAuditEvent } from "./_utils/audit.js";
 
 export const usersRouter = router({
+  adminMetrics: adminProcedure.query(async () => {
+    const now = Date.now();
+    const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+
+    const [usersTotalRow, usersByRoleRows, sebosTotalRow, activeSebosRow, booksRaw, newUsersRow, newSebosRow, newBooksRow] =
+      await Promise.all([
+        db.select({ count: sql<number>`count(*)`.as("count") }).from(users).then((res) => Number(res[0]?.count ?? 0)),
+        db
+          .select({
+            role: users.role,
+            count: sql<number>`count(*)`.as("count"),
+          })
+          .from(users)
+          .groupBy(users.role),
+        db.select({ count: sql<number>`count(*)`.as("count") }).from(sebos).then((res) => Number(res[0]?.count ?? 0)),
+        db
+          .select({ count: sql<number>`count(distinct ${books.seboId})`.as("count") })
+          .from(books)
+          .then((res) => Number(res[0]?.count ?? 0)),
+        db.select({ description: books.description }).from(books),
+        db
+          .select({ count: sql<number>`count(*)`.as("count") })
+          .from(users)
+          .where(gte(users.createdAt, sevenDaysAgo))
+          .then((res) => Number(res[0]?.count ?? 0)),
+        db
+          .select({ count: sql<number>`count(*)`.as("count") })
+          .from(sebos)
+          .where(gte(sebos.createdAt, sevenDaysAgo))
+          .then((res) => Number(res[0]?.count ?? 0)),
+        db
+          .select({ count: sql<number>`count(*)`.as("count") })
+          .from(books)
+          .where(gte(books.createdAt, sevenDaysAgo))
+          .then((res) => Number(res[0]?.count ?? 0)),
+      ]);
+
+    const roleCounts = new Map<string, number>();
+    for (const row of usersByRoleRows) {
+      const role = String(row.role || "comprador");
+      roleCounts.set(role, Number(row.count ?? 0));
+    }
+
+    const bookStatus = booksRaw.reduce(
+      (acc, row) => {
+        const raw = String(row.description || "").toUpperCase();
+        if (raw.includes("[STATUS:VENDIDO]")) acc.sold += 1;
+        else if (raw.includes("[STATUS:RESERVADO]")) acc.reserved += 1;
+        else acc.active += 1;
+        return acc;
+      },
+      { active: 0, reserved: 0, sold: 0 }
+    );
+
+    let recentAudit: Array<{
+      action: string;
+      entityType: string;
+      entityId: string | null;
+      actorRole: string | null;
+      createdAt: Date;
+    }> = [];
+    try {
+      recentAudit = await db
+        .select({
+          action: auditLogs.action,
+          entityType: auditLogs.entityType,
+          entityId: auditLogs.entityId,
+          actorRole: auditLogs.actorRole,
+          createdAt: auditLogs.createdAt,
+        })
+        .from(auditLogs)
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(10);
+    } catch {
+      recentAudit = [];
+    }
+
+    return {
+      users: {
+        total: usersTotalRow,
+        buyers: roleCounts.get("comprador") ?? 0,
+        sellers: roleCounts.get("livreiro") ?? 0,
+        admins: roleCounts.get("admin") ?? 0,
+      },
+      sebos: {
+        total: sebosTotalRow,
+        active: activeSebosRow,
+      },
+      books: {
+        total: booksRaw.length,
+        active: bookStatus.active,
+        reserved: bookStatus.reserved,
+        sold: bookStatus.sold,
+      },
+      growth7d: {
+        users: newUsersRow,
+        sebos: newSebosRow,
+        books: newBooksRow,
+      },
+      recentAudit,
+    };
+  }),
+
   // Get current user
   me: protectedProcedure.query(async ({ ctx }) => {
     const user = await db

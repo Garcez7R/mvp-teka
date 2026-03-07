@@ -4,6 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 
 type AdminTab = "users" | "sebos" | "books";
 
@@ -48,9 +49,30 @@ export default function Admin() {
       refetchOnWindowFocus: false,
     }
   );
+  const adminMetricsQuery = trpc.users.adminMetrics.useQuery(undefined, {
+    enabled: canRunAdminQueries,
+    refetchOnWindowFocus: false,
+  });
   const users = usersQuery.data ?? [];
   const sebos = sebosQuery.data ?? [];
   const books = booksQuery.data ?? [];
+  const adminMetrics = adminMetricsQuery.data;
+  const roleChartData = useMemo(
+    () => [
+      { label: "Compradores", value: adminMetrics?.users.buyers ?? 0 },
+      { label: "Livreiros", value: adminMetrics?.users.sellers ?? 0 },
+      { label: "Admins", value: adminMetrics?.users.admins ?? 0 },
+    ],
+    [adminMetrics]
+  );
+  const booksStatusChartData = useMemo(
+    () => [
+      { label: "Ativos", value: adminMetrics?.books.active ?? 0, color: "#059669" },
+      { label: "Reservados", value: adminMetrics?.books.reserved ?? 0, color: "#d97706" },
+      { label: "Vendidos", value: adminMetrics?.books.sold ?? 0, color: "#334155" },
+    ],
+    [adminMetrics]
+  );
 
   const adminCreateUserMutation = trpc.users.adminCreate.useMutation({
     onSuccess: async () => {
@@ -220,6 +242,78 @@ export default function Admin() {
       <Header />
       <main className="container flex-1 py-12">
         <h1 className="font-outfit text-3xl font-bold text-[#262969] mb-6">Painel Admin</h1>
+        {adminMetrics && (
+          <section className="mb-8 space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <div className="p-4 border rounded-lg bg-white">
+                <p className="text-xs text-gray-500">Usuários</p>
+                <p className="text-xl font-bold text-[#262969]">{adminMetrics.users.total}</p>
+              </div>
+              <div className="p-4 border rounded-lg bg-white">
+                <p className="text-xs text-gray-500">Sebos</p>
+                <p className="text-xl font-bold text-[#262969]">{adminMetrics.sebos.total}</p>
+              </div>
+              <div className="p-4 border rounded-lg bg-white">
+                <p className="text-xs text-gray-500">Sebos ativos</p>
+                <p className="text-xl font-bold text-emerald-700">{adminMetrics.sebos.active}</p>
+              </div>
+              <div className="p-4 border rounded-lg bg-white">
+                <p className="text-xs text-gray-500">Livros</p>
+                <p className="text-xl font-bold text-[#262969]">{adminMetrics.books.total}</p>
+              </div>
+              <div className="p-4 border rounded-lg bg-white">
+                <p className="text-xs text-gray-500">Crescimento 7d</p>
+                <p className="text-xs text-gray-700 mt-1">Usuários: {adminMetrics.growth7d.users}</p>
+                <p className="text-xs text-gray-700">Sebos: {adminMetrics.growth7d.sebos}</p>
+                <p className="text-xs text-gray-700">Livros: {adminMetrics.growth7d.books}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-lg bg-white">
+                <h2 className="font-semibold text-[#262969] mb-3">Perfis de usuário</h2>
+                <div className="w-full h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={roleChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="label" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#262969" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="p-4 border rounded-lg bg-white">
+                <h2 className="font-semibold text-[#262969] mb-3">Status dos livros</h2>
+                <div className="w-full h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={booksStatusChartData} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={80} label>
+                        {booksStatusChartData.map((entry) => (
+                          <Cell key={entry.label} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+            {adminMetrics.recentAudit.length > 0 && (
+              <div className="p-4 border rounded-lg bg-white">
+                <h2 className="font-semibold text-[#262969] mb-2">Ações recentes (auditoria)</h2>
+                <div className="space-y-1 text-sm text-gray-700">
+                  {adminMetrics.recentAudit.slice(0, 6).map((item: any, idx: number) => (
+                    <p key={`${item.action}-${item.createdAt}-${idx}`}>
+                      {new Date(Number(item.createdAt)).toLocaleString("pt-BR")} • {item.action} • {item.entityType}
+                      {item.entityId ? ` #${item.entityId}` : ""} • {item.actorRole || "sistema"}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
         {activeError && (
           <div className="mb-6 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
             <p className="font-semibold">Falha ao carregar dados desta aba.</p>
