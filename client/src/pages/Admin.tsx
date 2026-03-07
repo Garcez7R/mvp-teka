@@ -302,6 +302,9 @@ export default function Admin() {
                     <th className="text-left px-3 py-2">ID</th>
                     <th className="text-left px-3 py-2">Nome</th>
                     <th className="text-left px-3 py-2">E-mail</th>
+                    <th className="text-left px-3 py-2">WhatsApp</th>
+                    <th className="text-left px-3 py-2">Cidade/UF</th>
+                    <th className="text-left px-3 py-2">Consent. LGPD</th>
                     <th className="text-left px-3 py-2">Role</th>
                     <th className="text-left px-3 py-2">Ações</th>
                   </tr>
@@ -312,6 +315,15 @@ export default function Admin() {
                       <td className="px-3 py-2">{user.id}</td>
                       <td className="px-3 py-2">{user.name || "-"}</td>
                       <td className="px-3 py-2">{user.email || "-"}</td>
+                      <td className="px-3 py-2">{user.whatsapp || "-"}</td>
+                      <td className="px-3 py-2">
+                        {user.city || "-"}{user.state ? ` / ${user.state}` : ""}
+                      </td>
+                      <td className="px-3 py-2">
+                        {user.lgpdConsentAt
+                          ? new Date(Number(user.lgpdConsentAt)).toLocaleDateString("pt-BR")
+                          : "Não"}
+                      </td>
                       <td className="px-3 py-2">
                         <select
                           value={user.role}

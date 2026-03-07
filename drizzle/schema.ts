@@ -17,6 +17,9 @@ export const users = sqliteTable("users", {
   name: text("name"),
   email: text("email"),
   whatsapp: text("whatsapp"),
+  city: text("city"),
+  state: text("state"),
+  lgpdConsentAt: integer("lgpdConsentAt", { mode: "timestamp_ms" }),
   loginMethod: text("loginMethod"),
   role: text("role", { enum: ["user", "admin", "livreiro", "comprador"] })
     .default("comprador")

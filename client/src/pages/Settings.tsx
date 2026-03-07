@@ -17,6 +17,26 @@ export default function SettingsPage() {
   const { role, isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
   const canManageSebo = role === "livreiro" || role === "admin";
   const utils = trpc.useUtils();
+  const { data: me } = trpc.users.me.useQuery(undefined, {
+    enabled: isAuthenticated,
+    refetchOnWindowFocus: false,
+  });
+  const updateUserMutation = trpc.users.update.useMutation({
+    onSuccess: async () => {
+      await utils.users.me.invalidate();
+      toast.success("Dados do comprador atualizados.");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Falha ao atualizar seus dados.");
+    },
+  });
+  const [buyerForm, setBuyerForm] = useState({
+    name: "",
+    whatsapp: "",
+    city: "",
+    state: "",
+    lgpdConsent: false,
+  });
   const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
     enabled: isAuthenticated && canManageSebo,
     refetchOnWindowFocus: false,
@@ -59,6 +79,17 @@ export default function SettingsPage() {
   const [cameraHelpText, setCameraHelpText] = useState("");
   const [cameraHelpCopied, setCameraHelpCopied] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+
+  useEffect(() => {
+    if (!me) return;
+    setBuyerForm({
+      name: me.name || "",
+      whatsapp: (me as any).whatsapp || "",
+      city: (me as any).city || "",
+      state: (me as any).state || "",
+      lgpdConsent: Boolean((me as any).lgpdConsentAt),
+    });
+  }, [me]);
 
   useEffect(() => {
     if (!mySebo) {
@@ -299,6 +330,16 @@ export default function SettingsPage() {
     });
   };
 
+  const handleSaveBuyer = async () => {
+    await updateUserMutation.mutateAsync({
+      name: buyerForm.name.trim() || undefined,
+      whatsapp: buyerForm.whatsapp.trim() || undefined,
+      city: buyerForm.city.trim() || undefined,
+      state: buyerForm.state.trim().toUpperCase() || undefined,
+      lgpdConsent: buyerForm.lgpdConsent,
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
@@ -313,6 +354,61 @@ export default function SettingsPage() {
         <h1 className="font-outfit font-bold text-3xl text-[#262969] mb-6">Configurações</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <section className="border border-gray-200 rounded-xl p-5 bg-white md:col-span-2">
+            <h2 className="font-outfit font-semibold text-xl text-[#262969] mb-2">Dados do Comprador (Privado)</h2>
+            <p className="text-sm text-gray-600 mb-3">
+              Esses dados não são exibidos publicamente para outros usuários e podem ser acessados apenas por administradores para suporte e obrigações legais.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                value={buyerForm.name}
+                onChange={(e) => setBuyerForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Nome completo"
+                className="px-3 py-2 border border-gray-300 rounded bg-white"
+              />
+              <input
+                value={buyerForm.whatsapp}
+                onChange={(e) => setBuyerForm((prev) => ({ ...prev, whatsapp: e.target.value }))}
+                placeholder="WhatsApp"
+                className="px-3 py-2 border border-gray-300 rounded bg-white"
+              />
+              <input
+                value={buyerForm.city}
+                onChange={(e) => setBuyerForm((prev) => ({ ...prev, city: e.target.value }))}
+                placeholder="Cidade"
+                className="px-3 py-2 border border-gray-300 rounded bg-white"
+              />
+              <input
+                value={buyerForm.state}
+                onChange={(e) => setBuyerForm((prev) => ({ ...prev, state: e.target.value }))}
+                placeholder="UF"
+                maxLength={2}
+                className="px-3 py-2 border border-gray-300 rounded bg-white"
+              />
+            </div>
+            <label className="mt-3 inline-flex items-start gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={buyerForm.lgpdConsent}
+                onChange={(e) => setBuyerForm((prev) => ({ ...prev, lgpdConsent: e.target.checked }))}
+              />
+              <span>
+                Autorizo o tratamento destes dados para suporte, segurança e atendimento de obrigações legais.
+              </span>
+            </label>
+            <p className="mt-2 text-xs text-gray-600">
+              Base legal informativa: LGPD (Lei nº 13.709/2018), arts. 7º, 18 e 46; Marco Civil da Internet (Lei nº 12.965/2014), art. 15.
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleSaveBuyer()}
+              disabled={updateUserMutation.isPending}
+              className="mt-3 px-4 py-2 rounded-lg bg-[#262969] text-white hover:bg-[#1e2157] disabled:opacity-60"
+            >
+              {updateUserMutation.isPending ? "Salvando..." : "Salvar dados privados"}
+            </button>
+          </section>
+
           {canManageSebo && (
             <section className="border border-gray-200 rounded-xl p-5 bg-white md:col-span-2">
               <h2 className="font-outfit font-semibold text-xl text-[#262969] mb-2">Meu Sebo</h2>

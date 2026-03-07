@@ -124,12 +124,24 @@ export const usersRouter = router({
       z.object({
         name: z.string().optional(),
         email: z.string().email().optional(),
+        whatsapp: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        lgpdConsent: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const { lgpdConsent, ...rest } = input;
+      const payload: any = {
+        ...rest,
+        ...(rest.state ? { state: rest.state.toUpperCase() } : {}),
+      };
+      if (lgpdConsent !== undefined) {
+        payload.lgpdConsentAt = lgpdConsent ? new Date() : null;
+      }
       await db
         .update(users)
-        .set(input)
+        .set(payload)
         .where(eq(users.id, ctx.userId!));
 
       return { success: true };
@@ -206,6 +218,10 @@ export const usersRouter = router({
         userId: z.number(),
         name: z.string().optional(),
         email: z.string().email().optional(),
+        whatsapp: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        lgpdConsentAt: z.date().nullable().optional(),
         role: z.enum(["admin", "livreiro", "comprador", "user"]).optional(),
       })
     )
