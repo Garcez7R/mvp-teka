@@ -51,6 +51,7 @@ export default function BatchScan() {
   const scanFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const createBookMutation = trpc.books.create.useMutation();
   const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
@@ -75,23 +76,45 @@ export default function BatchScan() {
     });
   };
 
-  const beepAndVibrate = () => {
+  const ensureAudioContextReady = async () => {
     try {
       const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        const ctx = new AudioCtx();
-        const oscillator = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-        oscillator.type = "square";
-        oscillator.frequency.value = 940;
-        gainNode.gain.value = 0.08;
-        oscillator.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        oscillator.start();
-        window.setTimeout(() => {
-          oscillator.stop();
-          void ctx.close();
-        }, 90);
+      if (!AudioCtx) return null;
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioCtx();
+      }
+      const ctx = audioContextRef.current;
+      if (!ctx) return null;
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+      return ctx;
+    } catch {
+      return null;
+    }
+  };
+
+  const beepAndVibrate = async () => {
+    try {
+      const ctx = await ensureAudioContextReady();
+      if (ctx) {
+        const pulse = (when: number, frequency: number) => {
+          const oscillator = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+          oscillator.type = "square";
+          oscillator.frequency.value = frequency;
+          gainNode.gain.value = 0.0001;
+          oscillator.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          const startAt = ctx.currentTime + when;
+          gainNode.gain.exponentialRampToValueAtTime(0.16, startAt + 0.004);
+          gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.085);
+          oscillator.start(startAt);
+          oscillator.stop(startAt + 0.09);
+        };
+        // Two quick pulses similar to handheld scanners.
+        pulse(0, 980);
+        pulse(0.1, 1240);
       }
     } catch {
       // Ignore sound errors.
@@ -157,6 +180,24 @@ export default function BatchScan() {
           };
         }
       }
+      const gbLooseRes = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(clean)}&maxResults=1`
+      );
+      if (gbLooseRes.ok) {
+        const data = await gbLooseRes.json();
+        const info = data?.items?.[0]?.volumeInfo;
+        if (info) {
+          return {
+            title: String(info.title || fallback.title),
+            author: String(info.authors?.[0] || fallback.author),
+            category: String(info.categories?.[0] || fallback.category),
+            description: sanitizeFetchedDescription(info.description) || "",
+            pages: info.pageCount ? String(info.pageCount) : "",
+            year: String(info.publishedDate?.match(/\d{4}/)?.[0] || ""),
+            coverUrl: String(info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || "").replace("http://", "https://"),
+          };
+        }
+      }
       return fallback;
     } catch {
       return fallback;
@@ -177,7 +218,7 @@ export default function BatchScan() {
     }
     lastDetectedRef.current = { isbn, at: now };
 
-    beepAndVibrate();
+    void beepAndVibrate();
     const meta = await fetchBookMetaByIsbn(isbn);
     const defaultPriceValue = defaultPrice || "0,00";
 
@@ -252,6 +293,7 @@ export default function BatchScan() {
       setScannerError("");
       setScannerBusy(true);
       setScannerOpen(true);
+      await ensureAudioContextReady();
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" } },
         audio: false,
@@ -436,6 +478,7 @@ export default function BatchScan() {
             <button
               type="button"
               onClick={() => {
+                void ensureAudioContextReady();
                 void addDraftFromIsbn(manualIsbn);
                 setManualIsbn("");
               }}
@@ -591,4 +634,3 @@ export default function BatchScan() {
     </div>
   );
 }
-

@@ -287,6 +287,41 @@ export default function AddBook() {
         }
       }
 
+      // 2.1) Google Books loose fallback by raw ISBN query
+      if (!found) {
+        const googleLooseResp = await fetch(
+          `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(isbnClean)}&maxResults=5`
+        );
+        if (googleLooseResp.ok) {
+          const googleLooseData = await googleLooseResp.json();
+          const items = Array.isArray(googleLooseData?.items) ? googleLooseData.items : [];
+          const first = items[0];
+          const info = first?.volumeInfo;
+          if (info) {
+            setFormData((prev) => ({
+              ...prev,
+              title: info.title || prev.title,
+              author: info.authors?.[0] || prev.author,
+              pages: info.pageCount ? String(info.pageCount) : prev.pages,
+              year: info.publishedDate?.match(/\d{4}/)?.[0] || prev.year,
+              description: sanitizeFetchedDescription(info.description) || prev.description,
+            }));
+            found = true;
+          }
+          for (const item of items) {
+            const imageLinks = item?.volumeInfo?.imageLinks;
+            candidateCovers.push(
+              imageLinks?.extraLarge,
+              imageLinks?.large,
+              imageLinks?.medium,
+              imageLinks?.small,
+              imageLinks?.thumbnail,
+              imageLinks?.smallThumbnail
+            );
+          }
+        }
+      }
+
       // 3) Open Library direct cover fallback
       const openLibraryDirect = [
         `https://covers.openlibrary.org/b/isbn/${isbnClean}-L.jpg`,
@@ -324,7 +359,7 @@ export default function AddBook() {
         toast.success("Dados do livro encontrados!");
       } else {
         trackEvent("isbn_lookup_not_found", { isbn: isbnClean });
-        setCoverError("Livro não encontrado nas bases. Preencha manualmente.");
+        setCoverError("ISBN detectado, mas sem metadados automáticos. Continue o cadastro manual (ISBN já preenchido).");
         setCoverCandidates([]);
       }
     } catch (error) {
