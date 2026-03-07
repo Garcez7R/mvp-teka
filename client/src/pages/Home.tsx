@@ -274,6 +274,17 @@ export default function Home() {
   }, [filteredBooks.length, fuzzyFallbackBooks, normalizedSearchQuery, PAGE_SIZE]);
 
   const groupedBooks = filteredBooks.length > 0 ? filteredBooks : fallbackBooks;
+  const lastCatalogUpdate = useMemo(() => {
+    if (!groupedBooks.length) return null;
+    let latest = 0;
+    for (const book of groupedBooks) {
+      const raw = Number((book as any)?.updatedAt ?? (book as any)?.createdAt ?? 0);
+      if (Number.isFinite(raw) && raw > latest) {
+        latest = raw;
+      }
+    }
+    return latest > 0 ? new Date(latest) : null;
+  }, [groupedBooks]);
 
   useEffect(() => {
     document.title = "TEKA - Catálogo de Livros Usados";
@@ -546,6 +557,11 @@ export default function Home() {
           {hasMore && (
             <p className="font-inter text-xs text-gray-500 mt-1">
               Role para carregar mais livros.
+            </p>
+          )}
+          {lastCatalogUpdate && (
+            <p className="font-inter text-xs text-gray-500 mt-1">
+              Última atualização do catálogo: {lastCatalogUpdate.toLocaleString("pt-BR")}
             </p>
           )}
         </div>

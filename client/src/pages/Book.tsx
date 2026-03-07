@@ -35,6 +35,19 @@ export default function Book() {
       refetchOnWindowFocus: false,
     }
   );
+  const { data: offersForComparison = [] } = trpc.books.list.useQuery(
+    {
+      search: book?.isbn || book?.title || undefined,
+      limit: 24,
+      offset: 0,
+      includeHidden: false,
+      sortBy: "price_asc",
+    },
+    {
+      enabled: Boolean(book?.id),
+      refetchOnWindowFocus: false,
+    }
+  );
   const registerInterestMutation = trpc.books.registerInterest.useMutation();
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorited = favoriteId ? isFavorite(favoriteId) : false;
@@ -186,6 +199,19 @@ export default function Book() {
       `Pode confirmar disponibilidade?`
   );
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${liveWhatsappMessage}`;
+  const normalizedBookIsbn = String(book.isbn || "").replace(/\D/g, "");
+  const normalizedBookTitle = String(book.title || "").trim().toLowerCase();
+  const sameBookOffers = offersForComparison
+    .filter((candidate: any) => Number(candidate.id) !== Number(book.id))
+    .filter((candidate: any) => {
+      const candidateIsbn = String(candidate.isbn || "").replace(/\D/g, "");
+      const candidateTitle = String(candidate.title || "").trim().toLowerCase();
+      if (normalizedBookIsbn && candidateIsbn) {
+        return candidateIsbn === normalizedBookIsbn;
+      }
+      return candidateTitle === normalizedBookTitle;
+    })
+    .slice(0, 6);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -351,17 +377,9 @@ export default function Book() {
                     <p className="font-inter font-semibold text-base">{book.sebo.name}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3 mb-4 text-center">
+                <div className="grid grid-cols-1 mb-4 text-center">
                   <div className="bg-white/20 rounded p-2">
-                    <p className="text-xs opacity-90">Nota</p>
-                    <p className="font-bold">{book.seboStats?.score?.toFixed?.(1) ?? "4.5"}</p>
-                  </div>
-                  <div className="bg-white/20 rounded p-2">
-                    <p className="text-xs opacity-90">Resposta</p>
-                    <p className="font-bold">{book.seboStats?.responseTime ?? "~2h"}</p>
-                  </div>
-                  <div className="bg-white/20 rounded p-2">
-                    <p className="text-xs opacity-90">Catalogo</p>
+                    <p className="text-xs opacity-90">Catálogo</p>
                     <p className="font-bold">{book.seboStats?.totalBooks ?? "-"}</p>
                   </div>
                 </div>
@@ -412,7 +430,7 @@ export default function Book() {
                 <MessageCircle className="w-5 h-5" />
                 {book.availabilityStatus === "vendido"
                   ? "Livro Vendido"
-                  : "Contatar Sebo"}
+                  : "Contatar Sebo no WhatsApp"}
               </a>
               <button
                 onClick={() => void handleInterest(book.id, book.title)}
@@ -433,6 +451,42 @@ export default function Book() {
                 A TEKA conecta leitores e sebos. Pagamento, entrega e condições finais são tratados diretamente com o sebo.
               </p>
             </div>
+
+            {sameBookOffers.length > 0 && (
+              <div className="mb-8">
+                <h3 className="font-outfit font-semibold text-lg text-[#262969] mb-3">
+                  Outras ofertas deste título
+                </h3>
+                <div className="space-y-2">
+                  {sameBookOffers.map((offer: any) => (
+                    <Link
+                      key={offer.id}
+                      href={`/book/${offer.id}`}
+                      className="block border border-gray-200 rounded-lg p-3 hover:border-[#da4653] transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-[#262969] truncate">{offer.sebo?.name || "Sebo"}</p>
+                          <p className="text-xs text-gray-600 truncate">
+                            {offer.sebo?.city || "-"} / {offer.sebo?.state || "-"} • {offer.condition || "Sem condição"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-[#da4653]">R$ {Number(offer.price).toFixed(2)}</p>
+                          <p className="text-xs text-gray-500">
+                            {offer.availabilityStatus === "vendido"
+                              ? "Vendido"
+                              : offer.availabilityStatus === "reservado"
+                              ? "Reservado"
+                              : "Disponível"}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {similarBooks.length > 0 && (
               <div>

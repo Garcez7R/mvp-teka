@@ -305,8 +305,6 @@ export const booksRouter = router({
         sebo,
         seboStats: {
           totalBooks: seboBooksCount,
-          score: sebo?.verified ? 4.8 : 4.3,
-          responseTime: "Responde em ate 1h",
         },
       };
     }),

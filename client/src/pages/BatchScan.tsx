@@ -380,6 +380,19 @@ export default function BatchScan() {
 
   useEffect(() => () => stopScanner(), []);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const previousOverflow = document.body.style.overflow;
+    if (scannerOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = previousOverflow;
+      };
+    }
+    document.body.style.overflow = previousOverflow;
+    return undefined;
+  }, [scannerOpen]);
+
   const filteredDrafts = useMemo(
     () => drafts.filter((draft) => (statusFilter === "todos" ? true : draft.status === statusFilter)),
     [drafts, statusFilter]
@@ -398,6 +411,49 @@ export default function BatchScan() {
 
   const removeDraft = (id: string) => {
     setDrafts((prev) => prev.filter((draft) => draft.id !== id));
+  };
+
+  const fetchCoverOptionsByQuery = async (draft: BatchDraft) => {
+    const query = [draft.title, draft.author].filter(Boolean).join(" ").trim();
+    if (!query) {
+      toast.error("Informe título/autor para buscar capas.");
+      return;
+    }
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6`
+      );
+      if (!response.ok) {
+        toast.error("Não foi possível buscar capas agora.");
+        return;
+      }
+      const payload = await response.json();
+      const items = Array.isArray(payload?.items) ? payload.items : [];
+      const options = dedupeCoverUrls(
+        items.flatMap((item: any) => {
+          const links = item?.volumeInfo?.imageLinks;
+          return [
+            links?.extraLarge,
+            links?.large,
+            links?.medium,
+            links?.small,
+            links?.thumbnail,
+            links?.smallThumbnail,
+          ];
+        })
+      );
+      if (!options.length) {
+        toast.error("Nenhuma capa encontrada para este título/autor.");
+        return;
+      }
+      updateDraft(draft.id, {
+        coverOptions: options,
+        coverUrl: options[0],
+      });
+      toast.success(`Encontradas ${options.length} opções de capa.`);
+    } catch {
+      toast.error("Falha ao buscar capas.");
+    }
   };
 
   const saveDrafts = async () => {
@@ -544,9 +600,9 @@ export default function BatchScan() {
           </div>
 
           {scannerOpen && (
-            <div className="mt-3">
-              <video ref={videoRef} className="w-full max-h-80 rounded bg-black" autoPlay muted playsInline />
-            </div>
+            <p className="mt-3 text-sm text-blue-700 font-medium">
+              Scanner aberto em tela cheia para melhor leitura.
+            </p>
           )}
           {scannerError && (
             <p className="mt-3 text-sm text-amber-700 font-medium">{scannerError}</p>
@@ -674,6 +730,15 @@ export default function BatchScan() {
                   </button>
                 ))}
               </div>
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => void fetchCoverOptionsByQuery(draft)}
+                  className="px-3 py-1.5 text-xs rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white"
+                >
+                  Buscar capas por título/autor
+                </button>
+              </div>
               <div className="flex justify-end mt-2">
                 <button
                   type="button"
@@ -691,6 +756,31 @@ export default function BatchScan() {
             </div>
           )}
         </div>
+        {scannerOpen && (
+          <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl">
+              <p className="text-white text-sm mb-3">
+                Aponte para o código de barras. O scanner detecta continuamente.
+              </p>
+              <video
+                ref={videoRef}
+                className="w-full max-h-[70vh] rounded-xl bg-black border border-white/20"
+                autoPlay
+                muted
+                playsInline
+              />
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={stopScanner}
+                  className="px-4 py-2 rounded border border-white/40 text-white hover:bg-white/10"
+                >
+                  Parar scanner
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </div>

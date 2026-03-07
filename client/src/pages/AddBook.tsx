@@ -818,6 +818,19 @@ export default function AddBook() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const previousOverflow = document.body.style.overflow;
+    if (scannerOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = previousOverflow;
+      };
+    }
+    document.body.style.overflow = previousOverflow;
+    return undefined;
+  }, [scannerOpen]);
+
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -1126,36 +1139,10 @@ export default function AddBook() {
                   </button>
                 </div>
                 {scannerOpen && (
-                  <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
-                    <p className="text-sm text-gray-700 mb-2">
-                      {scannerEngine === "text" || scannerEngine === "tesseract"
-                        ? "Aponte a câmera para capa/lombada ou área com texto/ISBN."
-                        : "Aponte a câmera para o código de barras do livro."}
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      Câmera aberta em tela cheia para facilitar o enquadramento.
                     </p>
-                    <video
-                      ref={videoRef}
-                      className="w-full max-h-72 rounded-lg bg-black"
-                      autoPlay
-                      muted
-                      playsInline
-                    />
-                    <button
-                      type="button"
-                      onClick={stopScanner}
-                      className="mt-3 px-3 py-2 text-sm rounded border border-gray-300 hover:bg-gray-100"
-                    >
-                      Fechar câmera
-                    </button>
-                    {scannerEngine === "tesseract" && (
-                      <button
-                        type="button"
-                        onClick={() => void runTesseractOcrFromCamera()}
-                        disabled={scannerBusy}
-                        className="mt-3 ml-2 px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white disabled:opacity-50"
-                      >
-                        {scannerBusy ? "Processando foto..." : "Capturar foto e extrair dados"}
-                      </button>
-                    )}
                   </div>
                 )}
                 {coverError && (
@@ -1427,6 +1414,43 @@ export default function AddBook() {
             </button>
           </div>
         </form>
+        {scannerOpen && (
+          <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl">
+              <p className="text-white text-sm mb-3">
+                {scannerEngine === "text" || scannerEngine === "tesseract"
+                  ? "Aponte para capa/lombada ou área com texto/ISBN."
+                  : "Aponte para o código de barras do livro."}
+              </p>
+              <video
+                ref={videoRef}
+                className="w-full max-h-[70vh] rounded-xl bg-black border border-white/20"
+                autoPlay
+                muted
+                playsInline
+              />
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={stopScanner}
+                  className="px-4 py-2 text-sm rounded border border-white/40 text-white hover:bg-white/10"
+                >
+                  Fechar câmera
+                </button>
+                {scannerEngine === "tesseract" && (
+                  <button
+                    type="button"
+                    onClick={() => void runTesseractOcrFromCamera()}
+                    disabled={scannerBusy}
+                    className="px-4 py-2 text-sm rounded border border-[#8ea4ff] text-[#dce3ff] hover:bg-[#262969] disabled:opacity-50"
+                  >
+                    {scannerBusy ? "Processando foto..." : "Capturar foto e extrair dados"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />

@@ -223,6 +223,47 @@ export default function ManageBooks() {
     }
   };
 
+  const fetchCoverOptionsByText = async (title?: string, author?: string) => {
+    const query = [title, author].filter(Boolean).join(" ").trim();
+    if (!query) {
+      toast.error("Preencha título/autor para buscar capas.");
+      return;
+    }
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6`
+      );
+      if (!response.ok) {
+        toast.error("Não foi possível buscar capas agora.");
+        return;
+      }
+      const payload = await response.json();
+      const items = Array.isArray(payload?.items) ? payload.items : [];
+      const unique = dedupeCoverUrls(
+        items.flatMap((item: any) => {
+          const links = item?.volumeInfo?.imageLinks;
+          return [
+            links?.extraLarge,
+            links?.large,
+            links?.medium,
+            links?.small,
+            links?.thumbnail,
+            links?.smallThumbnail,
+          ];
+        })
+      );
+      if (!unique.length) {
+        toast.error("Nenhuma capa encontrada por título/autor.");
+        return;
+      }
+      setEditingCoverOptions(unique);
+      setEditingBook((prev) => (prev ? { ...prev, coverUrl: unique[0] } : prev));
+      toast.success(`Encontradas ${unique.length} opção(ões) de capa.`);
+    } catch {
+      toast.error("Falha ao buscar capas por título/autor.");
+    }
+  };
+
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && editingBook) {
@@ -781,6 +822,13 @@ export default function ManageBooks() {
                         className="w-full px-3 py-2 border border-[#262969] text-[#262969] rounded hover:bg-[#262969] hover:text-white text-sm"
                       >
                         Buscar opções de capa por ISBN
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void fetchCoverOptionsByText(editingBook?.title, editingBook?.author)}
+                        className="w-full px-3 py-2 border border-[#262969] text-[#262969] rounded hover:bg-[#262969] hover:text-white text-sm"
+                      >
+                        Buscar opções de capa por título/autor
                       </button>
                       {editingCoverOptions.length > 0 && (
                         <div className="grid grid-cols-3 gap-2">
