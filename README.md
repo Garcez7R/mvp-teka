@@ -6,6 +6,12 @@
 
 Plataforma para conectar leitores e sebos, com foco em catálogo de livros (usados e novos), gestão de estoque por livreiro e experiência de compra simples.
 
+## Guia de Uso
+
+Acesse o guia completo de operação:
+
+- [Guia de Uso - TEKA](docs/GUIA-USO-TEKA.md)
+
 ## Visão Geral
 
 O TEKA foi desenhado para:

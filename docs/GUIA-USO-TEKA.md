@@ -2,6 +2,9 @@
 
 Este guia explica, de forma prática, como usar todas as opções principais do app.
 
+Voltar para o documento principal:
+- [README](../README.md)
+
 ## 1. Visão Geral
 
 O TEKA conecta compradores e livreiros para negociação de livros.
@@ -156,3 +159,8 @@ Admin:
 1. Abrir painel.
 2. Gerir usuários/sebos/livros.
 3. Validar métricas e auditoria.
+
+---
+
+Voltar para o documento principal:
+- [README](../README.md)
