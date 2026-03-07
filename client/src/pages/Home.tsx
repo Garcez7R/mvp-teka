@@ -502,7 +502,7 @@ export default function Home() {
               onClick={() => setPrioritizeNearby((prev) => !prev)}
               className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white"
             >
-              {prioritizeNearby ? "Próximos: ON" : "Próximos: OFF"}
+              {prioritizeNearby ? "Ver perto de mim: ON" : "Ver perto de mim: OFF"}
             </button>
           </div>
         </div>
