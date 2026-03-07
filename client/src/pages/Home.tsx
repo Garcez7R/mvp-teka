@@ -313,6 +313,8 @@ export default function Home() {
   }, []);
 
   const hasBooksQueryError = Boolean(booksError);
+  const showSellerOnboarding =
+    role === "livreiro" && (!mySebo || mySeboBooks.length === 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -336,7 +338,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="container flex-1 py-12">
-        {(role === "livreiro" || role === "admin") && (
+        {showSellerOnboarding && (
           <div className="mb-8 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
             <h3 className="font-outfit font-semibold text-[#262969] mb-2">Onboarding do Livreiro</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
