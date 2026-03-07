@@ -580,76 +580,78 @@ export default function ManageBooks() {
             Voltar ao catálogo
           </button>
         </Link>
-        <h1 className="font-outfit font-bold text-3xl text-[#262969] mb-2">Meus Livros</h1>
+        <h1 className="font-outfit font-bold text-3xl text-[#262969] mb-2">Meu Catálogo</h1>
         <p className="text-gray-600 mb-8">{mySebo.name}</p>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
-          <div className="p-4 border rounded-lg bg-white">
-            <p className="text-xs text-gray-500">Livros</p>
-            <p className="text-xl font-bold text-[#262969]">{metrics?.totalBooks ?? myBooks.length}</p>
+        <section className="mb-8 space-y-4">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowCharts((prev) => !prev)}
+              className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white"
+            >
+              {showCharts ? "Ocultar gráficos" : "Exibir gráficos"}
+            </button>
           </div>
-          <div className="p-4 border rounded-lg bg-white">
-            <p className="text-xs text-gray-500">Ativos</p>
-            <p className="text-xl font-bold text-emerald-700">{metrics?.activeBooks ?? 0}</p>
-          </div>
-          <div className="p-4 border rounded-lg bg-white">
-            <p className="text-xs text-gray-500">Reservados</p>
-            <p className="text-xl font-bold text-amber-600">{metrics?.reservedBooks ?? 0}</p>
-          </div>
-          <div className="p-4 border rounded-lg bg-white">
-            <p className="text-xs text-gray-500">Vendidos</p>
-            <p className="text-xl font-bold text-gray-800">{metrics?.soldBooks ?? 0}</p>
-          </div>
-          <div className="p-4 border rounded-lg bg-white">
-            <p className="text-xs text-gray-500">Favoritos</p>
-            <p className="text-xl font-bold text-[#da4653]">{metrics?.totalFavorites ?? 0}</p>
-          </div>
-          <div className="p-4 border rounded-lg bg-white">
-            <p className="text-xs text-gray-500">Interesses</p>
-            <p className="text-xl font-bold text-[#262969]">{metrics?.totalInterests ?? 0}</p>
-          </div>
-        </div>
-        <div className="flex justify-end mb-4">
-          <button
-            type="button"
-            onClick={() => setShowCharts((prev) => !prev)}
-            className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white"
-          >
-            {showCharts ? "Ocultar gráficos" : "Exibir gráficos"}
-          </button>
-        </div>
-        {showCharts ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             <div className="p-4 border rounded-lg bg-white">
-              <h3 className="font-semibold text-[#262969] mb-3">Distribuição por status</h3>
-              <div className="w-full h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={statusChartData} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={80} label>
-                      {statusChartData.map((entry) => (
-                        <Cell key={entry.label} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => [formatChartNumber(value), "Livros"]} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <p className="text-xs text-gray-500">Livros</p>
+              <p className="text-xl font-bold text-[#262969]">{metrics?.totalBooks ?? myBooks.length}</p>
             </div>
             <div className="p-4 border rounded-lg bg-white">
-              <h3 className="font-semibold text-[#262969] mb-3">Top livros por favoritos</h3>
-              <div className="w-full h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topFavoritesChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="label" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip formatter={(value) => [formatChartNumber(value), "Favoritos"]} />
-                    <Bar dataKey="value" fill="#da4653" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <p className="text-xs text-gray-500">Ativos</p>
+              <p className="text-xl font-bold text-emerald-700">{metrics?.activeBooks ?? 0}</p>
+            </div>
+            <div className="p-4 border rounded-lg bg-white">
+              <p className="text-xs text-gray-500">Reservados</p>
+              <p className="text-xl font-bold text-amber-600">{metrics?.reservedBooks ?? 0}</p>
+            </div>
+            <div className="p-4 border rounded-lg bg-white">
+              <p className="text-xs text-gray-500">Vendidos</p>
+              <p className="text-xl font-bold text-gray-800">{metrics?.soldBooks ?? 0}</p>
+            </div>
+            <div className="p-4 border rounded-lg bg-white">
+              <p className="text-xs text-gray-500">Favoritos</p>
+              <p className="text-xl font-bold text-[#da4653]">{metrics?.totalFavorites ?? 0}</p>
+            </div>
+            <div className="p-4 border rounded-lg bg-white">
+              <p className="text-xs text-gray-500">Interesses</p>
+              <p className="text-xl font-bold text-[#262969]">{metrics?.totalInterests ?? 0}</p>
             </div>
           </div>
-        ) : null}
+          {showCharts ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-lg bg-white">
+                <h3 className="font-semibold text-[#262969] mb-3">Distribuição por status</h3>
+                <div className="w-full h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={statusChartData} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={80} label>
+                        {statusChartData.map((entry) => (
+                          <Cell key={entry.label} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => [formatChartNumber(value), "Livros"]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="p-4 border rounded-lg bg-white">
+                <h3 className="font-semibold text-[#262969] mb-3">Top livros por favoritos</h3>
+                <div className="w-full h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topFavoritesChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="label" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip formatter={(value) => [formatChartNumber(value), "Favoritos"]} />
+                      <Bar dataKey="value" fill="#da4653" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </section>
         {metrics?.topBooks?.length ? (
           <div className="mb-8 p-4 border rounded-lg bg-white">
             <h3 className="font-semibold text-[#262969] mb-2">Top livros por favoritos</h3>

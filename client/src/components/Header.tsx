@@ -60,7 +60,7 @@ export default function Header() {
                 Cadastrar Livro
               </Link>
               <Link href="/manage-books" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
-                Meus Livros
+                Meu Catálogo
               </Link>
               <Link href="/batch-scan" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
                 Scan em Lote
@@ -166,7 +166,7 @@ export default function Header() {
                   className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
                 >
                   <Library className="w-5 h-5 text-[#da4653]" />
-                  Meus Livros
+                  Meu Catálogo
                 </Link>
                 <Link
                   href="/batch-scan"
