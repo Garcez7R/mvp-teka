@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AlertCircle, CheckCircle } from "lucide-react";
+import { formatCpfCnpjInput } from "@/lib/formatters";
 
 export default function CreateSebo() {
   const [, navigate] = useLocation();
@@ -45,7 +46,9 @@ export default function CreateSebo() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name } = e.target;
+    const value =
+      name === "documentId" ? formatCpfCnpjInput(e.target.value) : e.target.value;
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -211,7 +214,7 @@ export default function CreateSebo() {
                   name="documentId"
                   value={formData.documentId}
                   onChange={handleChange}
-                  placeholder="Apenas preenchimento (sem consulta automática)"
+                  placeholder="Ex: 123.456.789-00 ou 12.345.678/0001-99"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
                   required
                 />

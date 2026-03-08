@@ -7,6 +7,7 @@ import { ArrowLeft, Camera, Download, CheckCircle2 } from "lucide-react";
 import { SESSION_MAX_AGE_MS } from "@/lib/session";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { formatCpfCnpjInput } from "@/lib/formatters";
 
 type BeforeInstallPromptEventLike = Event & {
   prompt: () => Promise<void>;
@@ -461,8 +462,13 @@ export default function SettingsPage() {
                     />
                     <input
                       value={seboForm.documentId}
-                      onChange={(e) => setSeboForm((prev) => ({ ...prev, documentId: e.target.value }))}
-                      placeholder="CPF/CNPJ (sem validação)"
+                      onChange={(e) =>
+                        setSeboForm((prev) => ({
+                          ...prev,
+                          documentId: formatCpfCnpjInput(e.target.value),
+                        }))
+                      }
+                      placeholder="CPF/CNPJ"
                       className="px-3 py-2 border border-gray-300 rounded bg-white"
                     />
                     <input

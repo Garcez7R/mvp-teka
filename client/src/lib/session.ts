@@ -10,13 +10,6 @@ type GoogleTokenClaims = {
   exp?: number;
 };
 
-const BUILTIN_ADMIN_EMAILS = new Set([
-  "rgs.dba7@gmail.com",
-  "claudiasobralm@gmail.com",
-  "carlosdanielbp101@gmail.com",
-  "dianadasilv4ds@gmail.com",
-]);
-
 function decodeTokenClaims(token: string): GoogleTokenClaims | null {
   const parts = token.split(".");
   if (parts.length < 2) return null;
@@ -96,10 +89,4 @@ export function getGoogleTokenClaims(): GoogleTokenClaims | null {
   const token = getSessionIdToken();
   if (!token) return null;
   return decodeTokenClaims(token);
-}
-
-export function isAdminEmail(email: string | null | undefined): boolean {
-  const normalized = email?.trim().toLowerCase();
-  if (!normalized) return false;
-  return BUILTIN_ADMIN_EMAILS.has(normalized);
 }
