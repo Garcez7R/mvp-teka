@@ -55,8 +55,8 @@ export const sebosRouter = router({
       z.object({
         name: z.string(),
         description: z.string().optional(),
-        ownerName: z.string().optional(),
-        documentId: z.string().optional(),
+        ownerName: z.string().trim().min(3, "Nome completo do sebista é obrigatório"),
+        documentId: z.string().trim().min(11, "CPF/CNPJ é obrigatório"),
         addressLine: z.string().optional(),
         postalCode: z.string().optional(),
         openingYear: z.number().int().optional(),

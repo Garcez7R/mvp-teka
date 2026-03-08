@@ -70,6 +70,12 @@ export default function CreateSebo() {
       if (!formData.name.trim()) {
         throw new Error("Nome do sebo é obrigatório");
       }
+      if (!formData.ownerName.trim()) {
+        throw new Error("Nome completo do sebista é obrigatório");
+      }
+      if (!formData.documentId.trim()) {
+        throw new Error("CPF/CNPJ é obrigatório");
+      }
       if (!formData.whatsapp.trim()) {
         throw new Error("WhatsApp é obrigatório para contato");
       }
@@ -80,8 +86,8 @@ export default function CreateSebo() {
       await createSeboMutation.mutateAsync({
         name: formData.name,
         description: formData.description || undefined,
-        ownerName: formData.ownerName || undefined,
-        documentId: formData.documentId || undefined,
+        ownerName: formData.ownerName.trim(),
+        documentId: formData.documentId.trim(),
         addressLine: formData.addressLine || undefined,
         postalCode: formData.postalCode || undefined,
         openingYear: formData.openingYear ? Number(formData.openingYear) : undefined,
@@ -184,7 +190,7 @@ export default function CreateSebo() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block font-inter font-semibold text-gray-700 mb-2">
-                  Nome completo do sebista (opcional)
+                  Nome completo do sebista *
                 </label>
                 <input
                   type="text"
@@ -193,19 +199,21 @@ export default function CreateSebo() {
                   onChange={handleChange}
                   placeholder="Ex: Nome Sobrenome"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                  required
                 />
               </div>
               <div>
                 <label className="block font-inter font-semibold text-gray-700 mb-2">
-                  CPF/CNPJ (opcional)
+                  CPF/CNPJ *
                 </label>
                 <input
                   type="text"
                   name="documentId"
                   value={formData.documentId}
                   onChange={handleChange}
-                  placeholder="Apenas preenchimento, sem validação"
+                  placeholder="Apenas preenchimento (sem consulta automática)"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
+                  required
                 />
               </div>
               <div>
