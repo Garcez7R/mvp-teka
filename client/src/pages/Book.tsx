@@ -382,7 +382,7 @@ export default function Book() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-inter font-semibold text-[#262969] truncate">{book.sebo.name}</p>
                       {book.sebo.verified && (
-                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-semibold">
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 px-2 py-0.5 rounded font-semibold">
                           Verificado
                         </span>
                       )}

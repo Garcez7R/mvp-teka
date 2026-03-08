@@ -96,28 +96,28 @@ export default function SeboStorefront() {
                   </p>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     {sebo.verified ? (
-                      <span className="text-[11px] px-2 py-1 rounded bg-emerald-100 text-emerald-700 font-semibold">
+                      <span className="text-[11px] px-2 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 font-semibold">
                         Verificado
                       </span>
                     ) : null}
                     {sebo.plan === "pro" ? (
-                      <span className="text-[11px] px-2 py-1 rounded bg-[#da4653] text-[#262969] font-semibold">
+                      <span className="text-[11px] px-2 py-1 rounded bg-[#da4653] text-[#262969] dark:bg-[#262969] dark:text-[#f3f4f6] font-semibold">
                         Sebo Pro
                       </span>
                     ) : sebo.plan === "gold" ? (
-                      <span className="text-[11px] px-2 py-1 rounded bg-amber-200 text-amber-900 font-semibold">
+                      <span className="text-[11px] px-2 py-1 rounded bg-amber-200 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200 font-semibold">
                         Sebo Gold
                       </span>
                     ) : (
-                      <span className="text-[11px] px-2 py-1 rounded bg-gray-100 text-gray-700 font-semibold">
+                      <span className="text-[11px] px-2 py-1 rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100 font-semibold">
                         Sebo Free
                       </span>
                     )}
-                    <span className="text-[11px] px-2 py-1 rounded bg-gray-100 text-gray-700 font-semibold">
+                    <span className="text-[11px] px-2 py-1 rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100 font-semibold">
                       Nota {Number(sebo?.reviewSummary?.avgRating ?? 0).toFixed(1)} ({Number(sebo?.reviewSummary?.totalReviews ?? 0)})
                     </span>
                     {sebo?.reviewSummary?.topRated ? (
-                      <span className="text-[11px] px-2 py-1 rounded bg-emerald-100 text-emerald-700 font-semibold">
+                      <span className="text-[11px] px-2 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 font-semibold">
                         Top Avaliado
                       </span>
                     ) : null}

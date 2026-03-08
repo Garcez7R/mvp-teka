@@ -77,10 +77,10 @@ export default function SebosPage() {
                   <span
                     className={`text-[11px] px-2 py-1 rounded font-semibold ${
                       sebo?.plan === "gold"
-                        ? "bg-amber-200 text-amber-900"
+                        ? "bg-amber-200 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
                         : sebo?.plan === "pro"
-                        ? "bg-[#da4653] text-[#262969]"
-                        : "bg-gray-100 text-gray-700"
+                        ? "bg-[#da4653] text-[#262969] dark:bg-[#262969] dark:text-[#f3f4f6]"
+                        : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
                     }`}
                   >
                     {sebo?.plan === "gold" ? "Gold" : sebo?.plan === "pro" ? "Pro" : "Free"}

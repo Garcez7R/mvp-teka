@@ -139,7 +139,7 @@ export default function BookCard({
               </span>
             )}
             {!compact && sebo?.verified && (
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200 font-semibold">
                 Verificado
               </span>
             )}
