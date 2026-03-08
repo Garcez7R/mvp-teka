@@ -1,19 +1,25 @@
 import { Link, useParams } from "wouter";
+import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import BookCard from "@/components/BookCard";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { toast } from "sonner";
 
 function seboLinkFromData(sebo: any): string {
-  if (sebo?.plan === "pro" && sebo?.proSlug) {
+  if (sebo?.plan !== "free" && sebo?.proSlug) {
     return `/s/${sebo.proSlug}`;
   }
   return `/sebo/${sebo?.id ?? ""}`;
 }
 
 export default function SeboStorefront() {
+  const { isAuthenticated } = useAuth();
   const { id, slug } = useParams<{ id?: string; slug?: string }>();
   const parsedSeboId = Number.parseInt(id || "", 10);
+  const [ratingDraft, setRatingDraft] = useState("5");
+  const [commentDraft, setCommentDraft] = useState("");
 
   const byIdQuery = trpc.sebos.getById.useQuery(parsedSeboId, {
     enabled: !slug && Number.isFinite(parsedSeboId) && parsedSeboId > 0,
@@ -30,6 +36,40 @@ export default function SeboStorefront() {
   const sebo = query.data as any;
   const books = Array.isArray(sebo?.books) ? sebo.books : [];
   const visibleBooks = books.filter((book: any) => book?.isVisible !== false);
+  const reviewSummaryQuery = trpc.sebos.reviewSummary.useQuery(
+    { seboId: Number(sebo?.id || 0) },
+    { enabled: Boolean(sebo?.id), refetchOnWindowFocus: false }
+  );
+  const listReviewsQuery = trpc.sebos.listReviews.useQuery(
+    { seboId: Number(sebo?.id || 0), limit: 6 },
+    { enabled: Boolean(sebo?.id), refetchOnWindowFocus: false }
+  );
+  const upsertReviewMutation = trpc.sebos.upsertReview.useMutation({
+    onSuccess: async () => {
+      await Promise.all([reviewSummaryQuery.refetch(), listReviewsQuery.refetch()]);
+      toast.success("Avaliação enviada.");
+      setCommentDraft("");
+    },
+    onError: (error) => toast.error(error.message || "Falha ao enviar avaliação."),
+  });
+
+  const handleSubmitReview = async () => {
+    if (!sebo?.id) return;
+    if (!isAuthenticated) {
+      toast.error("Faça login para avaliar o sebo.");
+      return;
+    }
+    const rating = Number.parseInt(ratingDraft, 10);
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      toast.error("Informe uma nota de 1 a 5.");
+      return;
+    }
+    await upsertReviewMutation.mutateAsync({
+      seboId: Number(sebo.id),
+      rating,
+      comment: commentDraft.trim() || undefined,
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
@@ -86,11 +126,20 @@ export default function SeboStorefront() {
                       <span className="text-[11px] px-2 py-1 rounded bg-[#da4653] text-[#262969] font-semibold">
                         Sebo Pro
                       </span>
+                    ) : sebo.plan === "gold" ? (
+                      <span className="text-[11px] px-2 py-1 rounded bg-amber-300 text-amber-900 font-semibold">
+                        Sebo Gold
+                      </span>
                     ) : (
                       <span className="text-[11px] px-2 py-1 rounded bg-gray-100 text-gray-700 font-semibold">
                         Sebo Free
                       </span>
                     )}
+                    {reviewSummaryQuery.data?.isTopRated ? (
+                      <span className="text-[11px] px-2 py-1 rounded bg-emerald-100 text-emerald-700 font-semibold">
+                        Top Avaliado
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -121,6 +170,75 @@ export default function SeboStorefront() {
                   {seboLinkFromData(sebo)}
                 </a>
               </p>
+              {sebo.showPublicPhone && sebo.whatsapp ? (
+                <p className="text-xs text-gray-700 dark:text-gray-200 mt-1">
+                  WhatsApp público: {sebo.whatsapp}
+                </p>
+              ) : null}
+              {sebo.showPublicAddress && sebo.addressLine ? (
+                <p className="text-xs text-gray-700 dark:text-gray-200 mt-1">
+                  Endereço: {sebo.addressLine}
+                </p>
+              ) : null}
+              <p className="text-xs text-gray-700 dark:text-gray-200 mt-2">
+                Avaliação:{" "}
+                <span className="font-semibold">
+                  {Number(reviewSummaryQuery.data?.average || 0).toFixed(1)}
+                </span>{" "}
+                ({Number(reviewSummaryQuery.data?.count || 0)} avaliação(ões))
+              </p>
+            </section>
+
+            <section className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 mb-6">
+              <h3 className="font-outfit font-semibold text-lg text-[#262969] dark:text-gray-100 mb-3">
+                Avaliar Sebo
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <select
+                  value={ratingDraft}
+                  onChange={(e) => setRatingDraft(e.target.value)}
+                  className="px-3 py-2 border rounded bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                >
+                  <option value="5">5 - Excelente</option>
+                  <option value="4">4 - Muito bom</option>
+                  <option value="3">3 - Bom</option>
+                  <option value="2">2 - Regular</option>
+                  <option value="1">1 - Ruim</option>
+                </select>
+                <input
+                  value={commentDraft}
+                  onChange={(e) => setCommentDraft(e.target.value)}
+                  placeholder="Comentário (opcional)"
+                  className="md:col-span-2 px-3 py-2 border rounded bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleSubmitReview()}
+                  disabled={upsertReviewMutation.isPending}
+                  className="px-3 py-2 rounded bg-[#da4653] text-[#262969] font-semibold disabled:opacity-60"
+                >
+                  {upsertReviewMutation.isPending ? "Enviando..." : "Enviar"}
+                </button>
+              </div>
+              {listReviewsQuery.data?.length ? (
+                <div className="mt-3 space-y-2">
+                  {listReviewsQuery.data.map((review: any) => (
+                    <div key={review.id} className="p-2 rounded border border-gray-200 dark:border-gray-700">
+                      <p className="text-xs text-gray-700 dark:text-gray-200">
+                        <span className="font-semibold">{review.rating}/5</span> •{" "}
+                        {review.userName || "Usuário"}
+                      </p>
+                      {review.comment ? (
+                        <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{review.comment}</p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-600 dark:text-gray-300 mt-2">
+                  Sem avaliações visíveis ainda.
+                </p>
+              )}
             </section>
 
             <section>

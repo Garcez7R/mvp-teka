@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { sebos, books, users, favorites, bookInterests } from "../_schema.ts";
-import { and, eq, inArray } from "drizzle-orm";
+import { sebos, books, users, favorites, bookInterests, seboReviews } from "../_schema.ts";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { logAuditEvent } from "./_utils/audit.js";
 
 const HIDDEN_MARKER = /^\[HIDDEN\]\s*/i;
@@ -43,7 +43,11 @@ const seboPublicSelect = {
   plan: sebos.plan,
   proSlug: sebos.proSlug,
   proEnabledAt: sebos.proEnabledAt,
+  maxActiveBooks: sebos.maxActiveBooks,
+  showPublicPhone: sebos.showPublicPhone,
+  showPublicAddress: sebos.showPublicAddress,
   description: sebos.description,
+  addressLine: sebos.addressLine,
   logoUrl: sebos.logoUrl,
   whatsapp: sebos.whatsapp,
   city: sebos.city,
@@ -110,7 +114,11 @@ function normalizeBookDescription(raw?: string | null): {
 export const sebosRouter = router({
   // Get all sebos
   list: publicProcedure.query(async () => {
-    return await db.select(seboPublicSelect).from(sebos);
+    const rows = await db.select(seboPublicSelect).from(sebos);
+    return rows.map((row) => ({
+      ...row,
+      addressLine: row.showPublicAddress ? row.addressLine : null,
+    }));
   }),
 
   // Get all sebos owned by current user
@@ -156,7 +164,11 @@ export const sebosRouter = router({
         plan: sebo.plan,
         proSlug: sebo.proSlug,
         proEnabledAt: sebo.proEnabledAt,
+        maxActiveBooks: sebo.maxActiveBooks,
+        showPublicPhone: sebo.showPublicPhone,
+        showPublicAddress: sebo.showPublicAddress,
         description: sebo.description,
+        addressLine: sebo.showPublicAddress ? sebo.addressLine : null,
         logoUrl: sebo.logoUrl,
         whatsapp: sebo.whatsapp,
         city: sebo.city,
@@ -187,7 +199,7 @@ export const sebosRouter = router({
       const sebo = await db
         .select()
         .from(sebos)
-        .where(and(eq(sebos.proSlug, normalizedSlug), eq(sebos.plan, "pro")))
+        .where(and(eq(sebos.proSlug, normalizedSlug), inArray(sebos.plan, ["pro", "gold"])))
         .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
 
       if (!sebo) {
@@ -218,7 +230,11 @@ export const sebosRouter = router({
         plan: sebo.plan,
         proSlug: sebo.proSlug,
         proEnabledAt: sebo.proEnabledAt,
+        maxActiveBooks: sebo.maxActiveBooks,
+        showPublicPhone: sebo.showPublicPhone,
+        showPublicAddress: sebo.showPublicAddress,
         description: sebo.description,
+        addressLine: sebo.showPublicAddress ? sebo.addressLine : null,
         logoUrl: sebo.logoUrl,
         whatsapp: sebo.whatsapp,
         city: sebo.city,
@@ -259,6 +275,9 @@ export const sebosRouter = router({
         description: z.string().optional(),
         ownerName: z.string().trim().min(3, "Nome completo do sebista é obrigatório"),
         documentId: z.string().trim().min(11, "CPF/CNPJ é obrigatório"),
+        maxActiveBooks: z.number().int().optional(),
+        showPublicPhone: z.boolean().optional(),
+        showPublicAddress: z.boolean().optional(),
         addressLine: z.string().optional(),
         postalCode: z.string().optional(),
         openingYear: z.number().int().optional(),
@@ -325,6 +344,9 @@ export const sebosRouter = router({
         description: z.string().optional(),
         ownerName: z.string().optional(),
         documentId: z.string().optional(),
+        maxActiveBooks: z.number().int().optional(),
+        showPublicPhone: z.boolean().optional(),
+        showPublicAddress: z.boolean().optional(),
         addressLine: z.string().optional(),
         postalCode: z.string().optional(),
         openingYear: z.number().int().optional(),
@@ -381,6 +403,9 @@ export const sebosRouter = router({
         description: z.string().optional(),
         ownerName: z.string().optional(),
         documentId: z.string().optional(),
+        maxActiveBooks: z.number().int().optional(),
+        showPublicPhone: z.boolean().optional(),
+        showPublicAddress: z.boolean().optional(),
         addressLine: z.string().optional(),
         postalCode: z.string().optional(),
         openingYear: z.number().int().optional(),
@@ -433,6 +458,9 @@ export const sebosRouter = router({
         description: z.string().optional(),
         ownerName: z.string().optional(),
         documentId: z.string().optional(),
+        maxActiveBooks: z.number().int().optional(),
+        showPublicPhone: z.boolean().optional(),
+        showPublicAddress: z.boolean().optional(),
         addressLine: z.string().optional(),
         postalCode: z.string().optional(),
         openingYear: z.number().int().optional(),
@@ -472,8 +500,9 @@ export const sebosRouter = router({
     .input(
       z.object({
         id: z.number(),
-        plan: z.enum(["free", "pro"]),
+        plan: z.enum(["free", "pro", "gold"]),
         proSlug: z.string().trim().optional(),
+        maxActiveBooks: z.number().int().nullable().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -487,15 +516,16 @@ export const sebosRouter = router({
         throw new Error("Sebo not found");
       }
 
-      if (input.plan === "pro") {
+      if (input.plan === "pro" || input.plan === "gold") {
         const requested = slugifySeboName(input.proSlug || existing.proSlug || existing.name);
         const uniqueSlug = await ensureUniqueProSlug(requested, existing.id);
         await db
           .update(sebos)
           .set({
-            plan: "pro",
+            plan: input.plan,
             proSlug: uniqueSlug,
             proEnabledAt: new Date(),
+            maxActiveBooks: input.maxActiveBooks === undefined ? existing.maxActiveBooks : input.maxActiveBooks,
           })
           .where(eq(sebos.id, input.id));
 
@@ -506,14 +536,15 @@ export const sebosRouter = router({
           entityType: "sebo",
           entityId: input.id,
           metadata: {
-            plan: "pro",
+            plan: input.plan,
             proSlug: uniqueSlug,
+            maxActiveBooks: input.maxActiveBooks === undefined ? existing.maxActiveBooks : input.maxActiveBooks,
           },
         });
 
         return {
           success: true,
-          plan: "pro" as const,
+          plan: input.plan,
           proSlug: uniqueSlug,
         };
       }
@@ -523,6 +554,7 @@ export const sebosRouter = router({
         .set({
           plan: "free",
           proEnabledAt: null,
+          maxActiveBooks: input.maxActiveBooks === undefined ? existing.maxActiveBooks : input.maxActiveBooks,
         })
         .where(eq(sebos.id, input.id));
 
@@ -567,8 +599,8 @@ export const sebosRouter = router({
         throw new Error("Unauthorized");
       }
 
-      if (existing.plan !== "pro") {
-        throw new Error("Este sebo ainda não está no plano Pro.");
+      if (existing.plan !== "pro" && existing.plan !== "gold") {
+        throw new Error("Este sebo ainda não está em plano com URL personalizada.");
       }
 
       const requested = slugifySeboName(input.proSlug);
@@ -594,6 +626,133 @@ export const sebosRouter = router({
         success: true,
         proSlug: uniqueSlug,
       };
+    }),
+
+  reviewSummary: publicProcedure
+    .input(z.object({ seboId: z.number() }))
+    .query(async ({ input }) => {
+      const rows = await db
+        .select({
+          count: sql<number>`count(*)`.as("count"),
+          avg: sql<number>`avg(${seboReviews.rating})`.as("avg"),
+        })
+        .from(seboReviews)
+        .where(and(eq(seboReviews.seboId, input.seboId), eq(seboReviews.isVisible, true)));
+
+      const count = Number(rows[0]?.count ?? 0);
+      const average = Number(rows[0]?.avg ?? 0);
+      const isTopRated = count >= 10 && average >= 4.7;
+      return {
+        seboId: input.seboId,
+        count,
+        average,
+        isTopRated,
+      };
+    }),
+
+  listReviews: publicProcedure
+    .input(z.object({ seboId: z.number(), limit: z.number().int().min(1).max(50).default(10) }))
+    .query(async ({ input }) => {
+      const rows = await db
+        .select({
+          id: seboReviews.id,
+          rating: seboReviews.rating,
+          comment: seboReviews.comment,
+          createdAt: seboReviews.createdAt,
+          userName: users.name,
+        })
+        .from(seboReviews)
+        .leftJoin(users, eq(users.id, seboReviews.userId))
+        .where(and(eq(seboReviews.seboId, input.seboId), eq(seboReviews.isVisible, true)))
+        .orderBy(desc(seboReviews.createdAt))
+        .limit(input.limit);
+
+      return rows;
+    }),
+
+  upsertReview: protectedProcedure
+    .input(
+      z.object({
+        seboId: z.number(),
+        rating: z.number().int().min(1).max(5),
+        comment: z.string().max(600).optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const sebo = await db
+        .select()
+        .from(sebos)
+        .where(eq(sebos.id, input.seboId))
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0] ?? null);
+      if (!sebo) throw new Error("Sebo not found");
+      if (Number(sebo.userId) === Number(ctx.userId)) {
+        throw new Error("Você não pode avaliar seu próprio sebo.");
+      }
+
+      const existing = await db
+        .select()
+        .from(seboReviews)
+        .where(and(eq(seboReviews.seboId, input.seboId), eq(seboReviews.userId, ctx.userId!)))
+        .then((res: Array<typeof seboReviews.$inferSelect>) => res[0] ?? null);
+
+      if (existing) {
+        await db
+          .update(seboReviews)
+          .set({
+            rating: input.rating,
+            comment: input.comment?.trim() || null,
+            updatedAt: new Date(),
+          })
+          .where(eq(seboReviews.id, existing.id));
+      } else {
+        await db.insert(seboReviews).values({
+          seboId: input.seboId,
+          userId: ctx.userId!,
+          rating: input.rating,
+          comment: input.comment?.trim() || null,
+          isVisible: true,
+        });
+      }
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "sebo.review.upsert",
+        entityType: "sebo",
+        entityId: input.seboId,
+        metadata: {
+          rating: input.rating,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  adminModerateReview: adminProcedure
+    .input(
+      z.object({
+        reviewId: z.number(),
+        isVisible: z.boolean(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      await db
+        .update(seboReviews)
+        .set({ isVisible: input.isVisible, updatedAt: new Date() })
+        .where(eq(seboReviews.id, input.reviewId));
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "admin.sebo.review.moderate",
+        entityType: "sebo_review",
+        entityId: input.reviewId,
+        metadata: {
+          isVisible: input.isVisible,
+        },
+      });
+
+      return { success: true };
     }),
 
   adminDelete: adminProcedure

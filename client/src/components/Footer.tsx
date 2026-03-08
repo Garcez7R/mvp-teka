@@ -91,7 +91,7 @@ export default function Footer() {
         {/* Divider */}
         <div className="border-t border-gray-700 pt-8">
           <p className="font-inter text-sm text-gray-400 text-center">
-            © {currentYear} TEKA. Todos os direitos reservados. | Versão 0.7.0+206
+            © {currentYear} TEKA. Todos os direitos reservados. | Versão 0.7.0+241
           </p>
         </div>
       </div>

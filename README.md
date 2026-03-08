@@ -10,7 +10,7 @@ Plataforma para conectar leitores e sebos, com foco em catálogo de livros (usad
 
 `Pronto para validação com usuários de teste (Beta controlado)`
 
-Versão de referência: `0.7.0+238`
+Versão de referência: `0.7.0+241`
 
 Escopo recomendado para teste:
 - fluxo de comprador (busca, filtros, detalhe, WhatsApp);
@@ -172,10 +172,13 @@ Variáveis importantes de produção (Cloudflare Pages > Settings > Variables an
 - Home (`/`) segue como catálogo agregado de todos os sebos.
 - Cada sebo possui vitrine própria:
   - Free: `/sebo/:id`
-  - Pro: `/s/:slug`
-- Promoção para Pro é feita pelo admin em **1 ação** no painel (`Promover para Pro`).
-- Livreiro Pro pode ajustar o slug em `Configurações`.
+  - Pro/Gold: `/s/:slug`
+- Promoção de plano (`free/pro/gold`) é feita pelo admin em **1 ação** no painel.
+- Livreiro Pro/Gold pode ajustar o slug em `Configurações`.
 - Ao virar Pro, a URL personalizada passa a valer imediatamente.
+- Avaliação de sebo já está ativa (1 a 5 estrelas + comentário opcional por comprador logado).
+- Badge `Top Avaliado` aparece com critério real (mín. 10 avaliações visíveis e média >= 4.7).
+- Limite por plano de livros ativos visíveis está preparado no backend (feature flag), mantendo fluxo atual de testes sem bloqueio por padrão.
 
 ## Observações Operacionais
 
