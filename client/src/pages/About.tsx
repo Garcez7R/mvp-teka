@@ -86,7 +86,7 @@ export default function About() {
             Evoluímos continuamente com base em uso real e feedback de usuários.
           </p>
           <p className="font-inter text-sm text-gray-600">
-            <strong>Versão:</strong> 0.7.0+241 | <strong>Ciclo:</strong> Release contínua | <strong>Ambiente:</strong> Cloudflare Pages
+            <strong>Versão:</strong> 0.7.0+206 | <strong>Ciclo:</strong> Release contínua | <strong>Ambiente:</strong> Cloudflare Pages
           </p>
         </section>
 

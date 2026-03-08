@@ -801,14 +801,12 @@ export default function Admin() {
                         <p className="font-semibold text-[#262969] dark:text-gray-100">{sebo.name}</p>
                         <span
                           className={`text-[11px] px-2 py-1 rounded font-semibold ${
-                            sebo.plan === "gold"
-                              ? "bg-amber-200 text-amber-900"
-                              : sebo.plan === "pro"
+                            sebo.plan === "pro"
                               ? "bg-[#da4653] text-[#262969]"
                               : "bg-gray-100 text-gray-700"
                           }`}
                         >
-                          {sebo.plan === "gold" ? "Gold" : sebo.plan === "pro" ? "Pro" : "Free"}
+                          {sebo.plan === "pro" ? "Pro" : "Free"}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600">
@@ -820,64 +818,52 @@ export default function Admin() {
                       <p className="text-xs text-gray-600">
                         Vitrine:{" "}
                         <a
-                          href={sebo.plan !== "free" && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
+                          href={sebo.plan === "pro" && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-[#da4653] hover:underline"
                         >
-                          {sebo.plan !== "free" && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
+                          {sebo.plan === "pro" && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
                         </a>
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 items-end">
-                      <div className="flex items-center gap-2">
-                        <select
-                          defaultValue={String(sebo.plan || "free")}
-                          onChange={(e) => {
+                      <button
+                        onClick={() => {
+                          if (sebo.plan === "pro") {
                             void adminSetSeboPlanMutation.mutateAsync({
                               id: Number(sebo.id),
-                              plan: e.target.value as "free" | "pro" | "gold",
+                              plan: "free",
                             });
-                          }}
-                          className="px-2 py-1 rounded border text-sm"
-                        >
-                          <option value="free">Free</option>
-                          <option value="pro">Pro</option>
-                          <option value="gold">Gold</option>
-                        </select>
-                        <button
-                          onClick={() => {
-                            const raw = window.prompt(
-                              "Limite de livros ativos visíveis (deixe vazio para padrão do plano):",
-                              sebo.maxActiveBooks == null ? "" : String(sebo.maxActiveBooks)
-                            );
-                            if (raw === null) return;
-                            const normalized = raw.trim();
-                            void adminSetSeboPlanMutation.mutateAsync({
-                              id: Number(sebo.id),
-                              plan: (sebo.plan || "free") as "free" | "pro" | "gold",
-                              maxActiveBooks: normalized === "" ? null : Number.parseInt(normalized, 10),
-                            });
-                          }}
-                          className="px-2 py-1 rounded text-sm bg-[#262969] text-white"
-                        >
-                          Limite
-                        </button>
-                      </div>
-                      {(sebo.plan === "pro" || sebo.plan === "gold") && (
+                            return;
+                          }
+                          void adminSetSeboPlanMutation.mutateAsync({
+                            id: Number(sebo.id),
+                            plan: "pro",
+                          });
+                        }}
+                        className={`px-2 py-1 rounded text-sm ${
+                          sebo.plan === "pro"
+                            ? "bg-gray-200 text-gray-800"
+                            : "bg-[#262969] text-white"
+                        }`}
+                      >
+                        {sebo.plan === "pro" ? "Rebaixar para Free" : "Promover para Pro"}
+                      </button>
+                      {sebo.plan === "pro" && (
                         <button
                           onClick={() => {
                             const nextSlug = window.prompt("Informe o novo slug Pro:", String(sebo.proSlug || ""));
                             if (!nextSlug) return;
                             void adminSetSeboPlanMutation.mutateAsync({
                               id: Number(sebo.id),
-                              plan: (sebo.plan || "pro") as "pro" | "gold",
+                              plan: "pro",
                               proSlug: nextSlug,
                             });
                           }}
                           className="px-2 py-1 rounded bg-[#da4653] text-[#262969] text-sm font-semibold"
                         >
-                          Editar slug vitrine
+                          Editar slug Pro
                         </button>
                       )}
                       <button

@@ -22,9 +22,6 @@ CREATE TABLE IF NOT EXISTS sebos (
   plan TEXT NOT NULL DEFAULT 'free',
   proSlug TEXT,
   proEnabledAt INTEGER,
-  maxActiveBooks INTEGER,
-  showPublicPhone INTEGER DEFAULT 0,
-  showPublicAddress INTEGER DEFAULT 0,
   description TEXT,
   ownerName TEXT,
   documentId TEXT,
@@ -89,17 +86,6 @@ CREATE TABLE IF NOT EXISTS wishlist_items (
   createdAt INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS sebo_reviews (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  seboId INTEGER NOT NULL,
-  userId INTEGER NOT NULL,
-  rating INTEGER NOT NULL,
-  comment TEXT,
-  isVisible INTEGER NOT NULL DEFAULT 1,
-  createdAt INTEGER NOT NULL,
-  updatedAt INTEGER NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS audit_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   actorUserId INTEGER,
@@ -121,8 +107,6 @@ CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
 CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
 CREATE INDEX IF NOT EXISTS idx_sebos_user ON sebos(userId);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sebos_pro_slug ON sebos(proSlug) WHERE proSlug IS NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_sebo_reviews_unique_user_per_sebo ON sebo_reviews(seboId, userId);
-CREATE INDEX IF NOT EXISTS idx_sebo_reviews_sebo ON sebo_reviews(seboId);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(createdAt);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_user_id ON audit_logs(actorUserId);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entityType, entityId);

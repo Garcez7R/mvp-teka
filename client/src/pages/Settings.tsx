@@ -86,8 +86,6 @@ export default function SettingsPage() {
     shippingFeeNotes: "",
     shippingEta: "",
     shippingNotes: "",
-    showPublicPhone: false,
-    showPublicAddress: false,
   });
   const [proSlugDraft, setProSlugDraft] = useState("");
   const [installAvailable, setInstallAvailable] = useState(false);
@@ -132,8 +130,6 @@ export default function SettingsPage() {
         shippingFeeNotes: "",
         shippingEta: "",
         shippingNotes: "",
-        showPublicPhone: false,
-        showPublicAddress: false,
       });
       return;
     }
@@ -158,8 +154,6 @@ export default function SettingsPage() {
       shippingFeeNotes: (mySebo as any).shippingFeeNotes || "",
       shippingEta: (mySebo as any).shippingEta || "",
       shippingNotes: (mySebo as any).shippingNotes || "",
-      showPublicPhone: Boolean((mySebo as any).showPublicPhone ?? false),
-      showPublicAddress: Boolean((mySebo as any).showPublicAddress ?? false),
     });
     setProSlugDraft((mySebo as any).proSlug || "");
   }, [mySebo]);
@@ -350,8 +344,6 @@ export default function SettingsPage() {
       shippingFeeNotes: seboForm.shippingFeeNotes.trim() || undefined,
       shippingEta: seboForm.shippingEta.trim() || undefined,
       shippingNotes: seboForm.shippingNotes.trim() || undefined,
-      showPublicPhone: seboForm.showPublicPhone,
-      showPublicAddress: seboForm.showPublicAddress,
     });
   };
 
@@ -578,22 +570,6 @@ export default function SettingsPage() {
                         />
                         Envio nacional
                       </label>
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={seboForm.showPublicPhone}
-                          onChange={(e) => setSeboForm((prev) => ({ ...prev, showPublicPhone: e.target.checked }))}
-                        />
-                        Exibir telefone na vitrine
-                      </label>
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={seboForm.showPublicAddress}
-                          onChange={(e) => setSeboForm((prev) => ({ ...prev, showPublicAddress: e.target.checked }))}
-                        />
-                        Exibir endereço na vitrine
-                      </label>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <input
@@ -633,9 +609,9 @@ export default function SettingsPage() {
                   </button>
                   <div className="mt-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
                     <p className="text-sm font-semibold text-[#262969] mb-1">
-                      Plano da vitrine: {String((mySebo as any).plan || "free").toUpperCase()}
+                      Plano da vitrine: {(mySebo as any).plan === "pro" ? "Pro" : "Free"}
                     </p>
-                    {(mySebo as any).plan !== "free" ? (
+                    {(mySebo as any).plan === "pro" ? (
                       <>
                         <label className="text-xs text-gray-600">URL personalizada (slug)</label>
                         <div className="mt-1 flex flex-col sm:flex-row gap-2">
@@ -668,7 +644,7 @@ export default function SettingsPage() {
                       </>
                     ) : (
                       <p className="text-xs text-gray-600 mt-1">
-                        Para liberar URL personalizada da vitrine, solicite promoção para Pro ou Gold ao admin.
+                        Para liberar URL personalizada da vitrine, solicite promoção para Pro ao admin.
                       </p>
                     )}
                   </div>
@@ -694,7 +670,7 @@ export default function SettingsPage() {
                           {seboForm.city || "-"} / {seboForm.state || "-"}
                           {seboForm.postalCode ? ` • CEP ${seboForm.postalCode}` : ""}
                         </p>
-                        {seboForm.showPublicAddress && seboForm.addressLine && (
+                        {seboForm.addressLine && (
                           <p className="text-xs text-gray-600">{seboForm.addressLine}</p>
                         )}
                         <p className="text-xs text-gray-600 mt-1">
@@ -712,7 +688,7 @@ export default function SettingsPage() {
                         {seboForm.description && (
                           <p className="text-xs text-gray-700 mt-1 line-clamp-3">{seboForm.description}</p>
                         )}
-                        {seboForm.showPublicPhone && seboForm.whatsapp && (
+                        {seboForm.whatsapp && (
                           <WhatsAppLink
                             href={`https://wa.me/${seboForm.whatsapp.replace(/\D/g, "")}`}
                             className="inline-block mt-2 text-xs text-[#da4653] hover:underline"

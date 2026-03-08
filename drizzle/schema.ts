@@ -43,12 +43,9 @@ export const sebos = sqliteTable("sebos", {
   id: int("id").primaryKey({ autoIncrement: true }),
   userId: int("userId").notNull(),
   name: text("name").notNull(),
-  plan: text("plan", { enum: ["free", "pro", "gold"] }).notNull().default("free"),
+  plan: text("plan", { enum: ["free", "pro"] }).notNull().default("free"),
   proSlug: text("proSlug"),
   proEnabledAt: integer("proEnabledAt", { mode: "timestamp_ms" }),
-  maxActiveBooks: int("maxActiveBooks"),
-  showPublicPhone: integer("showPublicPhone", { mode: "boolean" }).default(false),
-  showPublicAddress: integer("showPublicAddress", { mode: "boolean" }).default(false),
   description: text("description"),
   ownerName: text("ownerName"),
   documentId: text("documentId"),
@@ -148,25 +145,6 @@ export const wishlistItems = sqliteTable("wishlist_items", {
 export type WishlistItem = typeof wishlistItems.$inferSelect;
 export type InsertWishlistItem = typeof wishlistItems.$inferInsert;
 
-// Avaliações de sebos (comprador -> sebo)
-export const seboReviews = sqliteTable("sebo_reviews", {
-  id: int("id").primaryKey({ autoIncrement: true }),
-  seboId: int("seboId").notNull(),
-  userId: int("userId").notNull(),
-  rating: int("rating").notNull(),
-  comment: text("comment"),
-  isVisible: integer("isVisible", { mode: "boolean" }).notNull().default(true),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" })
-    .$defaultFn(() => new Date())
-    .notNull(),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
-    .$defaultFn(() => new Date())
-    .notNull(),
-});
-
-export type SeboReview = typeof seboReviews.$inferSelect;
-export type InsertSeboReview = typeof seboReviews.$inferInsert;
-
 // Auditoria mínima de ações sensíveis (admin/livreiro)
 export const auditLogs = sqliteTable("audit_logs", {
   id: int("id").primaryKey({ autoIncrement: true }),
@@ -198,7 +176,6 @@ export const sebosRelations = relations(sebos, ({ one, many }) => ({
     references: [users.id],
   }),
   books: many(books),
-  reviews: many(seboReviews),
 }));
 
 export const booksRelations = relations(books, ({ one, many }) => ({
@@ -235,17 +212,6 @@ export const bookInterestsRelations = relations(bookInterests, ({ one }) => ({
 export const wishlistItemsRelations = relations(wishlistItems, ({ one }) => ({
   user: one(users, {
     fields: [wishlistItems.userId],
-    references: [users.id],
-  }),
-}));
-
-export const seboReviewsRelations = relations(seboReviews, ({ one }) => ({
-  sebo: one(sebos, {
-    fields: [seboReviews.seboId],
-    references: [sebos.id],
-  }),
-  user: one(users, {
-    fields: [seboReviews.userId],
     references: [users.id],
   }),
 }));

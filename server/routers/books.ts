@@ -15,7 +15,6 @@ const seboBaseSelect = {
   name: sebos.name,
   plan: sebos.plan,
   proSlug: sebos.proSlug,
-  maxActiveBooks: sebos.maxActiveBooks,
   description: sebos.description,
   whatsapp: sebos.whatsapp,
   city: sebos.city,
@@ -33,15 +32,6 @@ const seboBaseSelect = {
   createdAt: sebos.createdAt,
   updatedAt: sebos.updatedAt,
 } as const;
-
-const PLAN_ACTIVE_BOOK_LIMITS: Record<string, number | null> = {
-  free: 120,
-  pro: 800,
-  gold: null,
-};
-
-const ENFORCE_PLAN_LIMITS =
-  String(process.env.ENFORCE_PLAN_LIMITS || "").toLowerCase() === "true";
 
 function sanitizeBookDescription(raw?: string | null): string | null {
   if (typeof raw !== "string") return null;
@@ -395,25 +385,6 @@ export const booksRouter = router({
         throw new Error("Unauthorized");
       }
 
-      if (ENFORCE_PLAN_LIMITS && ctx.role !== "admin") {
-        const planLimit = sebo.maxActiveBooks ?? PLAN_ACTIVE_BOOK_LIMITS[String(sebo.plan || "free")] ?? null;
-        if (typeof planLimit === "number") {
-          const seboBooks = await db.select().from(books).where(eq(books.seboId, input.seboId));
-          const activeVisibleCount = seboBooks.reduce((acc, item) => {
-            const normalized = normalizeBookDescription(item.description);
-            const isActive = normalized.availabilityStatus !== "vendido";
-            return isActive && normalized.isVisible ? acc + 1 : acc;
-          }, 0);
-          const willBeActiveVisible =
-            input.isVisible && input.availabilityStatus !== "vendido" && input.quantity > 0;
-          if (willBeActiveVisible && activeVisibleCount >= planLimit) {
-            throw new Error(
-              `Limite do plano atingido (${planLimit} livros ativos visíveis). Solicite upgrade para ampliar a vitrine.`
-            );
-          }
-        }
-      }
-
       const newBook = await db
         .insert(books)
         .values({
@@ -485,24 +456,6 @@ export const booksRouter = router({
         ? "vendido"
         : input.availabilityStatus ?? normalizedOriginal.availabilityStatus;
       const isVisible = input.isVisible ?? normalizedOriginal.isVisible;
-
-      if (ENFORCE_PLAN_LIMITS && ctx.role !== "admin") {
-        const planLimit = sebo.maxActiveBooks ?? PLAN_ACTIVE_BOOK_LIMITS[String(sebo.plan || "free")] ?? null;
-        if (typeof planLimit === "number") {
-          const seboBooks = await db.select().from(books).where(eq(books.seboId, original.seboId));
-          const activeVisibleCount = seboBooks.reduce((acc, item) => {
-            const normalized = normalizeBookDescription(item.description);
-            const isActive = normalized.availabilityStatus !== "vendido";
-            return isActive && normalized.isVisible ? acc + 1 : acc;
-          }, 0);
-          const willBeActiveVisible = isVisible && availabilityStatus !== "vendido" && quantity > 0;
-          if (willBeActiveVisible && activeVisibleCount >= planLimit) {
-            throw new Error(
-              `Limite do plano atingido (${planLimit} livros ativos visíveis). Solicite upgrade para ampliar a vitrine.`
-            );
-          }
-        }
-      }
 
       const created = await db
         .insert(books)

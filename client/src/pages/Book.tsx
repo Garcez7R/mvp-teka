@@ -386,15 +386,6 @@ export default function Book() {
                           Verificado
                         </span>
                       )}
-                      {book.sebo.plan === "gold" ? (
-                        <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-semibold">
-                          Gold
-                        </span>
-                      ) : book.sebo.plan === "pro" ? (
-                        <span className="text-[10px] bg-[#da4653] text-[#262969] px-2 py-0.5 rounded font-semibold">
-                          Pro
-                        </span>
-                      ) : null}
                       {(book.sebo.city || book.sebo.state) && (
                         <span className="text-[10px] bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:border-slate-600">
                           {book.sebo.city || "-"} / {book.sebo.state || "-"}
@@ -414,7 +405,7 @@ export default function Book() {
                     </p>
                     <div className="mt-2">
                       <Link
-                        href={book.sebo.plan !== "free" && book.sebo.proSlug ? `/s/${book.sebo.proSlug}` : `/sebo/${book.sebo.id}`}
+                        href={book.sebo.plan === "pro" && book.sebo.proSlug ? `/s/${book.sebo.proSlug}` : `/sebo/${book.sebo.id}`}
                         className="text-xs text-[#da4653] hover:underline font-semibold"
                       >
                         Ver vitrine do sebo

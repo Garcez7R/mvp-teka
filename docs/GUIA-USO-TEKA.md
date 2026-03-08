@@ -2,7 +2,7 @@
 
 Este guia explica, de forma prática, como usar todas as opções principais do app.
 
-Versão de referência deste guia: `0.7.0+241`
+Versão de referência deste guia: `0.7.0+238`
 
 Voltar para o documento principal:
 - [README](../README.md)
@@ -106,8 +106,7 @@ Regras úteis:
 
 Para livreiro/admin:
 - Atualize dados do sebo.
-- Se o sebo estiver no plano Pro/Gold, ajuste o slug da URL personalizada.
-- Defina se telefone/endereço podem aparecer publicamente na vitrine.
+- Se o sebo estiver no plano Pro, ajuste o slug da URL personalizada.
 - Revise disponibilidade da câmera e instruções de uso em mobile.
 
 Para comprador:
@@ -118,7 +117,7 @@ Para comprador:
 Abas principais:
 - Usuários: criar, editar role e excluir.
 - Sebos: criar, editar e excluir.
-- Sebos: alterar plano (`free/pro/gold`) em 1 ação, ajustar limite por sebo e editar slug da vitrine.
+- Sebos: promover para Pro/rebaixar para Free em 1 clique e editar slug Pro.
 - Livros: editar todos os campos de cadastro (incluindo descrição), além de capa, status, visibilidade e exclusão.
 - No Admin, a edição abre em formulário dedicado, com ações explícitas de `Salvar` e `Cancelar`.
 - Livros: filtro de capa (`Todos`, `Sem capa`, `Com capa`) e badge `Sem capa`.
@@ -140,7 +139,6 @@ Métricas:
 - Use visibilidade do livro para ocultar itens não disponíveis sem apagar histórico.
 - Para privacidade, negocie encontro em local seguro.
 - Use sempre o domínio principal da aplicação para evitar sessões/cache antigos.
-- Use avaliações reais dos compradores para reforçar confiança e reputação dos sebos.
 
 ## 6.1 Segurança Operacional (Aplicado)
 
