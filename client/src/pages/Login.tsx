@@ -161,8 +161,8 @@ export default function Login() {
                   onClick={() => setRole("comprador")}
                   className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                     role === "comprador"
-                      ? "bg-[#262969] text-white border-[#262969]"
-                      : "bg-white text-[#262969] border-gray-300 hover:border-[#262969]"
+                      ? "bg-[#da4653] text-[#262969] border-[#da4653]"
+                      : "bg-white text-[#262969] border-[#da4653] hover:bg-[#ffe9eb]"
                   }`}
                 >
                   Comprador
@@ -172,8 +172,8 @@ export default function Login() {
                   onClick={() => setRole("livreiro")}
                   className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                     role === "livreiro"
-                      ? "bg-[#262969] text-white border-[#262969]"
-                      : "bg-white text-[#262969] border-gray-300 hover:border-[#262969]"
+                      ? "bg-[#da4653] text-[#262969] border-[#da4653]"
+                      : "bg-white text-[#262969] border-[#da4653] hover:bg-[#ffe9eb]"
                   }`}
                 >
                   Livreiro

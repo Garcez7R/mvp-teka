@@ -431,8 +431,8 @@ export default function Admin() {
             {adminMetrics.recentAudit.length > 0 && (
               <div className="p-4 border rounded-lg bg-white">
                 <h2 className="font-semibold text-[#262969] mb-2">Ações recentes (auditoria)</h2>
-                <div className="space-y-1 text-sm text-gray-700">
-                  {adminMetrics.recentAudit.slice(0, 6).map((item: any, idx: number) => (
+                <div className="space-y-1 text-sm text-gray-700 max-h-36 overflow-y-auto pr-1">
+                  {adminMetrics.recentAudit.map((item: any, idx: number) => (
                     <p key={`${item.action}-${item.createdAt}-${idx}`}>
                       {formatDateTimePtBr(item.createdAt)} • {item.action} • {item.entityType}
                       {item.entityId ? ` #${item.entityId}` : ""} • {item.actorRole || "sistema"}
@@ -518,7 +518,99 @@ export default function Admin() {
               />
             </div>
 
-            <div className="border rounded-lg overflow-auto">
+            <div className="space-y-3 md:hidden">
+              {filteredBooks.map((book: any) => (
+                <div key={`mobile-${book.id}`} className="p-3 border rounded-lg bg-white">
+                  <div className="flex items-start gap-3">
+                    <div className="w-14 h-20 rounded overflow-hidden border border-gray-200 bg-white shrink-0">
+                      <BookCover
+                        isbn={book.isbn ?? undefined}
+                        title={book.title}
+                        author={book.author ?? undefined}
+                        coverUrl={book.coverUrl ?? undefined}
+                        className="w-full h-full"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-[#262969] truncate">{book.title}</p>
+                      <p className="text-xs text-gray-600 truncate">{book.sebo?.name || "-"}</p>
+                      {!book.coverUrl ? (
+                        <span className="inline-flex mt-1 text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                          Sem capa
+                        </span>
+                      ) : null}
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!confirm(`Excluir livro "${book.title}"?`)) return;
+                        void adminDeleteBookMutation.mutateAsync(book.id);
+                      }}
+                      className="px-2 py-1 rounded bg-red-600 text-white text-xs"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <input
+                      defaultValue={String(book.price)}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="px-2 py-1 border rounded"
+                      onBlur={(e) => {
+                        const nextPrice = Number(e.target.value);
+                        if (!Number.isFinite(nextPrice) || nextPrice <= 0 || nextPrice === Number(book.price)) return;
+                        void adminUpdateBookMutation.mutateAsync({ id: book.id, price: nextPrice });
+                      }}
+                    />
+                    <input
+                      defaultValue={String(book.quantity ?? 1)}
+                      type="number"
+                      min="0"
+                      className="px-2 py-1 border rounded"
+                      onBlur={(e) => {
+                        const nextQuantity = Number.parseInt(e.target.value, 10);
+                        if (!Number.isFinite(nextQuantity) || nextQuantity < 0 || nextQuantity === Number(book.quantity ?? 1)) return;
+                        void adminUpdateBookMutation.mutateAsync({
+                          id: book.id,
+                          quantity: nextQuantity,
+                          ...(nextQuantity === 0 ? { availabilityStatus: "vendido" as const } : {}),
+                        });
+                      }}
+                    />
+                    <select
+                      value={book.availabilityStatus || "ativo"}
+                      onChange={(e) => {
+                        void adminUpdateBookMutation.mutateAsync({
+                          id: book.id,
+                          availabilityStatus: e.target.value as any,
+                        });
+                      }}
+                      className="px-2 py-1 border rounded"
+                    >
+                      <option value="ativo">ativo</option>
+                      <option value="reservado">reservado</option>
+                      <option value="vendido">vendido</option>
+                    </select>
+                    <label className="inline-flex items-center gap-2 text-xs text-gray-700 px-2 py-1 border rounded">
+                      <input
+                        type="checkbox"
+                        checked={book.isVisible ?? true}
+                        onChange={(e) => {
+                          void adminUpdateBookMutation.mutateAsync({
+                            id: Number(book.id),
+                            isVisible: e.target.checked,
+                          });
+                        }}
+                      />
+                      {(book.isVisible ?? true) ? "Visível" : "Oculto"}
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden md:block border rounded-lg overflow-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
