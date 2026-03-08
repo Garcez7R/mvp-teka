@@ -361,6 +361,7 @@ export default function Admin() {
         <h1 className="font-outfit text-3xl font-bold text-[#262969] mb-6">Painel Admin</h1>
         {adminMetrics && (
           <section className="mb-8 space-y-4">
+            <h2 className="text-sm font-semibold text-[#262969]">Relatório Admin (Visão Global)</h2>
             <div className="flex justify-end">
               <button
                 type="button"

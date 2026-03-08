@@ -151,17 +151,35 @@ export default function Login() {
           )}
 
           <div className="space-y-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Tipo de conta no primeiro acesso
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as "livreiro" | "comprador")}
-                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#da4653] outline-none"
-              >
-                <option value="livreiro">Livreiro</option>
-                <option value="comprador">Comprador</option>
-              </select>
-            </label>
+            <div>
+              <p className="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de conta no primeiro acesso
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRole("comprador")}
+                  className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                    role === "comprador"
+                      ? "bg-[#262969] text-white border-[#262969]"
+                      : "bg-white text-[#262969] border-gray-300 hover:border-[#262969]"
+                  }`}
+                >
+                  Comprador
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("livreiro")}
+                  className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                    role === "livreiro"
+                      ? "bg-[#262969] text-white border-[#262969]"
+                      : "bg-white text-[#262969] border-gray-300 hover:border-[#262969]"
+                  }`}
+                >
+                  Livreiro
+                </button>
+              </div>
+            </div>
 
             <div className="w-full flex justify-center relative">
               <div ref={googleContainerRef} />

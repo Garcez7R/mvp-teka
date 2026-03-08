@@ -43,6 +43,7 @@ export default function ManageBooks() {
   const [statusHistoryByBook, setStatusHistoryByBook] = useState<Record<number, StatusHistoryEntry[]>>({});
   const [selectedBookIds, setSelectedBookIds] = useState<number[]>([]);
   const [showCharts, setShowCharts] = useState(false);
+  const [isImportingCsv, setIsImportingCsv] = useState(false);
 
   const { data: mySebos = [] } = trpc.sebos.listMine.useQuery(undefined, {
     enabled: isAuthenticated && role !== "admin",
@@ -130,6 +131,7 @@ export default function ManageBooks() {
       await utils.books.listBySebo.invalidate();
     },
   });
+  const createBookMutation = trpc.books.create.useMutation();
 
   if (!isAuthenticated) {
     return (
@@ -605,6 +607,95 @@ export default function ManageBooks() {
     toast.success("CSV exportado com sucesso.");
   };
 
+  const handleImportCsv = async (file: File) => {
+    if (!selectedSeboId) {
+      toast.error("Selecione um sebo para importar o catálogo.");
+      return;
+    }
+    setIsImportingCsv(true);
+    try {
+      const csvRaw = await file.text();
+      const lines = csvRaw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      if (lines.length < 2) {
+        toast.error("CSV sem dados para importar.");
+        return;
+      }
+
+      const parseRow = (line: string) => {
+        const matches = line.match(/("([^"]|"")*"|[^,]+)/g) || [];
+        return matches.map((cell) => {
+          const trimmed = cell.trim();
+          if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+            return trimmed.slice(1, -1).replace(/""/g, '"');
+          }
+          return trimmed;
+        });
+      };
+
+      const header = parseRow(lines[0]).map((value) => value.toLowerCase());
+      const getIndex = (...keys: string[]) => keys.map((key) => header.indexOf(key)).find((idx) => idx >= 0) ?? -1;
+      const titleIdx = getIndex("titulo", "title");
+      const authorIdx = getIndex("autor", "author");
+      const isbnIdx = getIndex("isbn");
+      const categoryIdx = getIndex("categoria", "category");
+      const priceIdx = getIndex("preco", "price");
+      const conditionIdx = getIndex("condicao", "condition");
+      const statusIdx = getIndex("status", "availabilitystatus");
+      const quantityIdx = getIndex("qtd", "quantidade", "quantity");
+
+      const dataLines = lines.slice(1);
+      let imported = 0;
+      for (const line of dataLines) {
+        const columns = parseRow(line);
+        const title = String(columns[titleIdx] || "").trim();
+        const author = String(columns[authorIdx] || "").trim();
+        const isbn = String(columns[isbnIdx] || "").trim();
+        const category = String(columns[categoryIdx] || "").trim();
+        const condition = String(columns[conditionIdx] || "").trim();
+        const status = String(columns[statusIdx] || "").trim().toLowerCase();
+        const quantityRaw = String(columns[quantityIdx] || "1").trim();
+        const priceRaw = String(columns[priceIdx] || "0").replace(/\./g, "").replace(",", ".").trim();
+        const price = Number.parseFloat(priceRaw);
+        const quantity = Number.parseInt(quantityRaw, 10);
+
+        if (!title || !Number.isFinite(price) || price <= 0) {
+          continue;
+        }
+
+        await createBookMutation.mutateAsync({
+          seboId: Number(selectedSeboId),
+          title,
+          author: author || "Autor não informado",
+          isbn: isbn || undefined,
+          category: category || "Outros",
+          price,
+          condition: (["Novo", "Excelente", "Bom estado", "Usado", "Desgastado"].includes(condition)
+            ? condition
+            : "Bom estado") as "Novo" | "Excelente" | "Bom estado" | "Usado" | "Desgastado",
+          quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+          availabilityStatus:
+            status === "reservado" ? "reservado" : status === "vendido" ? "vendido" : "ativo",
+          isVisible: true,
+        });
+        imported += 1;
+      }
+
+      await Promise.all([utils.books.listBySebo.invalidate(), utils.books.sellerMetrics.invalidate()]);
+      if (imported === 0) {
+        toast.error("Nenhum item válido encontrado no CSV.");
+      } else {
+        toast.success(`${imported} livro(s) importado(s) para ${selectedSebo?.name || "sebo"}.`);
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Falha ao importar CSV.");
+    } finally {
+      setIsImportingCsv(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
@@ -636,6 +727,7 @@ export default function ManageBooks() {
           </p>
         </div>
         <section className="mb-8 space-y-4">
+          <h2 className="text-sm font-semibold text-[#262969]">Relatório do Sebo Selecionado</h2>
           <div className="flex justify-end">
             <button
               type="button"
@@ -732,6 +824,22 @@ export default function ManageBooks() {
             >
               Exportar CSV
             </button>
+            <label className="border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white font-inter font-medium py-2 px-4 rounded-lg">
+              {isImportingCsv ? "Importando..." : "Importar CSV"}
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                disabled={isImportingCsv}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    void handleImportCsv(file);
+                  }
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
             <Link href="/add-book">
               <button className="bg-[#da4653] hover:bg-[#c23a45] text-white font-inter font-medium py-2 px-6 rounded-lg">
                 + Novo Livro

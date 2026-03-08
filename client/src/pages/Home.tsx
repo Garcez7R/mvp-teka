@@ -4,12 +4,13 @@ import SearchBar from "@/components/SearchBar";
 import BookCard from "@/components/BookCard";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
-import { Filter, Heart, LayoutGrid, Rows3 } from "lucide-react";
+import { Filter, Heart, Moon, Sun } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { ALL_BOOK_CATEGORIES } from "@/lib/book-categories";
 import { parseDateValue } from "@/lib/datetime";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type CatalogSort =
   | "recent"
@@ -17,8 +18,6 @@ type CatalogSort =
   | "title_asc"
   | "price_asc"
   | "price_desc";
-type CatalogView = "compact" | "detailed";
-const CATALOG_VIEW_STORAGE_KEY = "teka_catalog_view_mode";
 
 function normalizeSearchValue(value: string): string {
   return value
@@ -78,6 +77,7 @@ function sortBooksWithCoverFirst<T extends { coverUrl?: string | null }>(books: 
 
 export default function Home() {
   const { isAuthenticated, role } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const PAGE_SIZE = 24;
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -91,12 +91,6 @@ export default function Home() {
   const [maxPriceFilter, setMaxPriceFilter] = useState("");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [catalogView, setCatalogView] = useState<CatalogView>(() => {
-    if (typeof window === "undefined") return "compact";
-    const saved = window.localStorage.getItem(CATALOG_VIEW_STORAGE_KEY);
-    return saved === "detailed" ? "detailed" : "compact";
-  });
-  const [isViewTransitioning, setIsViewTransitioning] = useState(false);
   const [prioritizeNearby, setPrioritizeNearby] = useState(true);
   const [searchBarKey, setSearchBarKey] = useState(0);
   const [page, setPage] = useState(0);
@@ -137,12 +131,6 @@ export default function Home() {
     setLoadedBooks([]);
     setHasMore(true);
     setSearchBarKey((prev) => prev + 1);
-  };
-
-  const toggleCatalogView = () => {
-    setCatalogView((prev) => (prev === "compact" ? "detailed" : "compact"));
-    setIsViewTransitioning(true);
-    window.setTimeout(() => setIsViewTransitioning(false), 220);
   };
 
   const booksQueryInput = {
@@ -406,11 +394,6 @@ export default function Home() {
     return () => window.removeEventListener("teka:reset-catalog", handler);
   }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(CATALOG_VIEW_STORAGE_KEY, catalogView);
-  }, [catalogView]);
-
   const hasBooksQueryError = Boolean(booksError);
   const showSellerOnboarding =
     role === "livreiro" &&
@@ -504,12 +487,12 @@ export default function Home() {
             </div>
             <button
               type="button"
-              onClick={toggleCatalogView}
+              onClick={() => toggleTheme?.()}
               className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white"
             >
               <span className="inline-flex items-center gap-1">
-                {catalogView === "compact" ? <LayoutGrid className="w-4 h-4" /> : <Rows3 className="w-4 h-4" />}
-                {catalogView === "compact" ? "Modo Compacto" : "Modo Detalhado"}
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {theme === "dark" ? "Modo Claro" : "Modo Escuro"}
               </span>
             </button>
             <button
@@ -522,9 +505,7 @@ export default function Home() {
           </div>
         </div>
         <p className="text-xs text-gray-500 mb-4">
-          {catalogView === "compact"
-            ? "Compacto: mais livros por tela para navegação rápida."
-            : "Detalhado: mais contexto para decidir a compra."}
+          Visualização compacta ativa: mais livros por tela para navegação rápida.
         </p>
 
         {/* Filters Section */}
@@ -701,11 +682,7 @@ export default function Home() {
         {groupedBooks.length > 0 ? (
           <>
             <div
-              className={
-                catalogView === "compact"
-                  ? `grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 transition-all duration-200 ${isViewTransitioning ? "opacity-70 scale-[0.995]" : "opacity-100"}`
-                  : `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-all duration-200 ${isViewTransitioning ? "opacity-70 scale-[0.995]" : "opacity-100"}`
-              }
+              className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 transition-all duration-200 opacity-100"
             >
               {groupedBooks.map((book: any) => (
                 <BookCard
@@ -725,7 +702,7 @@ export default function Home() {
                   priceLabel={book.priceLabel}
                   availabilityStatus={book.availabilityStatus ?? "ativo"}
                   matchReason={book.matchReason}
-                  compact={catalogView === "compact"}
+                  compact
                   proximityLabel={book.proximityLabel}
                 />
               ))}
