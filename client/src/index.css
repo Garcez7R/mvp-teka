@@ -161,6 +161,28 @@
   .dark .border-gray-300 {
     border-color: #374151 !important;
   }
+
+  /* Keep mobile sandwich menu readable in dark mode */
+  .dark .teka-mobile-menu {
+    background-color: #ffffff !important;
+    border-color: #e5e7eb !important;
+  }
+
+  .dark .teka-mobile-menu .bg-gray-50 {
+    background-color: #f9fafb !important;
+  }
+
+  .dark .teka-mobile-menu .border-gray-200 {
+    border-color: #e5e7eb !important;
+  }
+
+  .dark .teka-mobile-menu .text-gray-500 {
+    color: #6b7280 !important;
+  }
+
+  .dark .teka-mobile-menu .text-gray-700 {
+    color: #374151 !important;
+  }
 }
 
 @layer components {

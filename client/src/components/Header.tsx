@@ -127,8 +127,17 @@ export default function Header() {
 
       {/* Mobile Navigation Overlay */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-16 left-0 w-full bg-white border-b border-gray-200 shadow-xl animate-in slide-in-from-top duration-200">
+        <div className="teka-mobile-menu md:hidden absolute top-16 left-0 w-full max-h-[calc(100vh-4rem)] overflow-y-auto bg-white border-b border-gray-200 shadow-xl animate-in slide-in-from-top duration-200">
           <nav className="container py-6 flex flex-col gap-4">
+            <div className="sticky top-0 z-10 -mx-4 px-4 py-2 bg-white/95 backdrop-blur border-b border-gray-200 flex justify-end">
+              <button
+                onClick={closeMenu}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-gray-300 text-[#262969] hover:bg-gray-50"
+              >
+                <X className="w-4 h-4" />
+                Fechar menu
+              </button>
+            </div>
             <Link 
               href="/" 
               onClick={() => {
@@ -252,6 +261,14 @@ export default function Header() {
                 </button>
               </>
             )}
+            <div className="pt-2 mt-1 border-t border-gray-200">
+              <button
+                onClick={closeMenu}
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 text-[#262969] font-inter font-medium hover:bg-gray-50"
+              >
+                Fechar menu
+              </button>
+            </div>
           </nav>
         </div>
       )}
