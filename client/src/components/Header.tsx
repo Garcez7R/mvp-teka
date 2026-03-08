@@ -19,6 +19,16 @@ export default function Header() {
       window.dispatchEvent(new CustomEvent("teka:reset-catalog"));
     }
   };
+  const handleHomeClick = (event?: { preventDefault?: () => void }) => {
+    if (typeof window === "undefined") return;
+    const isAlreadyHome = window.location.pathname === "/";
+
+    resetCatalog();
+    if (isAlreadyHome) {
+      event?.preventDefault?.();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
   const handleLogout = async () => {
     await logout();
     if (typeof window !== "undefined") {
@@ -33,7 +43,7 @@ export default function Header() {
         <Link
           href="/"
           onClick={() => {
-            resetCatalog();
+            handleHomeClick();
             closeMenu();
           }}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -46,7 +56,7 @@ export default function Header() {
         <nav className="hidden md:flex items-center gap-8">
           <Link
             href="/"
-            onClick={resetCatalog}
+            onClick={() => handleHomeClick()}
             className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium"
           >
             Início
@@ -140,8 +150,8 @@ export default function Header() {
             </div>
             <Link 
               href="/" 
-              onClick={() => {
-                resetCatalog();
+              onClick={(event) => {
+                handleHomeClick(event);
                 closeMenu();
               }}
               className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
