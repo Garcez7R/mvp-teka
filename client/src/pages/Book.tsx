@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 import { WHATSAPP_DEFAULT } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { trackEvent } from "@/lib/analytics";
-import { BookOpen, MapPin, Calendar, FileText, MessageCircle, ArrowLeft, Heart, Loader2 } from "lucide-react";
+import { BookOpen, MapPin, Calendar, FileText, ArrowLeft, Heart, Loader2 } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -457,7 +458,7 @@ export default function Book() {
                     : "bg-[#25D366] hover:bg-[#1ebe5d] hover:shadow-lg"
                 }`}
               >
-                <MessageCircle className="w-5 h-5" />
+                <WhatsAppIcon className="w-5 h-5" />
                 {book.availabilityStatus === "vendido"
                   ? "Livro Vendido"
                   : "Contatar Sebo no WhatsApp"}

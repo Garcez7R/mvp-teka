@@ -1,8 +1,8 @@
 import { Link } from "wouter";
-import { MessageCircle } from "lucide-react";
 import { WHATSAPP_DEFAULT } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -82,7 +82,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] px-4 py-2 rounded-lg transition-colors font-inter text-sm font-medium text-[#0f172a]"
             >
-              <MessageCircle className="w-4 h-4" />
+              <WhatsAppIcon className="w-4 h-4" />
               Equipe Teka - Suporte
             </a>
             <p className="mt-2 text-xs text-gray-400">
