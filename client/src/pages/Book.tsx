@@ -386,6 +386,17 @@ export default function Book() {
                           Verificado
                         </span>
                       )}
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
+                          book.sebo.plan === "gold"
+                            ? "bg-amber-200 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
+                            : book.sebo.plan === "pro"
+                            ? "bg-[#da4653] text-[#262969] dark:bg-[#262969] dark:text-[#f3f4f6]"
+                            : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
+                        }`}
+                      >
+                        {book.sebo.plan === "gold" ? "Sebo Gold" : book.sebo.plan === "pro" ? "Sebo Pro" : "Sebo Free"}
+                      </span>
                       {(book.sebo.city || book.sebo.state) && (
                         <span className="text-[10px] bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:border-slate-600">
                           {book.sebo.city || "-"} / {book.sebo.state || "-"}
