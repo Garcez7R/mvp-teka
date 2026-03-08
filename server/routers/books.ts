@@ -504,6 +504,8 @@ export const booksRouter = router({
         condition: z
           .enum(["Novo", "Excelente", "Bom estado", "Usado", "Desgastado"])
           .optional(),
+        pages: z.number().int().optional(),
+        year: z.number().int().optional(),
         availabilityStatus: z.enum(["ativo", "reservado", "vendido"]).optional(),
         isVisible: z.boolean().optional(),
         coverUrl: z.string().optional(),

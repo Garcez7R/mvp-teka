@@ -15,7 +15,12 @@ interface EditingBook {
   title: string;
   author?: string;
   isbn?: string;
+  category?: string;
+  description?: string;
   price: number;
+  condition?: "Novo" | "Excelente" | "Bom estado" | "Usado" | "Desgastado";
+  pages?: number;
+  year?: number;
   quantity: number;
   availabilityStatus?: "ativo" | "reservado" | "vendido";
   isVisible?: boolean;
@@ -215,7 +220,12 @@ export default function ManageBooks() {
       title: book.title,
       author: book.author || undefined,
       isbn: book.isbn || undefined,
+      category: book.category || undefined,
+      description: book.description || undefined,
       price: Number(book.price),
+      condition: book.condition || "Bom estado",
+      pages: Number.isFinite(Number(book.pages)) ? Number(book.pages) : undefined,
+      year: Number.isFinite(Number(book.year)) ? Number(book.year) : undefined,
       quantity: Number(book.quantity ?? 1),
       availabilityStatus: book.availabilityStatus || "ativo",
       isVisible: book.isVisible ?? true,
@@ -353,15 +363,18 @@ export default function ManageBooks() {
         id: editingBook.id,
         title: editingBook.title,
         author: editingBook.author || undefined,
+        isbn: editingBook.isbn?.trim() ? editingBook.isbn.trim() : undefined,
+        category: editingBook.category?.trim() ? editingBook.category.trim() : undefined,
+        description: editingBook.description?.trim() ? editingBook.description.trim() : "",
         price: editingBook.price,
+        condition: editingBook.condition || "Bom estado",
+        pages: Number.isFinite(editingBook.pages) ? Number(editingBook.pages) : undefined,
+        year: Number.isFinite(editingBook.year) ? Number(editingBook.year) : undefined,
         quantity: normalizedQuantity,
         availabilityStatus: editingBook.availabilityStatus || "ativo",
         isVisible: editingBook.isVisible ?? true,
         coverUrl: coverUrl || undefined,
       };
-      if (editingBook.isbn) {
-        payload.isbn = editingBook.isbn;
-      }
 
       await updateBookMutation.mutateAsync(payload);
 
@@ -998,6 +1011,86 @@ export default function ManageBooks() {
                           })
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                      />
+                      <input
+                        type="text"
+                        placeholder="ISBN"
+                        value={editingBook?.isbn || ""}
+                        onChange={(e) =>
+                          setEditingBook({
+                            ...editingBook!,
+                            isbn: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Categoria"
+                        value={editingBook?.category || ""}
+                        onChange={(e) =>
+                          setEditingBook({
+                            ...editingBook!,
+                            category: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                      />
+                      <select
+                        value={editingBook?.condition || "Bom estado"}
+                        onChange={(e) =>
+                          setEditingBook({
+                            ...editingBook!,
+                            condition: e.target.value as "Novo" | "Excelente" | "Bom estado" | "Usado" | "Desgastado",
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                      >
+                        <option value="Novo">Novo</option>
+                        <option value="Excelente">Excelente</option>
+                        <option value="Bom estado">Bom estado</option>
+                        <option value="Usado">Usado</option>
+                        <option value="Desgastado">Desgastado</option>
+                      </select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          placeholder="Páginas"
+                          value={editingBook?.pages ?? ""}
+                          onChange={(e) =>
+                            setEditingBook({
+                              ...editingBook!,
+                              pages: e.target.value ? Number.parseInt(e.target.value, 10) : undefined,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="Ano"
+                          value={editingBook?.year ?? ""}
+                          onChange={(e) =>
+                            setEditingBook({
+                              ...editingBook!,
+                              year: e.target.value ? Number.parseInt(e.target.value, 10) : undefined,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                        />
+                      </div>
+                      <textarea
+                        placeholder="Descrição"
+                        value={editingBook?.description || ""}
+                        onChange={(e) =>
+                          setEditingBook({
+                            ...editingBook!,
+                            description: e.target.value,
+                          })
+                        }
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none resize-y"
                       />
                       <input
                         type="number"

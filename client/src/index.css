@@ -183,6 +183,32 @@
   .dark .teka-mobile-menu .text-gray-700 {
     color: #374151 !important;
   }
+
+  /* Dark mode: normalize action buttons with the same visual pattern used in login */
+  .dark button[class*="border"][class*="text-[#262969]"],
+  .dark a[class*="border"][class*="text-[#262969]"] {
+    background-color: #ffffff !important;
+    border-color: #da4653 !important;
+    color: #262969 !important;
+  }
+
+  .dark button[class*="border"][class*="text-[#262969]"]:hover,
+  .dark a[class*="border"][class*="text-[#262969]"]:hover {
+    background-color: #ffe9eb !important;
+    color: #262969 !important;
+  }
+
+  .dark button[class*="bg-[#da4653]"],
+  .dark a[class*="bg-[#da4653]"] {
+    color: #262969 !important;
+    border-color: #da4653 !important;
+  }
+
+  .dark button[class*="bg-[#da4653]"]:hover,
+  .dark a[class*="bg-[#da4653]"]:hover {
+    background-color: #c93d45 !important;
+    color: #262969 !important;
+  }
 }
 
 @layer components {

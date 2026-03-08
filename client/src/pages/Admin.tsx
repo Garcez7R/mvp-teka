@@ -552,6 +552,99 @@ export default function Admin() {
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <input
+                      defaultValue={String(book.title || "")}
+                      className="px-2 py-1 border rounded col-span-2"
+                      placeholder="Título"
+                      onBlur={(e) => {
+                        const nextValue = e.target.value.trim();
+                        if (!nextValue || nextValue === String(book.title || "")) return;
+                        void adminUpdateBookMutation.mutateAsync({ id: book.id, title: nextValue });
+                      }}
+                    />
+                    <input
+                      defaultValue={String(book.author || "")}
+                      className="px-2 py-1 border rounded"
+                      placeholder="Autor"
+                      onBlur={(e) => {
+                        const nextValue = e.target.value.trim() || undefined;
+                        if ((book.author || undefined) === nextValue) return;
+                        void adminUpdateBookMutation.mutateAsync({ id: book.id, author: nextValue });
+                      }}
+                    />
+                    <input
+                      defaultValue={String(book.isbn || "")}
+                      className="px-2 py-1 border rounded"
+                      placeholder="ISBN"
+                      onBlur={(e) => {
+                        const nextValue = e.target.value.trim() || undefined;
+                        if ((book.isbn || undefined) === nextValue) return;
+                        void adminUpdateBookMutation.mutateAsync({ id: book.id, isbn: nextValue });
+                      }}
+                    />
+                    <input
+                      defaultValue={String(book.category || "")}
+                      className="px-2 py-1 border rounded"
+                      placeholder="Categoria"
+                      onBlur={(e) => {
+                        const nextValue = e.target.value.trim() || undefined;
+                        if ((book.category || undefined) === nextValue) return;
+                        void adminUpdateBookMutation.mutateAsync({ id: book.id, category: nextValue });
+                      }}
+                    />
+                    <select
+                      value={book.condition || "Bom estado"}
+                      onChange={(e) => {
+                        void adminUpdateBookMutation.mutateAsync({
+                          id: book.id,
+                          condition: e.target.value as any,
+                        });
+                      }}
+                      className="px-2 py-1 border rounded"
+                    >
+                      <option value="Novo">Novo</option>
+                      <option value="Excelente">Excelente</option>
+                      <option value="Bom estado">Bom estado</option>
+                      <option value="Usado">Usado</option>
+                      <option value="Desgastado">Desgastado</option>
+                    </select>
+                    <input
+                      defaultValue={book.pages ? String(book.pages) : ""}
+                      type="number"
+                      min="1"
+                      className="px-2 py-1 border rounded"
+                      placeholder="Páginas"
+                      onBlur={(e) => {
+                        const nextPages = e.target.value ? Number.parseInt(e.target.value, 10) : undefined;
+                        if (nextPages !== undefined && (!Number.isFinite(nextPages) || nextPages <= 0)) return;
+                        if (Number(book.pages || 0) === Number(nextPages || 0)) return;
+                        void adminUpdateBookMutation.mutateAsync({ id: book.id, pages: nextPages });
+                      }}
+                    />
+                    <input
+                      defaultValue={book.year ? String(book.year) : ""}
+                      type="number"
+                      min="0"
+                      className="px-2 py-1 border rounded"
+                      placeholder="Ano"
+                      onBlur={(e) => {
+                        const nextYear = e.target.value ? Number.parseInt(e.target.value, 10) : undefined;
+                        if (nextYear !== undefined && (!Number.isFinite(nextYear) || nextYear < 0)) return;
+                        if (Number(book.year || 0) === Number(nextYear || 0)) return;
+                        void adminUpdateBookMutation.mutateAsync({ id: book.id, year: nextYear });
+                      }}
+                    />
+                    <textarea
+                      defaultValue={String(book.description || "")}
+                      rows={3}
+                      placeholder="Descrição"
+                      className="px-2 py-1 border rounded col-span-2 resize-y"
+                      onBlur={(e) => {
+                        const nextValue = e.target.value.trim();
+                        if (nextValue === String(book.description || "").trim()) return;
+                        void adminUpdateBookMutation.mutateAsync({ id: book.id, description: nextValue });
+                      }}
+                    />
+                    <input
                       defaultValue={String(book.price)}
                       type="number"
                       step="0.01"
@@ -867,10 +960,11 @@ export default function Admin() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="text-left px-3 py-2">ID</th>
-                    <th className="text-left px-3 py-2">Título</th>
+                    <th className="text-left px-3 py-2">Dados</th>
                     <th className="text-left px-3 py-2">Sebo</th>
                     <th className="text-left px-3 py-2">Preço</th>
                     <th className="text-left px-3 py-2">Qtd</th>
+                    <th className="text-left px-3 py-2">Condição</th>
                     <th className="text-left px-3 py-2">Status</th>
                     <th className="text-left px-3 py-2">Visível</th>
                     <th className="text-left px-3 py-2">Capa</th>
@@ -882,8 +976,86 @@ export default function Admin() {
                     <tr key={book.id} className="border-t">
                       <td className="px-3 py-2">{book.id}</td>
                       <td className="px-3 py-2">
-                        <div className="flex flex-col gap-1">
-                          <span>{book.title}</span>
+                        <div className="flex flex-col gap-2 min-w-[280px]">
+                          <input
+                            defaultValue={String(book.title || "")}
+                            className="w-full px-2 py-1 border rounded"
+                            placeholder="Título"
+                            onBlur={(e) => {
+                              const nextValue = e.target.value.trim();
+                              if (!nextValue || nextValue === String(book.title || "")) return;
+                              void adminUpdateBookMutation.mutateAsync({ id: book.id, title: nextValue });
+                            }}
+                          />
+                          <input
+                            defaultValue={String(book.author || "")}
+                            className="w-full px-2 py-1 border rounded"
+                            placeholder="Autor"
+                            onBlur={(e) => {
+                              const nextValue = e.target.value.trim() || undefined;
+                              if ((book.author || undefined) === nextValue) return;
+                              void adminUpdateBookMutation.mutateAsync({ id: book.id, author: nextValue });
+                            }}
+                          />
+                          <input
+                            defaultValue={String(book.isbn || "")}
+                            className="w-full px-2 py-1 border rounded"
+                            placeholder="ISBN"
+                            onBlur={(e) => {
+                              const nextValue = e.target.value.trim() || undefined;
+                              if ((book.isbn || undefined) === nextValue) return;
+                              void adminUpdateBookMutation.mutateAsync({ id: book.id, isbn: nextValue });
+                            }}
+                          />
+                          <input
+                            defaultValue={String(book.category || "")}
+                            className="w-full px-2 py-1 border rounded"
+                            placeholder="Categoria"
+                            onBlur={(e) => {
+                              const nextValue = e.target.value.trim() || undefined;
+                              if ((book.category || undefined) === nextValue) return;
+                              void adminUpdateBookMutation.mutateAsync({ id: book.id, category: nextValue });
+                            }}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              defaultValue={book.pages ? String(book.pages) : ""}
+                              type="number"
+                              min="1"
+                              className="w-full px-2 py-1 border rounded"
+                              placeholder="Páginas"
+                              onBlur={(e) => {
+                                const nextPages = e.target.value ? Number.parseInt(e.target.value, 10) : undefined;
+                                if (nextPages !== undefined && (!Number.isFinite(nextPages) || nextPages <= 0)) return;
+                                if (Number(book.pages || 0) === Number(nextPages || 0)) return;
+                                void adminUpdateBookMutation.mutateAsync({ id: book.id, pages: nextPages });
+                              }}
+                            />
+                            <input
+                              defaultValue={book.year ? String(book.year) : ""}
+                              type="number"
+                              min="0"
+                              className="w-full px-2 py-1 border rounded"
+                              placeholder="Ano"
+                              onBlur={(e) => {
+                                const nextYear = e.target.value ? Number.parseInt(e.target.value, 10) : undefined;
+                                if (nextYear !== undefined && (!Number.isFinite(nextYear) || nextYear < 0)) return;
+                                if (Number(book.year || 0) === Number(nextYear || 0)) return;
+                                void adminUpdateBookMutation.mutateAsync({ id: book.id, year: nextYear });
+                              }}
+                            />
+                          </div>
+                          <textarea
+                            defaultValue={String(book.description || "")}
+                            rows={3}
+                            className="w-full px-2 py-1 border rounded resize-y"
+                            placeholder="Descrição"
+                            onBlur={(e) => {
+                              const nextValue = e.target.value.trim();
+                              if (nextValue === String(book.description || "").trim()) return;
+                              void adminUpdateBookMutation.mutateAsync({ id: book.id, description: nextValue });
+                            }}
+                          />
                           {!book.coverUrl ? (
                             <span className="inline-flex w-fit text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                               Sem capa
@@ -905,6 +1077,24 @@ export default function Admin() {
                             void adminUpdateBookMutation.mutateAsync({ id: book.id, price: nextPrice });
                           }}
                         />
+                      </td>
+                      <td className="px-3 py-2">
+                        <select
+                          value={book.condition || "Bom estado"}
+                          onChange={(e) => {
+                            void adminUpdateBookMutation.mutateAsync({
+                              id: book.id,
+                              condition: e.target.value as any,
+                            });
+                          }}
+                          className="px-2 py-1 border rounded"
+                        >
+                          <option value="Novo">Novo</option>
+                          <option value="Excelente">Excelente</option>
+                          <option value="Bom estado">Bom estado</option>
+                          <option value="Usado">Usado</option>
+                          <option value="Desgastado">Desgastado</option>
+                        </select>
                       </td>
                       <td className="px-3 py-2">
                         <input
