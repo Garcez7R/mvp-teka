@@ -682,7 +682,7 @@ export default function Home() {
         {groupedBooks.length > 0 ? (
           <>
             <div
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 transition-all duration-200 opacity-100"
+              className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 transition-all duration-200 opacity-100"
             >
               {groupedBooks.map((book: any) => (
                 <BookCard
