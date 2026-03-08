@@ -149,8 +149,6 @@ export default function Home() {
     setSortBy("recent");
     setShowFilters(false);
     setPage(0);
-    setLoadedBooks([]);
-    setHasMore(true);
     setSearchBarKey((prev) => prev + 1);
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
