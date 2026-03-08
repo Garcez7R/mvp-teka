@@ -29,7 +29,9 @@ export default function SebosPage() {
   }, [cityFilter, postalCodeFilter, sebos, stateFilter]);
 
   const getSeboStorefrontLink = (sebo: any) =>
-    sebo?.plan === "pro" && sebo?.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`;
+    (sebo?.plan === "pro" || sebo?.plan === "gold") && sebo?.proSlug
+      ? `/s/${sebo.proSlug}`
+      : `/sebo/${sebo.id}`;
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -74,17 +76,23 @@ export default function SebosPage() {
                   <h2 className="font-outfit font-semibold text-xl text-[#262969]">{sebo.name}</h2>
                   <span
                     className={`text-[11px] px-2 py-1 rounded font-semibold ${
-                      sebo?.plan === "pro"
+                      sebo?.plan === "gold"
+                        ? "bg-amber-200 text-amber-900"
+                        : sebo?.plan === "pro"
                         ? "bg-[#da4653] text-[#262969]"
                         : "bg-gray-100 text-gray-700"
                     }`}
                   >
-                    {sebo?.plan === "pro" ? "Pro" : "Free"}
+                    {sebo?.plan === "gold" ? "Gold" : sebo?.plan === "pro" ? "Pro" : "Free"}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">
                   {sebo.city || "-"} / {sebo.state || "-"}
                   {(sebo as any).postalCode ? ` • CEP ${(sebo as any).postalCode}` : ""}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Nota: {Number((sebo as any).reviewSummary?.avgRating ?? 0).toFixed(1)} ({Number((sebo as any).reviewSummary?.totalReviews ?? 0)} avaliações)
+                  {(sebo as any).reviewSummary?.topRated ? " • Top Avaliado" : ""}
                 </p>
                 {sebo.description ? (
                   <p className="text-sm text-gray-700 mt-2">{sebo.description}</p>

@@ -405,7 +405,7 @@ export default function Book() {
                     </p>
                     <div className="mt-2">
                       <Link
-                        href={book.sebo.plan === "pro" && book.sebo.proSlug ? `/s/${book.sebo.proSlug}` : `/sebo/${book.sebo.id}`}
+                        href={(book.sebo.plan === "pro" || book.sebo.plan === "gold") && book.sebo.proSlug ? `/s/${book.sebo.proSlug}` : `/sebo/${book.sebo.id}`}
                         className="text-xs text-[#da4653] hover:underline font-semibold"
                       >
                         Ver vitrine do sebo
@@ -445,6 +445,12 @@ export default function Book() {
                     )}
                     {book.sebo.shippingNotes && (
                       <p className="text-xs mt-1">Obs.: {book.sebo.shippingNotes}</p>
+                    )}
+                    {book.sebo.whatsapp && (
+                      <p className="text-xs mt-1">WhatsApp público: {book.sebo.whatsapp}</p>
+                    )}
+                    {book.sebo.addressLine && (
+                      <p className="text-xs mt-1">Endereço público: {book.sebo.addressLine}</p>
                     )}
                     <p className="text-xs mt-2 text-gray-600 dark:text-gray-300">
                       Por privacidade e segurança, o endereço completo é informado somente no atendimento direto com o sebo.

@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, livreiroProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
-import { books, sebos, favorites, bookInterests } from "../_schema.ts";
+import { books, sebos, favorites, bookInterests, seboReviews } from "../_schema.ts";
 import { eq, like, and, lte, gte, inArray, sql, asc, desc } from "drizzle-orm";
 import { normalizeBookTitle } from "./_utils/text.js";
 import { logAuditEvent } from "./_utils/audit.js";
+import { featureFlags, getPlanActiveBooksLimit } from "./_utils/features.ts";
 
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
 const HIDDEN_MARKER = /^\[HIDDEN\]\s*/i;
@@ -16,6 +17,10 @@ const seboBaseSelect = {
   plan: sebos.plan,
   proSlug: sebos.proSlug,
   description: sebos.description,
+  maxActiveBooks: sebos.maxActiveBooks,
+  showPublicPhone: sebos.showPublicPhone,
+  showPublicAddress: sebos.showPublicAddress,
+  addressLine: sebos.addressLine,
   whatsapp: sebos.whatsapp,
   city: sebos.city,
   state: sebos.state,
@@ -32,6 +37,55 @@ const seboBaseSelect = {
   createdAt: sebos.createdAt,
   updatedAt: sebos.updatedAt,
 } as const;
+
+function isBookActiveAndVisible(params: {
+  availabilityStatus: AvailabilityStatus;
+  isVisible: boolean;
+  quantity: number;
+}) {
+  return (
+    params.availabilityStatus === "ativo" &&
+    params.isVisible &&
+    Number(params.quantity) > 0
+  );
+}
+
+async function assertSeboPlanLimit(params: {
+  seboId: number;
+  sebo: { plan?: string | null; maxActiveBooks?: number | null };
+  shouldCountNewActiveVisible: boolean;
+}) {
+  if (!featureFlags.enforcePlanLimits()) return;
+  if (!params.shouldCountNewActiveVisible) return;
+
+  const override = Number(params.sebo.maxActiveBooks ?? 0);
+  const baseLimit = getPlanActiveBooksLimit(
+    (params.sebo.plan as "free" | "pro" | "gold") || "free"
+  );
+  const effectiveLimit = override > 0 ? override : baseLimit;
+  if (effectiveLimit == null) return;
+
+  const rows = await db
+    .select({ description: books.description, quantity: books.quantity })
+    .from(books)
+    .where(eq(books.seboId, params.seboId));
+  const currentActiveVisible = rows.reduce((sum, row) => {
+    const normalized = normalizeBookDescription(row.description);
+    return isBookActiveAndVisible({
+      availabilityStatus: normalized.availabilityStatus,
+      isVisible: normalized.isVisible,
+      quantity: Number(row.quantity ?? 0),
+    })
+      ? sum + 1
+      : sum;
+  }, 0);
+
+  if (currentActiveVisible >= effectiveLimit) {
+    throw new Error(
+      `Limite do plano atingido (${effectiveLimit} livros ativos/visíveis). Faça upgrade ou reduza itens ativos.`
+    );
+  }
+}
 
 function sanitizeBookDescription(raw?: string | null): string | null {
   if (typeof raw !== "string") return null;
@@ -237,6 +291,10 @@ export const booksRouter = router({
                   name: row.sebo.name,
                   plan: row.sebo.plan,
                   proSlug: row.sebo.proSlug,
+                  maxActiveBooks: row.sebo.maxActiveBooks,
+                  showPublicPhone: Boolean(row.sebo.showPublicPhone),
+                  showPublicAddress: Boolean(row.sebo.showPublicAddress),
+                  addressLine: row.sebo.addressLine,
                   city: row.sebo.city,
                   state: row.sebo.state,
                   verified: Boolean(row.sebo.verified),
@@ -296,6 +354,22 @@ export const booksRouter = router({
         .from(books)
         .where(eq(books.seboId, book.seboId))
         .then((res: Array<{ count: number }>) => Number(res[0]?.count ?? 0));
+      const seboReviewSummary = await db
+        .select({
+          avgRating: sql<number>`round(avg(${seboReviews.rating}), 2)`.as("avgRating"),
+          totalReviews: sql<number>`count(*)`.as("totalReviews"),
+        })
+        .from(seboReviews)
+        .where(
+          and(
+            eq(seboReviews.seboId, Number(book.seboId)),
+            eq(seboReviews.isVisible, true)
+          )
+        )
+        .then((res: Array<{ avgRating: number; totalReviews: number }>) => ({
+          avgRating: Number(res[0]?.avgRating ?? 0),
+          totalReviews: Number(res[0]?.totalReviews ?? 0),
+        }));
       const canSeeHidden =
         normalized.isVisible ||
         ctx.role === "admin" ||
@@ -303,6 +377,13 @@ export const booksRouter = router({
       if (!canSeeHidden) {
         throw new Error("Book not found");
       }
+      const canSeePrivateContact =
+        ctx.role === "admin" ||
+        (ctx.userId !== null && sebo?.userId === ctx.userId);
+      const canShowPublicContact = featureFlags.publicSeboContact();
+      const showPhone = canSeePrivateContact || (canShowPublicContact && Boolean((sebo as any)?.showPublicPhone));
+      const showAddress =
+        canSeePrivateContact || (canShowPublicContact && Boolean((sebo as any)?.showPublicAddress));
 
       return {
         ...book,
@@ -310,9 +391,21 @@ export const booksRouter = router({
         description: normalized.description,
         availabilityStatus: normalized.availabilityStatus,
         isVisible: normalized.isVisible,
-        sebo,
+        sebo: sebo
+          ? {
+              ...sebo,
+              whatsapp: showPhone ? sebo.whatsapp : null,
+              addressLine: showAddress ? (sebo as any).addressLine : null,
+            }
+          : null,
         seboStats: {
           totalBooks: seboBooksCount,
+        },
+        reviewSummary: {
+          ...seboReviewSummary,
+          topRated:
+            seboReviewSummary.avgRating >= 4.7 &&
+            seboReviewSummary.totalReviews >= 5,
         },
       };
     }),
@@ -385,6 +478,16 @@ export const booksRouter = router({
         throw new Error("Unauthorized");
       }
 
+      await assertSeboPlanLimit({
+        seboId: Number(input.seboId),
+        sebo,
+        shouldCountNewActiveVisible: isBookActiveAndVisible({
+          availabilityStatus: input.availabilityStatus,
+          isVisible: input.isVisible,
+          quantity: input.quantity,
+        }),
+      });
+
       const newBook = await db
         .insert(books)
         .values({
@@ -456,6 +559,16 @@ export const booksRouter = router({
         ? "vendido"
         : input.availabilityStatus ?? normalizedOriginal.availabilityStatus;
       const isVisible = input.isVisible ?? normalizedOriginal.isVisible;
+
+      await assertSeboPlanLimit({
+        seboId: Number(original.seboId),
+        sebo: sebo || {},
+        shouldCountNewActiveVisible: isBookActiveAndVisible({
+          availabilityStatus,
+          isVisible,
+          quantity,
+        }),
+      });
 
       const created = await db
         .insert(books)
@@ -548,6 +661,23 @@ export const booksRouter = router({
         ? "vendido"
         : availabilityStatus ?? currentNormalized.availabilityStatus;
       const targetVisibility = isVisible ?? currentNormalized.isVisible;
+      const currentActiveVisible = isBookActiveAndVisible({
+        availabilityStatus: currentNormalized.availabilityStatus,
+        isVisible: currentNormalized.isVisible,
+        quantity: Number(book.quantity ?? 0),
+      });
+      const targetActiveVisible = isBookActiveAndVisible({
+        availabilityStatus: targetStatus,
+        isVisible: targetVisibility,
+        quantity: Number(nextQuantity ?? 0),
+      });
+
+      await assertSeboPlanLimit({
+        seboId: Number(book.seboId),
+        sebo: sebo || {},
+        shouldCountNewActiveVisible: !currentActiveVisible && targetActiveVisible,
+      });
+
       const updateDataWithStringPrice: any = {
         ...updateData,
         ...(updateData.title !== undefined && {

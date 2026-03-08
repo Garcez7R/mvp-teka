@@ -3,15 +3,21 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
 import BookCard from "@/components/BookCard";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useState } from "react";
+import { toast } from "sonner";
 
 function seboLinkFromData(sebo: any): string {
-  if (sebo?.plan === "pro" && sebo?.proSlug) {
+  if ((sebo?.plan === "pro" || sebo?.plan === "gold") && sebo?.proSlug) {
     return `/s/${sebo.proSlug}`;
   }
   return `/sebo/${sebo?.id ?? ""}`;
 }
 
 export default function SeboStorefront() {
+  const { isAuthenticated, role } = useAuth();
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
   const { id, slug } = useParams<{ id?: string; slug?: string }>();
   const parsedSeboId = Number.parseInt(id || "", 10);
 
@@ -28,6 +34,18 @@ export default function SeboStorefront() {
 
   const query = slug ? bySlugQuery : byIdQuery;
   const sebo = query.data as any;
+  const reviewsQuery = trpc.sebos.listReviews.useQuery(
+    { seboId: Number(sebo?.id ?? 0), limit: 20 },
+    { enabled: Number(sebo?.id ?? 0) > 0, refetchOnWindowFocus: false }
+  );
+  const upsertReviewMutation = trpc.sebos.upsertReview.useMutation({
+    onSuccess: async () => {
+      await reviewsQuery.refetch();
+      toast.success("Avaliação registrada.");
+      setComment("");
+    },
+    onError: (error) => toast.error(error.message || "Não foi possível salvar sua avaliação."),
+  });
   const books = Array.isArray(sebo?.books) ? sebo.books : [];
   const visibleBooks = books.filter((book: any) => book?.isVisible !== false);
 
@@ -86,11 +104,23 @@ export default function SeboStorefront() {
                       <span className="text-[11px] px-2 py-1 rounded bg-[#da4653] text-[#262969] font-semibold">
                         Sebo Pro
                       </span>
+                    ) : sebo.plan === "gold" ? (
+                      <span className="text-[11px] px-2 py-1 rounded bg-amber-200 text-amber-900 font-semibold">
+                        Sebo Gold
+                      </span>
                     ) : (
                       <span className="text-[11px] px-2 py-1 rounded bg-gray-100 text-gray-700 font-semibold">
                         Sebo Free
                       </span>
                     )}
+                    <span className="text-[11px] px-2 py-1 rounded bg-gray-100 text-gray-700 font-semibold">
+                      Nota {Number(sebo?.reviewSummary?.avgRating ?? 0).toFixed(1)} ({Number(sebo?.reviewSummary?.totalReviews ?? 0)})
+                    </span>
+                    {sebo?.reviewSummary?.topRated ? (
+                      <span className="text-[11px] px-2 py-1 rounded bg-emerald-100 text-emerald-700 font-semibold">
+                        Top Avaliado
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -121,6 +151,81 @@ export default function SeboStorefront() {
                   {seboLinkFromData(sebo)}
                 </a>
               </p>
+              {sebo.whatsapp ? (
+                <p className="text-xs text-gray-700 dark:text-gray-200 mt-2">
+                  WhatsApp público: {sebo.whatsapp}
+                </p>
+              ) : null}
+              {sebo.addressLine ? (
+                <p className="text-xs text-gray-700 dark:text-gray-200 mt-1">
+                  Endereço público: {sebo.addressLine}
+                </p>
+              ) : null}
+            </section>
+
+            <section className="p-4 md:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 mb-6">
+              <h2 className="font-outfit font-semibold text-lg text-[#262969] dark:text-gray-100 mb-3">
+                Avaliações do Sebo
+              </h2>
+              {reviewsQuery.isLoading ? (
+                <p className="text-sm text-gray-600 dark:text-gray-300">Carregando avaliações...</p>
+              ) : (reviewsQuery.data?.length || 0) === 0 ? (
+                <p className="text-sm text-gray-600 dark:text-gray-300">Sem avaliações ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {(reviewsQuery.data || []).map((review: any) => (
+                    <div key={review.id} className="rounded border border-gray-200 dark:border-gray-700 p-3">
+                      <p className="text-sm font-semibold text-[#262969] dark:text-gray-100">
+                        {review.reviewerName} • {review.rating}/5
+                      </p>
+                      {review.comment ? (
+                        <p className="text-sm text-gray-700 dark:text-gray-200 mt-1">{review.comment}</p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {isAuthenticated && role === "comprador" ? (
+                <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <p className="text-sm font-semibold text-[#262969] dark:text-gray-100 mb-2">Deixe sua avaliação</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-xs text-gray-600 dark:text-gray-300">Nota:</label>
+                    <select
+                      value={rating}
+                      onChange={(event) => setRating(Number(event.target.value))}
+                      className="px-2 py-1 text-sm border border-gray-300 rounded bg-white dark:bg-gray-800"
+                    >
+                      <option value={5}>5</option>
+                      <option value={4}>4</option>
+                      <option value={3}>3</option>
+                      <option value={2}>2</option>
+                      <option value={1}>1</option>
+                    </select>
+                  </div>
+                  <textarea
+                    value={comment}
+                    onChange={(event) => setComment(event.target.value)}
+                    placeholder="Comentário (opcional)"
+                    rows={3}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded bg-white dark:bg-gray-800"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      upsertReviewMutation.mutate({
+                        seboId: Number(sebo.id),
+                        rating,
+                        comment: comment.trim() || undefined,
+                      })
+                    }
+                    disabled={upsertReviewMutation.isPending}
+                    className="mt-2 px-3 py-2 rounded bg-[#262969] text-white text-sm"
+                  >
+                    {upsertReviewMutation.isPending ? "Salvando..." : "Enviar avaliação"}
+                  </button>
+                </div>
+              ) : null}
             </section>
 
             <section>
