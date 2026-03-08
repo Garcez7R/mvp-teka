@@ -191,7 +191,7 @@ export default function CreateSebo() {
                   name="ownerName"
                   value={formData.ownerName}
                   onChange={handleChange}
-                  placeholder="Ex: Rafael Garcez dos Santos"
+                  placeholder="Ex: Nome Sobrenome"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg font-inter focus:outline-none focus:ring-2 focus:ring-[#da4653]"
                 />
               </div>
