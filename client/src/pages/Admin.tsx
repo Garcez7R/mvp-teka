@@ -2,12 +2,13 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { useMemo, useState } from "react";
+import { type ChangeEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 import BookCover from "@/components/BookCover";
 import { formatDatePtBr, formatDateTimePtBr } from "@/lib/datetime";
 import { useTheme } from "@/contexts/ThemeContext";
+import { Upload } from "lucide-react";
 
 type AdminTab = "users" | "sebos" | "books";
 
@@ -415,6 +416,28 @@ export default function Admin() {
     } finally {
       setIsSavingBook(false);
     }
+  };
+
+  const handleEditCoverChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!editingBook) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem válido.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 5MB.");
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setEditingBook({ ...editingBook, coverUrl: objectUrl });
+    setBookCoverOptions((prev) => {
+      const current = prev[editingBook.id] || [];
+      const next = [objectUrl, ...current.filter((url) => url !== objectUrl)].slice(0, 8);
+      return { ...prev, [editingBook.id]: next };
+    });
+    toast.success("Pré-visualização da capa atualizada.");
   };
 
   if (loading && role !== "admin") {
@@ -989,26 +1012,108 @@ export default function Admin() {
                   <button onClick={cancelEditBook} className="px-3 py-2 rounded border">Cancelar</button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input value={editingBook.title} onChange={(e) => setEditingBook({ ...editingBook, title: e.target.value })} className="px-3 py-2 border rounded" placeholder="Título" />
-                  <input value={editingBook.author || ""} onChange={(e) => setEditingBook({ ...editingBook, author: e.target.value })} className="px-3 py-2 border rounded" placeholder="Autor" />
-                  <input value={editingBook.isbn || ""} onChange={(e) => setEditingBook({ ...editingBook, isbn: e.target.value })} className="px-3 py-2 border rounded" placeholder="ISBN" />
-                  <input value={editingBook.category || ""} onChange={(e) => setEditingBook({ ...editingBook, category: e.target.value })} className="px-3 py-2 border rounded" placeholder="Categoria" />
-                  <input type="number" step="0.01" min={0} value={String(editingBook.price)} onChange={(e) => setEditingBook({ ...editingBook, price: Number(e.target.value) })} className="px-3 py-2 border rounded" placeholder="Preço" />
-                  <input type="number" min={0} value={String(editingBook.quantity)} onChange={(e) => setEditingBook({ ...editingBook, quantity: Number.parseInt(e.target.value || "0", 10) })} className="px-3 py-2 border rounded" placeholder="Quantidade" />
-                  <select value={editingBook.condition || "Bom estado"} onChange={(e) => setEditingBook({ ...editingBook, condition: e.target.value as any })} className="px-3 py-2 border rounded">
+                  <input
+                    type="text"
+                    value={editingBook.title}
+                    onChange={(e) => setEditingBook({ ...editingBook, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                    placeholder="Título"
+                  />
+                  <input
+                    type="text"
+                    value={editingBook.author || ""}
+                    onChange={(e) => setEditingBook({ ...editingBook, author: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                    placeholder="Autor"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={String(editingBook.price)}
+                    onChange={(e) => setEditingBook({ ...editingBook, price: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                    placeholder="Preço"
+                  />
+                  <input
+                    type="text"
+                    value={editingBook.isbn || ""}
+                    onChange={(e) => setEditingBook({ ...editingBook, isbn: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                    placeholder="ISBN"
+                  />
+                  <input
+                    type="text"
+                    value={editingBook.category || ""}
+                    onChange={(e) => setEditingBook({ ...editingBook, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                    placeholder="Categoria"
+                  />
+                  <select
+                    value={editingBook.condition || "Bom estado"}
+                    onChange={(e) => setEditingBook({ ...editingBook, condition: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                  >
                     <option value="Novo">Novo</option>
                     <option value="Excelente">Excelente</option>
                     <option value="Bom estado">Bom estado</option>
                     <option value="Usado">Usado</option>
                     <option value="Desgastado">Desgastado</option>
                   </select>
-                  <select value={editingBook.availabilityStatus || "ativo"} onChange={(e) => setEditingBook({ ...editingBook, availabilityStatus: e.target.value as any })} className="px-3 py-2 border rounded">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      value={editingBook.pages ?? ""}
+                      onChange={(e) =>
+                        setEditingBook({ ...editingBook, pages: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                      placeholder="Páginas"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      value={editingBook.year ?? ""}
+                      onChange={(e) =>
+                        setEditingBook({ ...editingBook, year: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                      placeholder="Ano"
+                    />
+                  </div>
+                  <textarea
+                    value={editingBook.description || ""}
+                    onChange={(e) => setEditingBook({ ...editingBook, description: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none resize-y md:col-span-2"
+                    placeholder="Descrição"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={String(editingBook.quantity)}
+                    onChange={(e) => setEditingBook({ ...editingBook, quantity: Number.parseInt(e.target.value || "0", 10) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                    placeholder="Quantidade"
+                  />
+                  <select
+                    value={editingBook.availabilityStatus || "ativo"}
+                    onChange={(e) => setEditingBook({ ...editingBook, availabilityStatus: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none"
+                  >
                     <option value="ativo">Disponível</option>
                     <option value="reservado">Reservado</option>
                     <option value="vendido">Vendido</option>
                   </select>
-                  <input type="number" min={1} value={editingBook.pages ?? ""} onChange={(e) => setEditingBook({ ...editingBook, pages: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })} className="px-3 py-2 border rounded" placeholder="Páginas" />
-                  <input type="number" min={0} value={editingBook.year ?? ""} onChange={(e) => setEditingBook({ ...editingBook, year: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })} className="px-3 py-2 border rounded" placeholder="Ano" />
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={editingBook.isVisible ?? true}
+                      onChange={(e) => setEditingBook({ ...editingBook, isVisible: e.target.checked })}
+                    />
+                    Visível para compradores
+                  </label>
                   <div className="md:col-span-2">
                     <p className="text-xs text-gray-600 mb-2">Pré-visualização da capa</p>
                     <div className="rounded-lg overflow-hidden border border-gray-200 aspect-[2/3] w-32 bg-white">
@@ -1021,13 +1126,14 @@ export default function Admin() {
                       />
                     </div>
                   </div>
-                  <input value={editingBook.coverUrl || ""} onChange={(e) => setEditingBook({ ...editingBook, coverUrl: e.target.value })} className="px-3 py-2 border rounded md:col-span-2" placeholder="URL da capa" />
-                  <textarea value={editingBook.description || ""} onChange={(e) => setEditingBook({ ...editingBook, description: e.target.value })} className="px-3 py-2 border rounded md:col-span-2" rows={4} placeholder="Descrição" />
+                  <input
+                    type="text"
+                    value={editingBook.coverUrl || ""}
+                    onChange={(e) => setEditingBook({ ...editingBook, coverUrl: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-[#da4653] outline-none md:col-span-2"
+                    placeholder="URL da capa (https://...)"
+                  />
                 </div>
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={editingBook.isVisible ?? true} onChange={(e) => setEditingBook({ ...editingBook, isVisible: e.target.checked })} />
-                  Visível para compradores
-                </label>
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={() => void fetchCoverOptionsByIsbn(editingBook)} className="teka-cover-btn teka-cover-btn--primary">
                     {coverLoadingId === editingBook.id ? "Buscando..." : "Trocar capa (ISBN)"}
@@ -1053,6 +1159,14 @@ export default function Admin() {
                     ))}
                   </div>
                 ) : null}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Atualizar Capa</label>
+                  <label className="block border-2 border-dashed border-gray-300 rounded p-3 text-center cursor-pointer hover:border-[#da4653]">
+                    <Upload className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                    <p className="text-xs text-gray-600">Clique para atualizar</p>
+                    <input type="file" accept="image/*" onChange={handleEditCoverChange} className="hidden" />
+                  </label>
+                </div>
                 <div className="flex gap-2">
                   <button onClick={() => void saveEditBook()} disabled={isSavingBook} className="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50">
                     {isSavingBook ? "Salvando..." : "Salvar"}
