@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Menu, X, BookOpen, Info, LogIn, Shield, Library, PlusCircle, LogOut, Heart, Settings } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getSessionIdToken } from "@/lib/session";
+import { hasAnyAuthSession } from "@/lib/session";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isAuthenticated, role, user, logout } = useAuth();
-  const hasToken = Boolean(getSessionIdToken());
+  const hasToken = hasAnyAuthSession();
   const displayName = user?.name?.trim() || user?.email?.trim() || "Usuário";
   const roleLabel =
     role === "admin" ? "Admin" : role === "livreiro" ? "Livreiro" : role === "comprador" ? "Comprador" : "Usuário";

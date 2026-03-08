@@ -83,6 +83,13 @@ export default function Admin() {
     enabled: canRunAdminQueries,
     refetchOnWindowFocus: false,
   });
+  const seboReviewsQuery = trpc.sebos.adminListReviews.useQuery(
+    { limit: 50 },
+    {
+      enabled: canRunAdminQueries && tab === "sebos",
+      refetchOnWindowFocus: false,
+    }
+  );
   const users = usersQuery.data ?? [];
   const sebos = sebosQuery.data ?? [];
   const books = booksQuery.data ?? [];
@@ -267,6 +274,14 @@ export default function Admin() {
       toast.success("Plano do sebo atualizado.");
     },
     onError: (error) => toast.error(error.message || "Erro ao atualizar plano do sebo."),
+  });
+  const adminModerateReviewMutation = trpc.sebos.adminModerateReview.useMutation({
+    onSuccess: async () => {
+      await seboReviewsQuery.refetch();
+      await utils.sebos.list.invalidate();
+      toast.success("Visibilidade da avaliação atualizada.");
+    },
+    onError: (error) => toast.error(error.message || "Erro ao moderar avaliação."),
   });
 
   const adminUpdateBookMutation = trpc.books.update.useMutation({
@@ -816,6 +831,42 @@ export default function Admin() {
             </div>
 
             <div className="space-y-3">
+              <div className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-900 dark:border-gray-700">
+                <h3 className="font-semibold text-[#262969] dark:text-gray-100 mb-2">Avaliações recentes de sebos</h3>
+                {(seboReviewsQuery.data || []).length === 0 ? (
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Sem avaliações registradas nesta base.</p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-auto">
+                    {(seboReviewsQuery.data || []).map((review: any) => (
+                      <div key={review.id} className="p-2 rounded border bg-white dark:bg-gray-800 dark:border-gray-700 text-sm">
+                        <p className="font-semibold text-[#262969] dark:text-gray-100">
+                          {review.seboName || `Sebo #${review.seboId}`} • {review.rating}/5
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
+                          {review.reviewerName || "Usuário"} ({review.reviewerEmail || "sem e-mail"})
+                        </p>
+                        {review.comment ? <p className="text-xs text-gray-700 dark:text-gray-200 mt-1">{review.comment}</p> : null}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            adminModerateReviewMutation.mutate({
+                              reviewId: Number(review.id),
+                              isVisible: !Boolean(review.isVisible),
+                            })
+                          }
+                          className={`mt-2 px-2 py-1 rounded text-xs border ${
+                            review.isVisible
+                              ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700"
+                              : "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-700"
+                          }`}
+                        >
+                          {review.isVisible ? "Ocultar avaliação" : "Exibir avaliação"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               {sebos.map((sebo: any) => (
                 <div key={sebo.id} className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between gap-3">
@@ -824,69 +875,100 @@ export default function Admin() {
                         <p className="font-semibold text-[#262969] dark:text-gray-100">{sebo.name}</p>
                         <span
                           className={`text-[11px] px-2 py-1 rounded font-semibold ${
-                            sebo.plan === "pro"
+                            sebo.plan === "gold"
+                              ? "bg-amber-200 text-amber-900"
+                              : sebo.plan === "pro"
                               ? "bg-[#da4653] text-[#262969]"
                               : "bg-gray-100 text-gray-700"
                           }`}
                         >
-                          {sebo.plan === "pro" ? "Pro" : "Free"}
+                          {sebo.plan === "gold" ? "Gold" : sebo.plan === "pro" ? "Pro" : "Free"}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
                         ID {sebo.id} • User {sebo.userId} • {sebo.city || "-"} / {sebo.state || "-"}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         Responsável: {usersById.get(Number(sebo.userId))?.email || "-"}
                       </p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
                         Vitrine:{" "}
                         <a
-                          href={sebo.plan === "pro" && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
+                          href={(sebo.plan === "pro" || sebo.plan === "gold") && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-[#da4653] hover:underline"
                         >
-                          {sebo.plan === "pro" && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
+                          {(sebo.plan === "pro" || sebo.plan === "gold") && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
                         </a>
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
+                        Avaliação: {Number(sebo.reviewSummary?.avgRating ?? 0).toFixed(1)} ({Number(sebo.reviewSummary?.totalReviews ?? 0)} avaliações)
+                        {sebo.reviewSummary?.topRated ? " • Top Avaliado" : ""}
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 items-end">
-                      <button
-                        onClick={() => {
-                          if (sebo.plan === "pro") {
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
                             void adminSetSeboPlanMutation.mutateAsync({
                               id: Number(sebo.id),
                               plan: "free",
                             });
-                            return;
-                          }
-                          void adminSetSeboPlanMutation.mutateAsync({
-                            id: Number(sebo.id),
-                            plan: "pro",
-                          });
-                        }}
-                        className={`px-2 py-1 rounded text-sm ${
-                          sebo.plan === "pro"
-                            ? "bg-gray-200 text-gray-800"
-                            : "bg-[#262969] text-white"
-                        }`}
-                      >
-                        {sebo.plan === "pro" ? "Rebaixar para Free" : "Promover para Pro"}
-                      </button>
-                      {sebo.plan === "pro" && (
+                          }}
+                          className={`px-2 py-1 rounded text-sm border ${
+                            sebo.plan === "free"
+                              ? "bg-gray-700 text-white border-gray-700 dark:bg-gray-200 dark:text-gray-900 dark:border-gray-200"
+                              : "bg-white text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+                          }`}
+                        >
+                          Free
+                        </button>
                         <button
                           onClick={() => {
-                            const nextSlug = window.prompt("Informe o novo slug Pro:", String(sebo.proSlug || ""));
-                            if (!nextSlug) return;
                             void adminSetSeboPlanMutation.mutateAsync({
                               id: Number(sebo.id),
                               plan: "pro",
+                            });
+                          }}
+                          className={`px-2 py-1 rounded text-sm border ${
+                            sebo.plan === "pro"
+                              ? "bg-[#262969] text-white border-[#262969] dark:bg-[#da4653] dark:text-[#262969] dark:border-[#da4653]"
+                              : "bg-white text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+                          }`}
+                        >
+                          Pro
+                        </button>
+                        <button
+                          onClick={() => {
+                            void adminSetSeboPlanMutation.mutateAsync({
+                              id: Number(sebo.id),
+                              plan: "gold",
+                            });
+                          }}
+                          className={`px-2 py-1 rounded text-sm border ${
+                            sebo.plan === "gold"
+                              ? "bg-amber-500 text-white border-amber-500 dark:bg-amber-300 dark:text-amber-950 dark:border-amber-300"
+                              : "bg-white text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+                          }`}
+                        >
+                          Gold
+                        </button>
+                      </div>
+                      {(sebo.plan === "pro" || sebo.plan === "gold") && (
+                        <button
+                          onClick={() => {
+                            const nextSlug = window.prompt("Informe o novo slug da vitrine:", String(sebo.proSlug || ""));
+                            if (!nextSlug) return;
+                            void adminSetSeboPlanMutation.mutateAsync({
+                              id: Number(sebo.id),
+                              plan: sebo.plan === "gold" ? "gold" : "pro",
                               proSlug: nextSlug,
                             });
                           }}
-                          className="px-2 py-1 rounded bg-[#da4653] text-[#262969] text-sm font-semibold"
+                          className="px-2 py-1 rounded border border-[#da4653] bg-[#da4653] text-[#262969] text-sm font-semibold dark:bg-[#262969] dark:text-white dark:border-[#262969]"
                         >
-                          Editar slug Pro
+                          Editar slug
                         </button>
                       )}
                       <button
@@ -894,7 +976,7 @@ export default function Admin() {
                           if (!confirm(`Excluir sebo "${sebo.name}"?`)) return;
                           void adminDeleteSeboMutation.mutateAsync({ id: sebo.id });
                         }}
-                        className="px-2 py-1 rounded bg-red-600 text-white text-sm"
+                        className="px-2 py-1 rounded border border-red-600 bg-red-600 text-white text-sm dark:bg-red-700 dark:border-red-700"
                       >
                         Excluir
                       </button>
@@ -937,6 +1019,18 @@ export default function Admin() {
                       className="px-3 py-2 border rounded"
                       placeholder="UF"
                     />
+                    <input
+                      defaultValue={sebo.maxActiveBooks ?? ""}
+                      onBlur={(e) => {
+                        const next = e.target.value.trim();
+                        const parsed = next ? Number.parseInt(next, 10) : NaN;
+                        const normalized = Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+                        if ((sebo.maxActiveBooks ?? undefined) === normalized) return;
+                        void adminUpdateSeboMutation.mutateAsync({ id: sebo.id, maxActiveBooks: normalized });
+                      }}
+                      className="px-3 py-2 border rounded"
+                      placeholder="Limite override (ativos)"
+                    />
                     <label className="inline-flex items-center gap-2 px-2">
                       <input
                         type="checkbox"
@@ -946,6 +1040,26 @@ export default function Admin() {
                         }}
                       />
                       Verificado
+                    </label>
+                    <label className="inline-flex items-center gap-2 px-2">
+                      <input
+                        type="checkbox"
+                        defaultChecked={Boolean(sebo.showPublicPhone)}
+                        onChange={(e) => {
+                          void adminUpdateSeboMutation.mutateAsync({ id: sebo.id, showPublicPhone: e.target.checked });
+                        }}
+                      />
+                      WhatsApp público
+                    </label>
+                    <label className="inline-flex items-center gap-2 px-2">
+                      <input
+                        type="checkbox"
+                        defaultChecked={Boolean(sebo.showPublicAddress)}
+                        onChange={(e) => {
+                          void adminUpdateSeboMutation.mutateAsync({ id: sebo.id, showPublicAddress: e.target.checked });
+                        }}
+                      />
+                      Endereço público
                     </label>
                   </div>
                 </div>

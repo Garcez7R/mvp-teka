@@ -2,26 +2,33 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { trpc } from "@/lib/trpc";
-import { setSessionIdToken, setSignupRole } from "@/lib/session";
+import { setLegacyEmailSession, setSessionIdToken, setSignupRole } from "@/lib/session";
 import { trackEvent } from "@/lib/analytics";
+import { isGoogleAuthEnabled } from "@/lib/auth-mode";
+import { TRPCClientError } from "@trpc/client";
 
 export default function Login() {
   const utils = trpc.useUtils();
   const setMyRoleMutation = trpc.users.setMyRole.useMutation();
   const updateUserMutation = trpc.users.update.useMutation();
+  const loginByEmailMutation = trpc.users.loginByEmail.useMutation();
+  const registerMutation = trpc.users.register.useMutation();
   const [role, setRole] = useState<"livreiro" | "comprador">("comprador");
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const roleRef = useRef<"livreiro" | "comprador">("comprador");
   const googleContainerRef = useRef<HTMLDivElement | null>(null);
   const googleInitializedRef = useRef(false);
+  const googleEnabled = useMemo(() => isGoogleAuthEnabled(), []);
   const googleClientId = useMemo(
     () => (import.meta.env.VITE_GOOGLE_CLIENT_ID || "").trim(),
     []
   );
 
-  const isGoogleConfigured = Boolean(googleClientId);
+  const isGoogleConfigured = googleEnabled && Boolean(googleClientId);
 
   const sleep = (ms: number) =>
     new Promise((resolve) => {
@@ -136,6 +143,68 @@ export default function Login() {
     };
   }, [googleClientId, isGoogleConfigured]);
 
+  const handleLegacyEmailLogin = async () => {
+    try {
+      setError("");
+      if (!consentChecked) {
+        setError("Para continuar, marque “Estou ciente” sobre tratamento de dados.");
+        return;
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedName = name.trim();
+      if (!normalizedEmail) {
+        setError("Informe um e-mail válido.");
+        return;
+      }
+
+      setIsBusy(true);
+      const selectedRole = roleRef.current;
+      setSignupRole(selectedRole);
+      setLegacyEmailSession({
+        email: normalizedEmail,
+        name: normalizedName || null,
+      });
+
+      try {
+        await loginByEmailMutation.mutateAsync({ email: normalizedEmail });
+      } catch (err) {
+        const isUnauthorized =
+          err instanceof TRPCClientError && err.data?.code === "UNAUTHORIZED";
+        if (!isUnauthorized) {
+          throw err;
+        }
+        if (!normalizedName) {
+          setError("Primeiro acesso: informe também seu nome para criar a conta.");
+          return;
+        }
+        await registerMutation.mutateAsync({
+          name: normalizedName,
+          email: normalizedEmail,
+          role: selectedRole,
+        });
+      }
+
+      try {
+        await setMyRoleMutation.mutateAsync({ role: selectedRole });
+        if (consentChecked) {
+          await updateUserMutation.mutateAsync({ lgpdConsent: true });
+        }
+      } catch {
+        // Mantém fluxo não bloqueante.
+      }
+
+      await refreshSessionAndGo("/");
+      trackEvent("legacy_email_login_success", { role: selectedRole });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Falha no login por e-mail";
+      setError(message);
+      trackEvent("legacy_email_login_error", { message });
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
@@ -181,21 +250,48 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="w-full flex justify-center relative">
-              <div ref={googleContainerRef} />
-              {!consentChecked && (
+            {isGoogleConfigured ? (
+              <div className="w-full flex justify-center relative">
+                <div ref={googleContainerRef} />
+                {!consentChecked && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setError(
+                        "Para continuar, marque “Estou ciente” sobre tratamento de dados."
+                      )
+                    }
+                    className="absolute inset-0 bg-transparent"
+                    aria-label="Ative o consentimento para habilitar login"
+                  />
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <input
+                  type="email"
+                  placeholder="Seu e-mail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white text-[#262969]"
+                />
+                <input
+                  type="text"
+                  placeholder="Seu nome (obrigatório no primeiro acesso)"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white text-[#262969]"
+                />
                 <button
                   type="button"
-                  onClick={() =>
-                    setError(
-                      "Para continuar, marque “Estou ciente” sobre tratamento de dados."
-                    )
-                  }
-                  className="absolute inset-0 bg-transparent"
-                  aria-label="Ative o consentimento para habilitar login"
-                />
-              )}
-            </div>
+                  disabled={isBusy}
+                  onClick={() => void handleLegacyEmailLogin()}
+                  className="w-full rounded-lg border border-[#da4653] bg-[#da4653] text-white px-4 py-2 font-medium disabled:opacity-60"
+                >
+                  Entrar com e-mail
+                </button>
+              </div>
+            )}
             <label className="block text-xs text-gray-700 dark:text-gray-200">
               <span className="inline-flex items-start gap-2">
                 <input
@@ -219,9 +315,14 @@ export default function Login() {
               <p className="text-sm text-gray-600 text-center">Conectando...</p>
             )}
 
-            {!isGoogleConfigured && (
+            {!isGoogleConfigured && googleEnabled && (
               <p className="text-xs text-red-600">
                 Defina <code>VITE_GOOGLE_CLIENT_ID</code> no ambiente para habilitar o login.
+              </p>
+            )}
+            {!googleEnabled && (
+              <p className="text-xs text-gray-600">
+                Google desativado neste ambiente. Login por e-mail habilitado para testes.
               </p>
             )}
           </div>

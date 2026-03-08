@@ -60,6 +60,13 @@ function getGoogleAudiencesAllowlist(): string[] {
   return Array.from(new Set(values));
 }
 
+function isLegacyEmailAuthEnabled() {
+  return (
+    String(getRuntimeEnvValue("ALLOW_LEGACY_EMAIL_AUTH") || "").toLowerCase() ===
+    "true"
+  );
+}
+
 export async function createTRPCContext(
   opts?: ContextOptionsLike
 ): Promise<Context> {
@@ -190,6 +197,93 @@ export async function createTRPCContext(
       }
     } catch {
       // Invalid or expired Google token: fallback to anonymous context.
+    }
+  }
+
+  if (isLegacyEmailAuthEnabled()) {
+    const emailHeader =
+      readFirstValue(req?.headers?.["x-teka-email"]) ??
+      readFirstValue(req?.headers?.["X-Teka-Email"]);
+    const requestedRole = readFirstValue(req?.headers?.["x-teka-role"]);
+    const nameHeader =
+      readFirstValue(req?.headers?.["x-teka-name"]) ??
+      readFirstValue(req?.headers?.["X-Teka-Name"]);
+    const normalizedEmail = (emailHeader || "").trim().toLowerCase();
+
+    if (normalizedEmail) {
+      const adminEmailAllowlist = getAdminEmailsAllowlist();
+      const isAdminEmail = adminEmailAllowlist.has(normalizedEmail);
+      const fallbackName = normalizedEmail.split("@")[0] || "Usuário";
+      const effectiveName = (nameHeader || "").trim() || fallbackName;
+      const roleFromHeader =
+        requestedRole === "livreiro" || requestedRole === "comprador"
+          ? requestedRole
+          : "comprador";
+
+      const openId = `email:${normalizedEmail}`;
+      const existing = await db
+        .select()
+        .from(users)
+        .where(eq(users.openId, openId))
+        .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
+
+      if (existing) {
+        const shouldPromoteToLivreiro =
+          requestedRole === "livreiro" &&
+          (existing.role === "comprador" || existing.role === "user");
+        const effectiveRole = isAdminEmail
+          ? "admin"
+          : shouldPromoteToLivreiro
+          ? "livreiro"
+          : existing.role;
+
+        await db
+          .update(users)
+          .set({
+            name: effectiveName || existing.name,
+            email: normalizedEmail || existing.email,
+            role: effectiveRole,
+            loginMethod: "email",
+            lastSignedIn: new Date(),
+          })
+          .where(eq(users.id, existing.id));
+
+        return {
+          user: {
+            ...existing,
+            name: effectiveName || existing.name,
+            email: normalizedEmail || existing.email,
+            role: effectiveRole,
+          },
+          userId: existing.id,
+          role: effectiveRole,
+        };
+      }
+
+      const created = await db
+        .insert(users)
+        .values({
+          openId,
+          name: effectiveName,
+          email: normalizedEmail,
+          role: isAdminEmail ? "admin" : roleFromHeader,
+          loginMethod: "email",
+        })
+        .returning({ id: users.id });
+
+      const createdUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, created[0].id))
+        .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
+
+      if (createdUser) {
+        return {
+          user: createdUser,
+          userId: createdUser.id,
+          role: createdUser.role,
+        };
+      }
     }
   }
 
