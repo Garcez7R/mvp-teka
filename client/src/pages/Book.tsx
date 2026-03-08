@@ -359,7 +359,7 @@ export default function Book() {
 
             {/* Seller Info */}
             {book.sebo && (
-              <div className="rounded-lg p-4 mb-8 border border-[#f1d7da] dark:border-[#55303a] bg-[#fff7f8] dark:bg-[#1b1114]">
+              <div className="rounded-lg p-4 mb-8 border border-[#da4653]/40 dark:border-[#da4653]/50 bg-[#fff1f3] dark:bg-[#2a1217]">
                 <h3 className="font-outfit font-semibold text-base text-[#262969] mb-3">Informações do Sebo</h3>
                 <div className="flex gap-3">
                   <div className="w-14 h-14 rounded-md overflow-hidden border border-gray-200 bg-white shrink-0 flex items-center justify-center">
@@ -465,7 +465,7 @@ export default function Book() {
               <button
                 onClick={() => void handleInterest(book.id, book.title)}
                 disabled={registerInterestMutation.isPending}
-                className="flex items-center justify-center gap-2 w-full border border-[#262969] text-[#262969] font-inter font-semibold py-3 px-4 rounded-lg bg-white hover:bg-[#262969] hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 w-full border border-[#da4653] text-[#da4653] font-inter font-semibold py-3 px-4 rounded-lg bg-white hover:bg-[#da4653] hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Heart className="w-4 h-4" />
                 {registerInterestMutation.isPending
