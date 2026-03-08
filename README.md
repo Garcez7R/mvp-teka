@@ -39,6 +39,7 @@ O TEKA foi desenhado para:
 - busca por título, autor e ISBN;
 - favoritos e lista de interesses;
 - visualização de variações de oferta por estado/preço.
+- modo claro/escuro com preferência salva no navegador (padrão inicial: modo claro).
 - priorização opcional de ofertas próximas (`Ver perto de mim: ON/OFF`) com selo `Na sua cidade` / `No seu estado`.
 - na Home, livros sem capa são posicionados no final para manter vitrine visual mais consistente.
 - no detalhe do livro, o bloco do sebo está compacto com opção `Ver mais detalhes do sebo`.
@@ -48,7 +49,7 @@ O TEKA foi desenhado para:
 - cadastro manual de livros;
 - scanner por código de barras/ISBN;
 - **scan em lote** com revisão antes de publicar;
-- gestão de estoque (quantidade, status, visibilidade, edição e exclusão);
+- gestão de estoque (quantidade, status, visibilidade, edição completa e exclusão);
 - identificação rápida de itens sem capa (badge `Sem capa`);
 - filtro de capa no catálogo do livreiro (`Todos`, `Sem capa`, `Com capa`);
 - exportação CSV do catálogo.
@@ -56,7 +57,7 @@ O TEKA foi desenhado para:
 ### Admin
 
 - visão administrativa de usuários, sebos e livros;
-- edição e ações de gestão centralizadas;
+- edição completa de livros e ações de gestão centralizadas;
 - gestão de capas com filtros (`Sem capa` / `Com capa`) e troca por ISBN/título;
 - controle por role.
 

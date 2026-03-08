@@ -35,10 +35,9 @@ Rotas principais:
 - Use ordenação: Recentes, Menor preço, Maior preço.
 - Use filtros: categoria, sebo, condição, status, cidade/UF e faixa de preço.
 - Livros sem capa aparecem por último na listagem, para manter a vitrine mais uniforme.
-- Use o botão de visualização para alternar entre:
-  - Compacta (padrão)
-  - Detalhada
+- A Home usa visualização compacta como padrão fixo, priorizando leitura rápida em mobile e web.
 - Use o botão `Ver perto de mim: ON/OFF` para priorizar ofertas locais.
+- Use o botão `Modo Escuro/Modo Claro` para trocar tema; a escolha fica salva para próximas aberturas.
 - Se seus dados de comprador tiverem cidade/UF em `Configurações`, o catálogo pode mostrar:
   - selo `Na sua cidade`
   - selo `No seu estado`
@@ -88,7 +87,7 @@ Regras úteis:
 - Clique em Salvar itens no catálogo para publicar.
 
 ## 3.4 Meu Catálogo (`/manage-books`)
-- Edite dados dos livros.
+- Edite todos os campos do livro: título, autor, ISBN, categoria, descrição, preço, condição, páginas, ano, quantidade, status, visibilidade e capa.
 - Ajuste quantidade rapidamente (+/-).
 - Altere status: ativo, reservado, vendido.
 - Oculte/exiba livro para compradores.
@@ -112,7 +111,7 @@ Para comprador:
 Abas principais:
 - Usuários: criar, editar role e excluir.
 - Sebos: criar, editar e excluir.
-- Livros: editar preço, quantidade, status, capa e excluir.
+- Livros: editar todos os campos de cadastro (incluindo descrição), além de capa, status, visibilidade e exclusão.
 - Livros: filtro de capa (`Todos`, `Sem capa`, `Com capa`) e badge `Sem capa`.
 
 Capas no Admin:
