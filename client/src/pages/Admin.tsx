@@ -358,10 +358,10 @@ export default function Admin() {
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
       <main className="container flex-1 py-12">
-        <h1 className="font-outfit text-3xl font-bold text-[#262969] mb-6">Painel Admin</h1>
+        <h1 className="font-outfit text-3xl font-bold text-[#262969] dark:text-gray-100 mb-6">Painel Admin</h1>
         {adminMetrics && (
           <section className="mb-8 space-y-4">
-            <h2 className="text-sm font-semibold text-[#262969]">Relatório Admin (Visão Global)</h2>
+            <h2 className="text-sm font-semibold text-[#262969] dark:text-gray-100">Relatório Admin (Visão Global)</h2>
             <div className="flex justify-end">
               <button
                 type="button"
@@ -374,11 +374,11 @@ export default function Admin() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div className="p-4 border rounded-lg bg-white">
                 <p className="text-xs text-gray-500">Usuários</p>
-                <p className="text-xl font-bold text-[#262969]">{adminMetrics.users.total}</p>
+                <p className="text-xl font-bold text-[#262969] dark:text-gray-100">{adminMetrics.users.total}</p>
               </div>
               <div className="p-4 border rounded-lg bg-white">
                 <p className="text-xs text-gray-500">Sebos</p>
-                <p className="text-xl font-bold text-[#262969]">{adminMetrics.sebos.total}</p>
+                <p className="text-xl font-bold text-[#262969] dark:text-gray-100">{adminMetrics.sebos.total}</p>
               </div>
               <div className="p-4 border rounded-lg bg-white">
                 <p className="text-xs text-gray-500">Sebos ativos</p>
@@ -386,7 +386,7 @@ export default function Admin() {
               </div>
               <div className="p-4 border rounded-lg bg-white">
                 <p className="text-xs text-gray-500">Livros</p>
-                <p className="text-xl font-bold text-[#262969]">{adminMetrics.books.total}</p>
+                <p className="text-xl font-bold text-[#262969] dark:text-gray-100">{adminMetrics.books.total}</p>
               </div>
               <div className="p-4 border rounded-lg bg-white">
                 <p className="text-xs text-gray-500">Crescimento 7d</p>
@@ -398,7 +398,7 @@ export default function Admin() {
             {showCharts ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 border rounded-lg bg-white">
-                  <h2 className="font-semibold text-[#262969] mb-3">Perfis de usuário</h2>
+                  <h2 className="font-semibold text-[#262969] dark:text-gray-100 mb-3">Perfis de usuário</h2>
                   <div className="w-full h-56">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={roleChartData}>
@@ -412,7 +412,7 @@ export default function Admin() {
                   </div>
                 </div>
                 <div className="p-4 border rounded-lg bg-white">
-                  <h2 className="font-semibold text-[#262969] mb-3">Status dos livros</h2>
+                  <h2 className="font-semibold text-[#262969] dark:text-gray-100 mb-3">Status dos livros</h2>
                   <div className="w-full h-56">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -430,7 +430,7 @@ export default function Admin() {
             ) : null}
             {adminMetrics.recentAudit.length > 0 && (
               <div className="p-4 border rounded-lg bg-white">
-                <h2 className="font-semibold text-[#262969] mb-2">Ações recentes (auditoria)</h2>
+                <h2 className="font-semibold text-[#262969] dark:text-gray-100 mb-2">Ações recentes (auditoria)</h2>
                 <div className="space-y-1 text-sm text-gray-700 max-h-36 overflow-y-auto pr-1">
                   {adminMetrics.recentAudit.map((item: any, idx: number) => (
                     <p key={`${item.action}-${item.createdAt}-${idx}`}>
@@ -483,7 +483,7 @@ export default function Admin() {
         {tab === "users" && (
           <section className="space-y-4">
             <div className="p-4 border rounded-lg bg-gray-50">
-              <h2 className="font-semibold text-[#262969] mb-3">Criar Usuário</h2>
+              <h2 className="font-semibold text-[#262969] dark:text-gray-100 mb-3">Criar Usuário</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                 <input value={newUser.name} onChange={(e) => setNewUser((p) => ({ ...p, name: e.target.value }))} placeholder="Nome" className="px-3 py-2 border rounded" />
                 <input value={newUser.email} onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))} placeholder="E-mail" className="px-3 py-2 border rounded" />
@@ -509,7 +509,7 @@ export default function Admin() {
               </div>
             </div>
             <div className="p-4 border rounded-lg bg-gray-50">
-              <h2 className="font-semibold text-[#262969] mb-3">Buscar Usuário</h2>
+              <h2 className="font-semibold text-[#262969] dark:text-gray-100 mb-3">Buscar Usuário</h2>
               <input
                 value={userFilter}
                 onChange={(e) => setUserFilter(e.target.value)}
@@ -532,7 +532,7 @@ export default function Admin() {
                       />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-[#262969] truncate">{book.title}</p>
+                      <p className="font-semibold text-[#262969] dark:text-gray-100 truncate">{book.title}</p>
                       <p className="text-xs text-gray-600 truncate">{book.sebo?.name || "-"}</p>
                       {!book.coverUrl ? (
                         <span className="inline-flex mt-1 text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">
@@ -777,7 +777,7 @@ export default function Admin() {
         {tab === "sebos" && (
           <section className="space-y-4">
             <div className="p-4 border rounded-lg bg-gray-50">
-              <h2 className="font-semibold text-[#262969] mb-3">Criar Sebo</h2>
+              <h2 className="font-semibold text-[#262969] dark:text-gray-100 mb-3">Criar Sebo</h2>
               <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
                 <input value={newSebo.userId} onChange={(e) => setNewSebo((p) => ({ ...p, userId: e.target.value }))} placeholder="User ID" className="px-3 py-2 border rounded" />
                 <input value={newSebo.name} onChange={(e) => setNewSebo((p) => ({ ...p, name: e.target.value }))} placeholder="Nome do sebo" className="px-3 py-2 border rounded" />
@@ -810,7 +810,7 @@ export default function Admin() {
                 <div key={sebo.id} className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-[#262969]">{sebo.name}</p>
+                      <p className="font-semibold text-[#262969] dark:text-gray-100">{sebo.name}</p>
                       <p className="text-sm text-gray-600">
                         ID {sebo.id} • User {sebo.userId} • {sebo.city || "-"} / {sebo.state || "-"}
                       </p>
