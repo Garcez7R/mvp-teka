@@ -3,7 +3,8 @@ import { httpBatchLink } from "@trpc/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { trpc } from "./lib/trpc";
-import { getSessionIdToken, getSignupRole } from "./lib/session";
+import { getLegacyEmailSession, getSessionIdToken, getSignupRole } from "./lib/session";
+import { isGoogleAuthEnabled } from "./lib/auth-mode";
 import "./index.css";
 
 function disableServiceWorkerAndClearLocalCaches() {
@@ -77,11 +78,18 @@ const trpcClient = trpc.createClient({
       url: trpcUrl,
       fetch(url, options) {
         const idToken = getSessionIdToken();
+        const legacySession = getLegacyEmailSession();
         const signupRole = getSignupRole();
         const mergedHeaders = new Headers(options?.headers ?? {});
         if (idToken) {
           mergedHeaders.set("authorization", `Bearer ${idToken}`);
           mergedHeaders.set("x-teka-id-token", idToken);
+        }
+        if (!idToken && !isGoogleAuthEnabled() && legacySession?.email) {
+          mergedHeaders.set("x-teka-email", legacySession.email);
+          if (legacySession.name) {
+            mergedHeaders.set("x-teka-name", legacySession.name);
+          }
         }
         if (signupRole) {
           mergedHeaders.set("x-teka-role", signupRole);

@@ -1,12 +1,15 @@
 import { trpc } from "@/lib/trpc";
 import {
+  clearLegacyEmailSession,
   clearSessionIdToken,
   clearSignupRole,
+  getLegacyEmailSession,
   getGoogleTokenClaims,
   getSessionIdToken,
   getSignupRole,
   setSessionIdToken,
 } from "@/lib/session";
+import { isGoogleAuthEnabled } from "@/lib/auth-mode";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -50,6 +53,7 @@ export function useAuth(options?: UseAuthOptions) {
       throw error;
     } finally {
       clearSessionIdToken();
+      clearLegacyEmailSession();
       clearSignupRole();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
@@ -58,8 +62,9 @@ export function useAuth(options?: UseAuthOptions) {
 
   const state = useMemo(() => {
     const claims = getGoogleTokenClaims();
+    const legacySession = getLegacyEmailSession();
     const fallbackRole = getSignupRole();
-    const hasSessionToken = Boolean(getSessionIdToken());
+    const hasSessionToken = Boolean(getSessionIdToken() || legacySession?.email);
     const fallbackUser =
       !meQuery.data && claims?.sub
         ? {
@@ -67,6 +72,17 @@ export function useAuth(options?: UseAuthOptions) {
             openId: `google:${claims.sub}`,
             name: claims.name ?? null,
             email: claims.email ?? null,
+            role: (fallbackRole ?? "comprador") as
+              | "admin"
+              | "livreiro"
+              | "comprador",
+          }
+        : !meQuery.data && legacySession?.email
+        ? {
+            id: 0,
+            openId: `email:${legacySession.email}`,
+            name: legacySession.name ?? null,
+            email: legacySession.email,
             role: (fallbackRole ?? "comprador") as
               | "admin"
               | "livreiro"
@@ -132,6 +148,7 @@ export function useAuth(options?: UseAuthOptions) {
     if (silentAuthAttemptedRef.current) return;
     if (getSessionIdToken()) return;
 
+    if (!isGoogleAuthEnabled()) return;
     const googleClientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || "").trim();
     if (!googleClientId) return;
 
@@ -180,7 +197,7 @@ export function useAuth(options?: UseAuthOptions) {
       meQuery.error.data?.code === "UNAUTHORIZED";
     if (!isUnauthorized) return;
     if (silentAuthRunning) return;
-    if (getSessionIdToken()) return;
+    if (getSessionIdToken() || getLegacyEmailSession()?.email) return;
 
     const now = Date.now();
     if (now - lastSessionExpiredToastAt < 5000) return;

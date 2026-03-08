@@ -1,6 +1,8 @@
 const TOKEN_KEY = "teka_auth_google_id_token";
 const SIGNUP_ROLE_KEY = "teka_signup_role";
 const TOKEN_ISSUED_AT_KEY = "teka_auth_issued_at";
+const LEGACY_EMAIL_KEY = "teka_auth_legacy_email";
+const LEGACY_NAME_KEY = "teka_auth_legacy_name";
 export const SESSION_MAX_AGE_MS = 1000 * 60 * 60; // 1 hour
 
 type GoogleTokenClaims = {
@@ -69,6 +71,40 @@ export function clearSessionIdToken() {
   window.localStorage.removeItem(TOKEN_ISSUED_AT_KEY);
 }
 
+export function setLegacyEmailSession(params: { email: string; name?: string | null }) {
+  if (typeof window === "undefined") return;
+  const email = params.email.trim().toLowerCase();
+  if (!email) return;
+  window.localStorage.setItem(LEGACY_EMAIL_KEY, email);
+  if (params.name && params.name.trim()) {
+    window.localStorage.setItem(LEGACY_NAME_KEY, params.name.trim());
+  } else {
+    window.localStorage.removeItem(LEGACY_NAME_KEY);
+  }
+}
+
+export function getLegacyEmailSession():
+  | {
+      email: string;
+      name: string | null;
+    }
+  | null {
+  if (typeof window === "undefined") return null;
+  const email = (window.localStorage.getItem(LEGACY_EMAIL_KEY) || "").trim().toLowerCase();
+  if (!email) return null;
+  const nameRaw = (window.localStorage.getItem(LEGACY_NAME_KEY) || "").trim();
+  return {
+    email,
+    name: nameRaw || null,
+  };
+}
+
+export function clearLegacyEmailSession() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(LEGACY_EMAIL_KEY);
+  window.localStorage.removeItem(LEGACY_NAME_KEY);
+}
+
 export function setSignupRole(role: "livreiro" | "comprador") {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(SIGNUP_ROLE_KEY, role);
@@ -83,6 +119,10 @@ export function getSignupRole(): "livreiro" | "comprador" | null {
 export function clearSignupRole() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(SIGNUP_ROLE_KEY);
+}
+
+export function hasAnyAuthSession() {
+  return Boolean(getSessionIdToken() || getLegacyEmailSession()?.email);
 }
 
 export function getGoogleTokenClaims(): GoogleTokenClaims | null {
