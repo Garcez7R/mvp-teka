@@ -58,6 +58,7 @@ O TEKA foi desenhado para:
 
 - visão administrativa de usuários, sebos e livros;
 - edição completa de livros e ações de gestão centralizadas;
+- fluxo de edição de livros com formulário dedicado e ações explícitas `Salvar` / `Cancelar`;
 - gestão de capas com filtros (`Sem capa` / `Com capa`) e troca por ISBN/título;
 - controle por role.
 
@@ -65,6 +66,7 @@ O TEKA foi desenhado para:
 
 - **Livreiro**: cards operacionais + gráficos de status do catálogo e top livros por favoritos.
 - **Admin**: visão consolidada da plataforma com usuários por perfil, status de livros, crescimento 7d e ações recentes de auditoria.
+- Auditoria no painel Admin mostra por padrão as 5 últimas ações, com opção para expandir o histórico completo.
 - Gráficos implementados com `recharts`, mantendo identidade visual do produto.
 
 ## Privacidade e Compliance

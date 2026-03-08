@@ -112,6 +112,7 @@ Abas principais:
 - Usuários: criar, editar role e excluir.
 - Sebos: criar, editar e excluir.
 - Livros: editar todos os campos de cadastro (incluindo descrição), além de capa, status, visibilidade e exclusão.
+- No Admin, a edição abre em formulário dedicado, com ações explícitas de `Salvar` e `Cancelar`.
 - Livros: filtro de capa (`Todos`, `Sem capa`, `Com capa`) e badge `Sem capa`.
 
 Capas no Admin:
@@ -122,7 +123,7 @@ Capas no Admin:
 
 Métricas:
 - Cards de resumo e gráficos (colapsáveis).
-- Auditoria de ações recentes.
+- Auditoria de ações recentes: exibe as 5 últimas por padrão, com opção de expandir para histórico completo.
 
 ## 6. Boas Práticas de Operação
 
