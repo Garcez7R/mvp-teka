@@ -742,7 +742,7 @@ export default function ManageBooks() {
             <select
               value={String(selectedSeboId || "")}
               onChange={(e) => setSelectedSeboId(Number.parseInt(e.target.value, 10))}
-              className="w-full md:max-w-md px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full md:max-w-md px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100"
             >
               {availableSebos.map((sebo: any) => (
                 <option key={sebo.id} value={String(sebo.id)}>
@@ -751,7 +751,7 @@ export default function ManageBooks() {
               ))}
             </select>
           </div>
-          <p className="text-gray-600 md:text-right md:self-end">
+          <p className="text-gray-600 dark:text-gray-300 md:text-right md:self-end">
             {selectedSebo?.name || "-"}
           </p>
         </div>
