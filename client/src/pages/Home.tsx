@@ -737,7 +737,7 @@ export default function Home() {
             <p className="font-inter text-sm text-gray-500">Tente ajustar seus filtros ou busca</p>
             <button
               onClick={clearAllFilters}
-              className="mt-4 px-4 py-2 border-2 border-[#da4653] text-[#da4653] rounded-lg font-medium hover:bg-[#da4653] hover:text-white transition-colors"
+              className="mt-4 px-4 py-2 border-2 border-[#da4653] bg-[#da4653] text-[#262969] rounded-lg font-semibold hover:bg-[#c93d45] hover:text-[#1f245f] transition-colors"
             >
               Limpar filtros
             </button>
