@@ -152,6 +152,9 @@ export default function Home() {
     setLoadedBooks([]);
     setHasMore(true);
     setSearchBarKey((prev) => prev + 1);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const syncDraftFromAppliedFilters = () => {
