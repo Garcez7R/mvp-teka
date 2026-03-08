@@ -1,6 +1,6 @@
 {
   "name": "teka",
-  "version": "1.0.0",
+  "version": "0.7.0+206",
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@10.4.1",
