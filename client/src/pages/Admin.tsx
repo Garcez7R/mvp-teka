@@ -831,21 +831,21 @@ export default function Admin() {
             </div>
 
             <div className="space-y-3">
-              <div className="p-4 border rounded-lg bg-gray-50">
+              <div className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-900 dark:border-gray-700">
                 <h3 className="font-semibold text-[#262969] dark:text-gray-100 mb-2">Avaliações recentes de sebos</h3>
                 {(seboReviewsQuery.data || []).length === 0 ? (
-                  <p className="text-sm text-gray-600">Sem avaliações registradas nesta base.</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Sem avaliações registradas nesta base.</p>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-auto">
                     {(seboReviewsQuery.data || []).map((review: any) => (
-                      <div key={review.id} className="p-2 rounded border bg-white text-sm">
-                        <p className="font-semibold text-[#262969]">
+                      <div key={review.id} className="p-2 rounded border bg-white dark:bg-gray-800 dark:border-gray-700 text-sm">
+                        <p className="font-semibold text-[#262969] dark:text-gray-100">
                           {review.seboName || `Sebo #${review.seboId}`} • {review.rating}/5
                         </p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
                           {review.reviewerName || "Usuário"} ({review.reviewerEmail || "sem e-mail"})
                         </p>
-                        {review.comment ? <p className="text-xs text-gray-700 mt-1">{review.comment}</p> : null}
+                        {review.comment ? <p className="text-xs text-gray-700 dark:text-gray-200 mt-1">{review.comment}</p> : null}
                         <button
                           type="button"
                           onClick={() =>
@@ -854,8 +854,10 @@ export default function Admin() {
                               isVisible: !Boolean(review.isVisible),
                             })
                           }
-                          className={`mt-2 px-2 py-1 rounded text-xs ${
-                            review.isVisible ? "bg-amber-100 text-amber-900" : "bg-emerald-100 text-emerald-900"
+                          className={`mt-2 px-2 py-1 rounded text-xs border ${
+                            review.isVisible
+                              ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700"
+                              : "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-700"
                           }`}
                         >
                           {review.isVisible ? "Ocultar avaliação" : "Exibir avaliação"}
@@ -883,13 +885,13 @@ export default function Admin() {
                           {sebo.plan === "gold" ? "Gold" : sebo.plan === "pro" ? "Pro" : "Free"}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
                         ID {sebo.id} • User {sebo.userId} • {sebo.city || "-"} / {sebo.state || "-"}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         Responsável: {usersById.get(Number(sebo.userId))?.email || "-"}
                       </p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
                         Vitrine:{" "}
                         <a
                           href={(sebo.plan === "pro" || sebo.plan === "gold") && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
@@ -900,7 +902,7 @@ export default function Admin() {
                           {(sebo.plan === "pro" || sebo.plan === "gold") && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
                         </a>
                       </p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
                         Avaliação: {Number(sebo.reviewSummary?.avgRating ?? 0).toFixed(1)} ({Number(sebo.reviewSummary?.totalReviews ?? 0)} avaliações)
                         {sebo.reviewSummary?.topRated ? " • Top Avaliado" : ""}
                       </p>
@@ -914,7 +916,11 @@ export default function Admin() {
                               plan: "free",
                             });
                           }}
-                          className={`px-2 py-1 rounded text-sm ${sebo.plan === "free" ? "bg-gray-700 text-white" : "bg-gray-200 text-gray-800"}`}
+                          className={`px-2 py-1 rounded text-sm border ${
+                            sebo.plan === "free"
+                              ? "bg-gray-700 text-white border-gray-700 dark:bg-gray-200 dark:text-gray-900 dark:border-gray-200"
+                              : "bg-white text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+                          }`}
                         >
                           Free
                         </button>
@@ -925,7 +931,11 @@ export default function Admin() {
                               plan: "pro",
                             });
                           }}
-                          className={`px-2 py-1 rounded text-sm ${sebo.plan === "pro" ? "bg-[#262969] text-white" : "bg-gray-200 text-gray-800"}`}
+                          className={`px-2 py-1 rounded text-sm border ${
+                            sebo.plan === "pro"
+                              ? "bg-[#262969] text-white border-[#262969] dark:bg-[#da4653] dark:text-[#262969] dark:border-[#da4653]"
+                              : "bg-white text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+                          }`}
                         >
                           Pro
                         </button>
@@ -936,7 +946,11 @@ export default function Admin() {
                               plan: "gold",
                             });
                           }}
-                          className={`px-2 py-1 rounded text-sm ${sebo.plan === "gold" ? "bg-amber-500 text-white" : "bg-gray-200 text-gray-800"}`}
+                          className={`px-2 py-1 rounded text-sm border ${
+                            sebo.plan === "gold"
+                              ? "bg-amber-500 text-white border-amber-500 dark:bg-amber-300 dark:text-amber-950 dark:border-amber-300"
+                              : "bg-white text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600"
+                          }`}
                         >
                           Gold
                         </button>
@@ -952,7 +966,7 @@ export default function Admin() {
                               proSlug: nextSlug,
                             });
                           }}
-                          className="px-2 py-1 rounded bg-[#da4653] text-[#262969] text-sm font-semibold"
+                          className="px-2 py-1 rounded border border-[#da4653] bg-[#da4653] text-[#262969] text-sm font-semibold dark:bg-[#262969] dark:text-white dark:border-[#262969]"
                         >
                           Editar slug
                         </button>
@@ -962,7 +976,7 @@ export default function Admin() {
                           if (!confirm(`Excluir sebo "${sebo.name}"?`)) return;
                           void adminDeleteSeboMutation.mutateAsync({ id: sebo.id });
                         }}
-                        className="px-2 py-1 rounded bg-red-600 text-white text-sm"
+                        className="px-2 py-1 rounded border border-red-600 bg-red-600 text-white text-sm dark:bg-red-700 dark:border-red-700"
                       >
                         Excluir
                       </button>
