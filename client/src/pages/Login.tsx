@@ -196,12 +196,13 @@ export default function Login() {
                 />
               )}
             </div>
-            <label className="block text-xs text-gray-700">
+            <label className="block text-xs text-gray-700 dark:text-gray-200">
               <span className="inline-flex items-start gap-2">
                 <input
                   type="checkbox"
                   checked={consentChecked}
                   onChange={(e) => setConsentChecked(e.target.checked)}
+                  className="mt-0.5 accent-[#da4653]"
                 />
                 <span>
                   Estou ciente do tratamento de dados para autenticação, segurança e cumprimento de obrigação legal,
@@ -210,7 +211,7 @@ export default function Login() {
               </span>
             </label>
             {!consentChecked && (
-              <p className="text-xs text-amber-700">
+              <p className="text-xs text-amber-700 dark:text-amber-300">
                 Marque “Estou ciente” para habilitar o login.
               </p>
             )}

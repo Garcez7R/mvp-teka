@@ -373,21 +373,22 @@ export default function CreateSebo() {
             </div>
 
             {/* Info Box */}
-            <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg flex gap-3">
-              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg flex gap-3 dark:bg-slate-900/60 dark:border-slate-700">
+              <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-300 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-inter text-sm text-blue-900">
+                <p className="font-inter text-sm text-blue-900 dark:text-blue-100">
                   <span className="font-semibold">Próximo:</span> Após criar seu sebo, você poderá adicionar livros para venda imediatamente.
                 </p>
               </div>
             </div>
 
-            <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <label className="inline-flex items-start gap-2 text-sm text-amber-900">
+            <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-950/20 dark:border-amber-800/60">
+              <label className="inline-flex items-start gap-2 text-sm text-amber-900 dark:text-amber-100">
                 <input
                   type="checkbox"
                   checked={legalAware}
                   onChange={(e) => setLegalAware(e.target.checked)}
+                  className="mt-0.5 accent-[#da4653]"
                 />
                 <span>
                   Estou ciente das regras de privacidade e responsabilidade da plataforma:

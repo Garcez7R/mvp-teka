@@ -226,6 +226,18 @@
     color: #d1d5db !important;
   }
 
+  .dark .text-blue-900,
+  .dark .text-blue-800,
+  .dark .text-blue-700 {
+    color: #dbeafe !important;
+  }
+
+  .dark .text-amber-900,
+  .dark .text-amber-800,
+  .dark .text-amber-700 {
+    color: #fde68a !important;
+  }
+
   .dark .border-gray-200,
   .dark .border-gray-300 {
     border-color: #374151 !important;
