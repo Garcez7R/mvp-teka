@@ -92,7 +92,7 @@ O TEKA foi desenhado para:
    - busca de sugestões de livro;
    - escolha de capa entre opções encontradas.
 4. **Scan em lote (`/batch-scan`)**:
-   - leitura contínua;
+   - leitura guiada (uma leitura por vez com botão `Próximo scan`);
    - cooldown anti-duplicação;
    - som/vibração ao detectar;
    - revisão em fila e publicação em lote.

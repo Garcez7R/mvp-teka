@@ -40,6 +40,7 @@ export default function BatchScan() {
   const [scannerBusy, setScannerBusy] = useState(false);
   const [scannerError, setScannerError] = useState("");
   const [scannerEngine, setScannerEngine] = useState<"barcode" | "tesseract">("barcode");
+  const [waitingNextScan, setWaitingNextScan] = useState(false);
   const [manualIsbn, setManualIsbn] = useState("");
   const [defaultCondition, setDefaultCondition] = useState<DraftCondition>("Usado");
   const [defaultPrice, setDefaultPrice] = useState("");
@@ -50,11 +51,17 @@ export default function BatchScan() {
 
   const lastDetectedRef = useRef<{ isbn: string; at: number } | null>(null);
   const scannerActiveRef = useRef(false);
+  const waitingNextScanRef = useRef(false);
   const scanFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const tesseractLoaderRef = useRef<Promise<any> | null>(null);
+
+  const setScanPaused = (value: boolean) => {
+    waitingNextScanRef.current = value;
+    setWaitingNextScan(value);
+  };
 
   const createBookMutation = trpc.books.create.useMutation();
   const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
@@ -251,17 +258,20 @@ export default function BatchScan() {
     }
   };
 
-  const addDraftFromIsbn = async (rawIsbn: string) => {
+  const addDraftFromIsbn = async (
+    rawIsbn: string,
+    options?: { pauseAfterRead?: boolean }
+  ) => {
     const isbn = normalizeISBN(rawIsbn);
     if (!isValidISBN(isbn)) {
       toast.error("ISBN inválido para scan em lote.");
-      return;
+      return false;
     }
 
     const now = Date.now();
     const last = lastDetectedRef.current;
     if (last && last.isbn === isbn && now - last.at < 2500) {
-      return;
+      return false;
     }
     lastDetectedRef.current = { isbn, at: now };
 
@@ -312,10 +322,16 @@ export default function BatchScan() {
     });
     incrementScannedToday();
     toast.success(`Escaneado: ${isbn}`);
+    if (options?.pauseAfterRead) {
+      setScanPaused(true);
+      setScannerError("Leitura concluída. Toque em Próximo scan para continuar.");
+    }
+    return true;
   };
 
   const stopScanner = () => {
     scannerActiveRef.current = false;
+    setScanPaused(false);
     setScannerBusy(false);
     if (scanFrameRef.current) {
       cancelAnimationFrame(scanFrameRef.current);
@@ -425,6 +441,7 @@ export default function BatchScan() {
     try {
       setScannerError("");
       setScannerBusy(true);
+      setScanPaused(false);
       setScannerOpen(true);
       setScannerEngine(hasBarcodeDetector ? "barcode" : "tesseract");
       await ensureAudioContextReady();
@@ -447,12 +464,16 @@ export default function BatchScan() {
       scannerActiveRef.current = true;
       const loop = async () => {
         if (!scannerActiveRef.current || !videoRef.current) return;
+        if (waitingNextScanRef.current) {
+          scanFrameRef.current = requestAnimationFrame(() => void loop());
+          return;
+        }
         try {
           const codes = await detector.detect(videoRef.current);
           for (const code of codes || []) {
             const raw = String(code?.rawValue || "");
             if (raw) {
-              void addDraftFromIsbn(raw);
+              await addDraftFromIsbn(raw, { pauseAfterRead: true });
               break;
             }
           }
@@ -610,7 +631,7 @@ export default function BatchScan() {
 
         <h1 className="font-outfit font-bold text-3xl text-[#262969] mb-2">Scan em Lote</h1>
         <p className="text-gray-600 mb-6">
-          Escaneie ISBN continuamente no celular e revise antes de publicar no catálogo.
+          Escaneie ISBN no celular em modo controlado (um por vez) e revise antes de publicar no catálogo.
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -657,7 +678,7 @@ export default function BatchScan() {
               disabled={scannerBusy || scannerOpen}
               className="px-4 py-2 rounded bg-[#262969] text-white disabled:opacity-50"
             >
-              {scannerBusy ? "Abrindo câmera..." : scannerOpen ? "Scanner ativo" : "Iniciar scanner contínuo"}
+              {scannerBusy ? "Abrindo câmera..." : scannerOpen ? "Scanner ativo" : "Iniciar scanner"}
             </button>
           </div>
 
@@ -680,6 +701,21 @@ export default function BatchScan() {
             >
               Adicionar
             </button>
+            {scannerOpen && (
+              <button
+                type="button"
+                onClick={() => {
+                  setScanPaused(false);
+                  setScannerError("");
+                }}
+                disabled={!waitingNextScan || scannerEngine !== "barcode"}
+                className="px-4 py-2 rounded border border-[#262969] text-[#262969] disabled:opacity-50"
+              >
+                {waitingNextScan && scannerEngine === "barcode"
+                  ? "Próximo scan"
+                  : "Aguardando leitura"}
+              </button>
+            )}
             {scannerOpen && (
               <button
                 type="button"
@@ -852,7 +888,7 @@ export default function BatchScan() {
           <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
             <div className="w-full max-w-sm md:max-w-lg">
               <p className="text-white text-sm mb-3">
-                Aponte para o código de barras. O scanner detecta continuamente.
+                Aponte para o código de barras. Após cada leitura, toque em Próximo scan.
               </p>
               <video
                 ref={videoRef}
@@ -870,6 +906,19 @@ export default function BatchScan() {
                     className="px-4 py-2 rounded border border-[#8ea4ff] text-[#dce3ff] hover:bg-[#262969] disabled:opacity-50"
                   >
                     {scannerBusy ? "Processando..." : "Capturar ISBN (modo compatível)"}
+                  </button>
+                )}
+                {scannerEngine === "barcode" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setScanPaused(false);
+                      setScannerError("");
+                    }}
+                    disabled={!waitingNextScan}
+                    className="px-4 py-2 rounded border border-[#8ea4ff] text-[#dce3ff] hover:bg-[#262969] disabled:opacity-50"
+                  >
+                    {waitingNextScan ? "Próximo scan" : "Aguardando leitura"}
                   </button>
                 )}
                 <button

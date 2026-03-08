@@ -80,8 +80,8 @@ Regras úteis:
 - Você pode escolher capa por sugestões (ISBN/título/autor).
 
 ## 3.3 Scan em Lote (`/batch-scan`)
-- Abra o scanner contínuo.
-- Escaneie vários ISBNs em sequência.
+- Abra o scanner em modo guiado.
+- Após cada leitura válida, use `Próximo scan` para liberar a leitura seguinte.
 - Revise os rascunhos: título, autor, condição, preço, quantidade, capa.
 - Filtre por status: Todos, Escaneados, Revisados, Prontos.
 - Clique em Salvar itens no catálogo para publicar.
@@ -175,7 +175,7 @@ Admin:
 2. Livreiro consegue cadastrar via ISBN e via scan em lote sem erro.
 3. Livreiro consegue alterar quantidade/status e ocultar item no catálogo.
 4. Admin consegue editar/excluir entidades e trocar capa de livro.
-5. Em mobile, câmera abre e o scanner funciona com leitura contínua.
+5. Em mobile, câmera abre e o scanner funciona em modo guiado com `Próximo scan`.
 
 ---
 
