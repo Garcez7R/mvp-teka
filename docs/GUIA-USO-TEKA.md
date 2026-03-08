@@ -2,6 +2,8 @@
 
 Este guia explica, de forma prática, como usar todas as opções principais do app.
 
+Versão de referência deste guia: `0.7.0+233`
+
 Voltar para o documento principal:
 - [README](../README.md)
 
@@ -131,6 +133,15 @@ Métricas:
 - Mantenha quantidade atualizada para evitar frustração de compra.
 - Use visibilidade do livro para ocultar itens não disponíveis sem apagar histórico.
 - Para privacidade, negocie encontro em local seguro.
+- Use sempre o domínio principal da aplicação para evitar sessões/cache antigos.
+
+## 6.1 Segurança Operacional (Aplicado)
+
+- Endpoints públicos exibem apenas dados essenciais (sem expor dados sensíveis de cadastro).
+- Livros ocultos não aparecem para público.
+- Login social usa validação estrita de token.
+- Endpoints sensíveis possuem limitação de taxa.
+- Auditoria de ações administrativas permanece ativa para rastreabilidade.
 
 ## 7. Problemas Comuns
 

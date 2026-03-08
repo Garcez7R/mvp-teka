@@ -10,6 +10,8 @@ Plataforma para conectar leitores e sebos, com foco em catálogo de livros (usad
 
 `Pronto para validação com usuários de teste (Beta controlado)`
 
+Versão de referência: `0.7.0+233`
+
 Escopo recomendado para teste:
 - fluxo de comprador (busca, filtros, detalhe, WhatsApp);
 - fluxo de livreiro (criação do sebo, cadastro por ISBN/scan, gestão de catálogo);
@@ -80,7 +82,12 @@ O TEKA foi desenhado para:
 
 - proteção de headers de segurança em rotas críticas;
 - rate limit em endpoints sensíveis (ex.: OCR);
+- limpeza de buckets de rate limit para evitar crescimento indefinido em memória;
 - sanitização de erros internos para não expor SQL/infra;
+- validação estrita de audience em tokens Google (sem fallback inseguro);
+- bloqueio de exposição pública de livros ocultos;
+- minimização de dados sensíveis em endpoints públicos de sebo/usuário;
+- bloqueio de login/cadastro legados por e-mail em produção (salvo flag explícita);
 - trilha de auditoria para ações administrativas e de gestão.
 
 ## Fluxos de Cadastro de Livro
