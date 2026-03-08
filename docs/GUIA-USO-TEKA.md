@@ -2,7 +2,7 @@
 
 Este guia explica, de forma prática, como usar todas as opções principais do app.
 
-Versão de referência deste guia: `0.7.0+238`
+Versão de referência deste guia: `0.7.0+241`
 
 Voltar para o documento principal:
 - [README](../README.md)

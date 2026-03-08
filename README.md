@@ -10,7 +10,7 @@ Plataforma para conectar leitores e sebos, com foco em catálogo de livros (usad
 
 `Pronto para validação com usuários de teste (Beta controlado)`
 
-Versão de referência: `0.7.0+238`
+Versão de referência: `0.7.0+241`
 
 Escopo recomendado para teste:
 - fluxo de comprador (busca, filtros, detalhe, WhatsApp);
