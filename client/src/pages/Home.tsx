@@ -512,7 +512,7 @@ export default function Home() {
         <div className="mb-8 flex gap-3 flex-wrap">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 border-2 border-[#da4653] rounded-full hover:bg-[#da4653] hover:text-white transition-colors font-inter text-sm font-medium text-[#da4653]"
+            className="flex items-center gap-2 px-4 py-2 border-2 border-[#da4653] rounded-full bg-[#da4653] text-[#262969] hover:bg-[#c93d45] hover:text-[#1f245f] transition-colors font-inter text-sm font-semibold"
           >
             <Filter className="w-4 h-4" />
             Filtros
