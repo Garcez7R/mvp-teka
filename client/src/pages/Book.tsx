@@ -403,6 +403,14 @@ export default function Book() {
                     <p className="font-inter text-xs text-gray-700 dark:text-gray-200 mt-2">
                       Contato e negociação direto com o sebo via WhatsApp.
                     </p>
+                    <div className="mt-2">
+                      <Link
+                        href={book.sebo.plan === "pro" && book.sebo.proSlug ? `/s/${book.sebo.proSlug}` : `/sebo/${book.sebo.id}`}
+                        className="text-xs text-[#da4653] hover:underline font-semibold"
+                      >
+                        Ver vitrine do sebo
+                      </Link>
+                    </div>
                   </div>
                 </div>
                 <button

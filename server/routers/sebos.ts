@@ -2,21 +2,53 @@ import { z } from "zod";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_utils/trpc.js";
 import { db } from "./_utils/db.js";
 import { sebos, books, users, favorites, bookInterests } from "../_schema.ts";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { logAuditEvent } from "./_utils/audit.js";
 
 const HIDDEN_MARKER = /^\[HIDDEN\]\s*/i;
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
 type AvailabilityStatus = "ativo" | "reservado" | "vendido";
 
+function slugifySeboName(value?: string | null): string {
+  const base = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .trim();
+  return base || "sebo";
+}
+
+async function ensureUniqueProSlug(baseSlug: string, currentSeboId?: number): Promise<string> {
+  let nextSlug = baseSlug;
+  let suffix = 1;
+  while (true) {
+    const existing = await db
+      .select({ id: sebos.id })
+      .from(sebos)
+      .where(eq(sebos.proSlug, nextSlug))
+      .then((res) => res[0] ?? null);
+    if (!existing || (currentSeboId && Number(existing.id) === Number(currentSeboId))) {
+      return nextSlug;
+    }
+    suffix += 1;
+    nextSlug = `${baseSlug}-${suffix}`;
+  }
+}
+
 const seboPublicSelect = {
   id: sebos.id,
   name: sebos.name,
+  plan: sebos.plan,
+  proSlug: sebos.proSlug,
+  proEnabledAt: sebos.proEnabledAt,
   description: sebos.description,
   logoUrl: sebos.logoUrl,
   whatsapp: sebos.whatsapp,
   city: sebos.city,
   state: sebos.state,
+  postalCode: sebos.postalCode,
   verified: sebos.verified,
   supportsPickup: sebos.supportsPickup,
   shipsNeighborhood: sebos.shipsNeighborhood,
@@ -121,11 +153,15 @@ export const sebosRouter = router({
       const publicSebo = {
         id: sebo.id,
         name: sebo.name,
+        plan: sebo.plan,
+        proSlug: sebo.proSlug,
+        proEnabledAt: sebo.proEnabledAt,
         description: sebo.description,
         logoUrl: sebo.logoUrl,
         whatsapp: sebo.whatsapp,
         city: sebo.city,
         state: sebo.state,
+        postalCode: sebo.postalCode,
         verified: sebo.verified,
         supportsPickup: sebo.supportsPickup,
         shipsNeighborhood: sebo.shipsNeighborhood,
@@ -141,6 +177,67 @@ export const sebosRouter = router({
       };
 
       return { ...publicSebo, books: visibleBooks };
+    }),
+
+  // Get sebo pro storefront by slug
+  getBySlug: publicProcedure
+    .input(z.string().trim().min(2))
+    .query(async ({ input, ctx }) => {
+      const normalizedSlug = slugifySeboName(input);
+      const sebo = await db
+        .select()
+        .from(sebos)
+        .where(and(eq(sebos.proSlug, normalizedSlug), eq(sebos.plan, "pro")))
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0]);
+
+      if (!sebo) {
+        throw new Error("Sebo not found");
+      }
+
+      const seboBooks = await db
+        .select()
+        .from(books)
+        .where(eq(books.seboId, sebo.id));
+
+      const canSeeHidden = ctx.role === "admin" || (ctx.userId !== null && sebo.userId === ctx.userId);
+      const visibleBooks = seboBooks
+        .map((book) => {
+          const normalized = normalizeBookDescription(book.description);
+          return {
+            ...book,
+            description: normalized.description,
+            availabilityStatus: normalized.availabilityStatus,
+            isVisible: normalized.isVisible,
+          };
+        })
+        .filter((book) => canSeeHidden || book.isVisible);
+
+      return {
+        id: sebo.id,
+        name: sebo.name,
+        plan: sebo.plan,
+        proSlug: sebo.proSlug,
+        proEnabledAt: sebo.proEnabledAt,
+        description: sebo.description,
+        logoUrl: sebo.logoUrl,
+        whatsapp: sebo.whatsapp,
+        city: sebo.city,
+        state: sebo.state,
+        postalCode: sebo.postalCode,
+        verified: sebo.verified,
+        supportsPickup: sebo.supportsPickup,
+        shipsNeighborhood: sebo.shipsNeighborhood,
+        shipsCity: sebo.shipsCity,
+        shipsState: sebo.shipsState,
+        shipsNationwide: sebo.shipsNationwide,
+        shippingAreas: sebo.shippingAreas,
+        shippingFeeNotes: sebo.shippingFeeNotes,
+        shippingEta: sebo.shippingEta,
+        shippingNotes: sebo.shippingNotes,
+        createdAt: sebo.createdAt,
+        updatedAt: sebo.updatedAt,
+        books: visibleBooks,
+      };
     }),
 
   // Get current user's sebo
@@ -369,6 +466,134 @@ export const sebosRouter = router({
         },
       });
       return { success: true };
+    }),
+
+  adminSetPlan: adminProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        plan: z.enum(["free", "pro"]),
+        proSlug: z.string().trim().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const existing = await db
+        .select()
+        .from(sebos)
+        .where(eq(sebos.id, input.id))
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0] ?? null);
+
+      if (!existing) {
+        throw new Error("Sebo not found");
+      }
+
+      if (input.plan === "pro") {
+        const requested = slugifySeboName(input.proSlug || existing.proSlug || existing.name);
+        const uniqueSlug = await ensureUniqueProSlug(requested, existing.id);
+        await db
+          .update(sebos)
+          .set({
+            plan: "pro",
+            proSlug: uniqueSlug,
+            proEnabledAt: new Date(),
+          })
+          .where(eq(sebos.id, input.id));
+
+        await logAuditEvent({
+          actorUserId: ctx.userId,
+          actorRole: ctx.role,
+          action: "admin.sebo.set_plan",
+          entityType: "sebo",
+          entityId: input.id,
+          metadata: {
+            plan: "pro",
+            proSlug: uniqueSlug,
+          },
+        });
+
+        return {
+          success: true,
+          plan: "pro" as const,
+          proSlug: uniqueSlug,
+        };
+      }
+
+      await db
+        .update(sebos)
+        .set({
+          plan: "free",
+          proEnabledAt: null,
+        })
+        .where(eq(sebos.id, input.id));
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "admin.sebo.set_plan",
+        entityType: "sebo",
+        entityId: input.id,
+        metadata: {
+          plan: "free",
+        },
+      });
+
+      return {
+        success: true,
+        plan: "free" as const,
+        proSlug: existing.proSlug ?? null,
+      };
+    }),
+
+  setMyProSlug: protectedProcedure
+    .input(
+      z.object({
+        seboId: z.number(),
+        proSlug: z.string().trim().min(2),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const existing = await db
+        .select()
+        .from(sebos)
+        .where(eq(sebos.id, input.seboId))
+        .then((res: Array<typeof sebos.$inferSelect>) => res[0] ?? null);
+
+      if (!existing) {
+        throw new Error("Sebo not found");
+      }
+
+      const canEdit = existing.userId === ctx.userId || ctx.role === "admin";
+      if (!canEdit) {
+        throw new Error("Unauthorized");
+      }
+
+      if (existing.plan !== "pro") {
+        throw new Error("Este sebo ainda não está no plano Pro.");
+      }
+
+      const requested = slugifySeboName(input.proSlug);
+      const uniqueSlug = await ensureUniqueProSlug(requested, existing.id);
+
+      await db
+        .update(sebos)
+        .set({ proSlug: uniqueSlug, updatedAt: new Date() })
+        .where(eq(sebos.id, input.seboId));
+
+      await logAuditEvent({
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        action: "sebo.update_pro_slug",
+        entityType: "sebo",
+        entityId: existing.id,
+        metadata: {
+          proSlug: uniqueSlug,
+        },
+      });
+
+      return {
+        success: true,
+        proSlug: uniqueSlug,
+      };
     }),
 
   adminDelete: adminProcedure

@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS sebos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   userId INTEGER NOT NULL,
   name TEXT NOT NULL,
+  plan TEXT NOT NULL DEFAULT 'free',
+  proSlug TEXT,
+  proEnabledAt INTEGER,
   description TEXT,
   ownerName TEXT,
   documentId TEXT,
@@ -103,6 +106,7 @@ CREATE INDEX IF NOT EXISTS idx_books_sebo ON books(seboId);
 CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
 CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
 CREATE INDEX IF NOT EXISTS idx_sebos_user ON sebos(userId);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sebos_pro_slug ON sebos(proSlug) WHERE proSlug IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(createdAt);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_user_id ON audit_logs(actorUserId);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entityType, entityId);

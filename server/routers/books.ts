@@ -13,6 +13,8 @@ const seboBaseSelect = {
   id: sebos.id,
   userId: sebos.userId,
   name: sebos.name,
+  plan: sebos.plan,
+  proSlug: sebos.proSlug,
   description: sebos.description,
   whatsapp: sebos.whatsapp,
   city: sebos.city,
@@ -233,6 +235,8 @@ export const booksRouter = router({
               ? {
                   id: row.sebo.id,
                   name: row.sebo.name,
+                  plan: row.sebo.plan,
+                  proSlug: row.sebo.proSlug,
                   city: row.sebo.city,
                   state: row.sebo.state,
                   verified: Boolean(row.sebo.verified),

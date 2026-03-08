@@ -260,6 +260,13 @@ export default function Admin() {
     },
     onError: (error) => toast.error(error.message || "Erro ao remover sebo."),
   });
+  const adminSetSeboPlanMutation = trpc.sebos.adminSetPlan.useMutation({
+    onSuccess: async () => {
+      await utils.sebos.list.invalidate();
+      toast.success("Plano do sebo atualizado.");
+    },
+    onError: (error) => toast.error(error.message || "Erro ao atualizar plano do sebo."),
+  });
 
   const adminUpdateBookMutation = trpc.books.update.useMutation({
     onSuccess: async () => {
@@ -935,23 +942,85 @@ export default function Admin() {
                 <div key={sebo.id} className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-[#262969] dark:text-gray-100">{sebo.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-[#262969] dark:text-gray-100">{sebo.name}</p>
+                        <span
+                          className={`text-[11px] px-2 py-1 rounded font-semibold ${
+                            sebo.plan === "pro"
+                              ? "bg-[#da4653] text-[#262969]"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {sebo.plan === "pro" ? "Pro" : "Free"}
+                        </span>
+                      </div>
                       <p className="text-sm text-gray-600">
                         ID {sebo.id} • User {sebo.userId} • {sebo.city || "-"} / {sebo.state || "-"}
                       </p>
                       <p className="text-xs text-gray-500">
                         Responsável: {usersById.get(Number(sebo.userId))?.email || "-"}
                       </p>
+                      <p className="text-xs text-gray-600">
+                        Vitrine:{" "}
+                        <a
+                          href={sebo.plan === "pro" && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#da4653] hover:underline"
+                        >
+                          {sebo.plan === "pro" && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
+                        </a>
+                      </p>
                     </div>
-                    <button
-                      onClick={() => {
-                        if (!confirm(`Excluir sebo "${sebo.name}"?`)) return;
-                        void adminDeleteSeboMutation.mutateAsync({ id: sebo.id });
-                      }}
-                      className="px-2 py-1 rounded bg-red-600 text-white text-sm"
-                    >
-                      Excluir
-                    </button>
+                    <div className="flex flex-col gap-2 items-end">
+                      <button
+                        onClick={() => {
+                          if (sebo.plan === "pro") {
+                            void adminSetSeboPlanMutation.mutateAsync({
+                              id: Number(sebo.id),
+                              plan: "free",
+                            });
+                            return;
+                          }
+                          void adminSetSeboPlanMutation.mutateAsync({
+                            id: Number(sebo.id),
+                            plan: "pro",
+                          });
+                        }}
+                        className={`px-2 py-1 rounded text-sm ${
+                          sebo.plan === "pro"
+                            ? "bg-gray-200 text-gray-800"
+                            : "bg-[#262969] text-white"
+                        }`}
+                      >
+                        {sebo.plan === "pro" ? "Rebaixar para Free" : "Promover para Pro"}
+                      </button>
+                      {sebo.plan === "pro" && (
+                        <button
+                          onClick={() => {
+                            const nextSlug = window.prompt("Informe o novo slug Pro:", String(sebo.proSlug || ""));
+                            if (!nextSlug) return;
+                            void adminSetSeboPlanMutation.mutateAsync({
+                              id: Number(sebo.id),
+                              plan: "pro",
+                              proSlug: nextSlug,
+                            });
+                          }}
+                          className="px-2 py-1 rounded bg-[#da4653] text-[#262969] text-sm font-semibold"
+                        >
+                          Editar slug Pro
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          if (!confirm(`Excluir sebo "${sebo.name}"?`)) return;
+                          void adminDeleteSeboMutation.mutateAsync({ id: sebo.id });
+                        }}
+                        className="px-2 py-1 rounded bg-red-600 text-white text-sm"
+                      >
+                        Excluir
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-5 gap-2">
                     <input

@@ -52,6 +52,19 @@ export default function SettingsPage() {
       toast.error(error.message || "Falha ao atualizar sebo.");
     },
   });
+  const updateMyProSlugMutation = trpc.sebos.setMyProSlug.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.sebos.getMySebo.invalidate(),
+        utils.sebos.listMine.invalidate(),
+        utils.sebos.list.invalidate(),
+      ]);
+      toast.success("URL Pro atualizada.");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Falha ao atualizar URL Pro.");
+    },
+  });
   const [seboForm, setSeboForm] = useState({
     name: "",
     whatsapp: "",
@@ -74,6 +87,7 @@ export default function SettingsPage() {
     shippingEta: "",
     shippingNotes: "",
   });
+  const [proSlugDraft, setProSlugDraft] = useState("");
   const [installAvailable, setInstallAvailable] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [installStatus, setInstallStatus] = useState("");
@@ -141,6 +155,7 @@ export default function SettingsPage() {
       shippingEta: (mySebo as any).shippingEta || "",
       shippingNotes: (mySebo as any).shippingNotes || "",
     });
+    setProSlugDraft((mySebo as any).proSlug || "");
   }, [mySebo]);
 
   useEffect(() => {
@@ -329,6 +344,19 @@ export default function SettingsPage() {
       shippingFeeNotes: seboForm.shippingFeeNotes.trim() || undefined,
       shippingEta: seboForm.shippingEta.trim() || undefined,
       shippingNotes: seboForm.shippingNotes.trim() || undefined,
+    });
+  };
+
+  const handleSaveProSlug = async () => {
+    if (!mySebo?.id) return;
+    const nextSlug = proSlugDraft.trim();
+    if (!nextSlug) {
+      toast.error("Informe uma URL Pro válida.");
+      return;
+    }
+    await updateMyProSlugMutation.mutateAsync({
+      seboId: Number(mySebo.id),
+      proSlug: nextSlug,
     });
   };
 
@@ -579,6 +607,47 @@ export default function SettingsPage() {
                   >
                     {updateSeboMutation.isPending ? "Salvando..." : "Salvar dados do sebo"}
                   </button>
+                  <div className="mt-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <p className="text-sm font-semibold text-[#262969] mb-1">
+                      Plano da vitrine: {(mySebo as any).plan === "pro" ? "Pro" : "Free"}
+                    </p>
+                    {(mySebo as any).plan === "pro" ? (
+                      <>
+                        <label className="text-xs text-gray-600">URL personalizada (slug)</label>
+                        <div className="mt-1 flex flex-col sm:flex-row gap-2">
+                          <input
+                            value={proSlugDraft}
+                            onChange={(e) => setProSlugDraft(e.target.value)}
+                            placeholder="ex: sebo-do-centro"
+                            className="px-3 py-2 border border-gray-300 rounded bg-white w-full"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleSaveProSlug()}
+                            disabled={updateMyProSlugMutation.isPending}
+                            className="px-4 py-2 rounded-lg bg-[#262969] text-white hover:bg-[#1e2157] disabled:opacity-60 whitespace-nowrap"
+                          >
+                            {updateMyProSlugMutation.isPending ? "Salvando..." : "Salvar URL Pro"}
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-2">
+                          Link atual:{" "}
+                          <a
+                            href={`/s/${(mySebo as any).proSlug || proSlugDraft}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[#da4653] hover:underline"
+                          >
+                            /s/{(mySebo as any).proSlug || proSlugDraft}
+                          </a>
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-xs text-gray-600 mt-1">
+                        Para liberar URL personalizada da vitrine, solicite promoção para Pro ao admin.
+                      </p>
+                    )}
+                  </div>
                   <div className="mt-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
                     <p className="text-sm font-semibold text-[#262969] mb-3">Prévia pública do sebo</p>
                     <div className="flex items-start gap-3">

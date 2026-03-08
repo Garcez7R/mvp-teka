@@ -22,6 +22,8 @@ Rotas principais:
 - `/login` Login
 - `/sebos` Lista de sebos
 - `/sebo/novo` Criar sebo
+- `/sebo/:id` Vitrine padrão do sebo (free)
+- `/s/:slug` Vitrine personalizada do sebo (pro)
 - `/add-book` Cadastrar livro
 - `/batch-scan` Scan em lote
 - `/manage-books` Meu Catálogo
@@ -61,6 +63,7 @@ Rotas principais:
 ### 2.4 Sebos (`/sebos`)
 - Liste todos os sebos cadastrados.
 - Filtre por cidade, UF e CEP.
+- Abra a vitrine de cada sebo diretamente na lista.
 
 ## 3. Fluxo do Livreiro
 
@@ -103,6 +106,7 @@ Regras úteis:
 
 Para livreiro/admin:
 - Atualize dados do sebo.
+- Se o sebo estiver no plano Pro, ajuste o slug da URL personalizada.
 - Revise disponibilidade da câmera e instruções de uso em mobile.
 
 Para comprador:
@@ -113,6 +117,7 @@ Para comprador:
 Abas principais:
 - Usuários: criar, editar role e excluir.
 - Sebos: criar, editar e excluir.
+- Sebos: promover para Pro/rebaixar para Free em 1 clique e editar slug Pro.
 - Livros: editar todos os campos de cadastro (incluindo descrição), além de capa, status, visibilidade e exclusão.
 - No Admin, a edição abre em formulário dedicado, com ações explícitas de `Salvar` e `Cancelar`.
 - Livros: filtro de capa (`Todos`, `Sem capa`, `Com capa`) e badge `Sem capa`.

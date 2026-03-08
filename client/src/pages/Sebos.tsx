@@ -28,6 +28,9 @@ export default function SebosPage() {
     });
   }, [cityFilter, postalCodeFilter, sebos, stateFilter]);
 
+  const getSeboStorefrontLink = (sebo: any) =>
+    sebo?.plan === "pro" && sebo?.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`;
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />
@@ -67,7 +70,18 @@ export default function SebosPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredSebos.map((sebo: any) => (
               <div key={sebo.id} className="border border-gray-200 rounded-lg p-4 bg-white">
-                <h2 className="font-outfit font-semibold text-xl text-[#262969]">{sebo.name}</h2>
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-outfit font-semibold text-xl text-[#262969]">{sebo.name}</h2>
+                  <span
+                    className={`text-[11px] px-2 py-1 rounded font-semibold ${
+                      sebo?.plan === "pro"
+                        ? "bg-[#da4653] text-[#262969]"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {sebo?.plan === "pro" ? "Pro" : "Free"}
+                  </span>
+                </div>
                 <p className="text-sm text-gray-600 mt-1">
                   {sebo.city || "-"} / {sebo.state || "-"}
                   {(sebo as any).postalCode ? ` • CEP ${(sebo as any).postalCode}` : ""}
@@ -88,8 +102,8 @@ export default function SebosPage() {
                     .join(" • ") || "Não informado"}
                 </p>
                 <div className="mt-3">
-                  <Link href="/" className="text-[#da4653] hover:underline text-sm">
-                    Ver livros na página inicial
+                  <Link href={getSeboStorefrontLink(sebo)} className="text-[#da4653] hover:underline text-sm">
+                    Ver vitrine do sebo
                   </Link>
                 </div>
               </div>

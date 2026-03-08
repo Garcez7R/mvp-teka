@@ -9,6 +9,7 @@ const Home = lazy(() => import("./pages/Home"));
 const Book = lazy(() => import("./pages/Book"));
 const About = lazy(() => import("./pages/About"));
 const Sebos = lazy(() => import("./pages/Sebos"));
+const SeboStorefront = lazy(() => import("./pages/SeboStorefront"));
 const AddBook = lazy(() => import("./pages/AddBook"));
 const BatchScan = lazy(() => import("./pages/BatchScan"));
 const CreateSebo = lazy(() => import("./pages/CreateSebo"));
@@ -28,6 +29,8 @@ function Router() {
       <Route path="/batch-scan" component={BatchScan} />
       <Route path="/manage-books" component={ManageBooks} />
       <Route path="/sebo/novo" component={CreateSebo} />
+      <Route path="/sebo/:id" component={SeboStorefront} />
+      <Route path="/s/:slug" component={SeboStorefront} />
       <Route path="/login" component={Login} />
       <Route path="/my-interests" component={MyInterests} />
       <Route path="/settings" component={Settings} />
