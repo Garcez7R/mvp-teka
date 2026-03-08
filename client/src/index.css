@@ -146,6 +146,26 @@
     background-color: #1f2937 !important;
   }
 
+  .dark .bg-blue-50 {
+    background-color: #0b1220 !important;
+  }
+
+  .dark .bg-amber-50 {
+    background-color: #1a1407 !important;
+  }
+
+  .dark .bg-green-50 {
+    background-color: #0b1a12 !important;
+  }
+
+  .dark .bg-red-50 {
+    background-color: #1a0b0f !important;
+  }
+
+  .dark .bg-indigo-50 {
+    background-color: #101427 !important;
+  }
+
   .dark .text-gray-900 {
     color: #f3f4f6 !important;
   }
@@ -160,6 +180,26 @@
   .dark .border-gray-200,
   .dark .border-gray-300 {
     border-color: #374151 !important;
+  }
+
+  .dark .border-blue-200 {
+    border-color: #1e3a5f !important;
+  }
+
+  .dark .border-amber-200 {
+    border-color: #5b4a1d !important;
+  }
+
+  .dark .border-green-200 {
+    border-color: #1f5b3a !important;
+  }
+
+  .dark .border-red-200 {
+    border-color: #5b1f2a !important;
+  }
+
+  .dark .border-indigo-200 {
+    border-color: #2d3d73 !important;
   }
 
   /* Keep mobile sandwich menu readable in dark mode */
