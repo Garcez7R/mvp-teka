@@ -23,7 +23,7 @@ Rotas principais:
 - `/sebos` Lista de sebos
 - `/sebo/novo` Criar sebo
 - `/sebo/:id` Vitrine padrão do sebo (free)
-- `/s/:slug` Vitrine personalizada do sebo (pro)
+- `/s/:slug` Vitrine personalizada do sebo (pro/gold)
 - `/add-book` Cadastrar livro
 - `/batch-scan` Scan em lote
 - `/manage-books` Meu Catálogo
@@ -64,6 +64,7 @@ Rotas principais:
 - Liste todos os sebos cadastrados.
 - Filtre por cidade, UF e CEP.
 - Abra a vitrine de cada sebo diretamente na lista.
+- Quando habilitado, a vitrine exibe badge de plano (`Free`, `Pro`, `Gold`) e resumo de avaliações.
 
 ## 3. Fluxo do Livreiro
 
@@ -106,7 +107,7 @@ Regras úteis:
 
 Para livreiro/admin:
 - Atualize dados do sebo.
-- Se o sebo estiver no plano Pro, ajuste o slug da URL personalizada.
+- Se o sebo estiver no plano Pro ou Gold, ajuste o slug da URL personalizada.
 - Revise disponibilidade da câmera e instruções de uso em mobile.
 
 Para comprador:
@@ -117,7 +118,7 @@ Para comprador:
 Abas principais:
 - Usuários: criar, editar role e excluir.
 - Sebos: criar, editar e excluir.
-- Sebos: promover para Pro/rebaixar para Free em 1 clique e editar slug Pro.
+- Sebos: alterar plano (`Free`, `Pro`, `Gold`) em 1 clique e editar slug da vitrine personalizada.
 - Livros: editar todos os campos de cadastro (incluindo descrição), além de capa, status, visibilidade e exclusão.
 - No Admin, a edição abre em formulário dedicado, com ações explícitas de `Salvar` e `Cancelar`.
 - Livros: filtro de capa (`Todos`, `Sem capa`, `Com capa`) e badge `Sem capa`.
@@ -131,6 +132,16 @@ Capas no Admin:
 Métricas:
 - Cards de resumo e gráficos (colapsáveis).
 - Auditoria de ações recentes: exibe as 5 últimas por padrão, com opção de expandir para histórico completo.
+
+## 5.1 Modo Pro/Gold (quando habilitado)
+
+- Todo sebo novo entra como `Free` por padrão.
+- Apenas admin altera plano do sebo.
+- Sebos `Pro/Gold` usam vitrine com slug (`/s/:slug`).
+- Recursos opcionais dependem de flags:
+  - `FEATURE_REVIEWS` para avaliações;
+  - `FEATURE_PUBLIC_SEBO_CONTACT` para contato/endereço público;
+  - `ENFORCE_PLAN_LIMITS` para limite de livros ativos por plano.
 
 ## 6. Boas Práticas de Operação
 

@@ -163,19 +163,24 @@ Variáveis importantes de produção (Cloudflare Pages > Settings > Variables an
 ## Estrutura de Dados (resumo)
 
 - `books`: título, autor, ISBN, categoria, preço, condição, quantidade, capa
-- `sebos`: dados da loja + logística de entrega + plano (`free`/`pro`) + slug de vitrine
+- `sebos`: dados da loja + logística de entrega + plano (`free`/`pro`/`gold`) + slug de vitrine
 - `favorites`, `wishlist`, `book_interests`: suporte a descoberta e interesse do comprador
 - `audit_logs`: trilha de ações sensíveis (admin/livreiro)
 
-## Vitrine Pro de Sebo
+## Planos do Sebo (Free/Pro/Gold)
 
 - Home (`/`) segue como catálogo agregado de todos os sebos.
 - Cada sebo possui vitrine própria:
   - Free: `/sebo/:id`
-  - Pro: `/s/:slug`
-- Promoção para Pro é feita pelo admin em **1 ação** no painel (`Promover para Pro`).
-- Livreiro Pro pode ajustar o slug em `Configurações`.
-- Ao virar Pro, a URL personalizada passa a valer imediatamente.
+  - Pro/Gold: `/s/:slug`
+- Todo sebo nasce em `free` por padrão no cadastro.
+- Mudança de plano (`free` <-> `pro` <-> `gold`) é feita pelo admin em **1 ação** no painel.
+- Livreiro de sebo `pro/gold` pode ajustar o slug em `Configurações`.
+- Ao virar `pro` ou `gold`, a URL personalizada passa a valer imediatamente.
+- Recursos avançados são controlados por flags de ambiente:
+  - `FEATURE_REVIEWS` (avaliações de sebo);
+  - `FEATURE_PUBLIC_SEBO_CONTACT` (exibição pública de contato/endereço quando permitido);
+  - `ENFORCE_PLAN_LIMITS` (limites por plano).
 
 ## Observações Operacionais
 
