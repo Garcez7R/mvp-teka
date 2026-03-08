@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 import { formatDateTimePtBr } from "@/lib/datetime";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface EditingBook {
   id: number;
@@ -35,6 +36,7 @@ type StatusHistoryEntry = {
 };
 
 export default function ManageBooks() {
+  const { theme } = useTheme();
   const { isAuthenticated, role } = useAuth({ redirectOnUnauthenticated: true });
   const utils = trpc.useUtils();
   const [searchQuery, setSearchQuery] = useState("");
@@ -212,6 +214,20 @@ export default function ManageBooks() {
     filteredBooks.length > 0 &&
     filteredBooks.every((book: any) => selectedBookIds.includes(Number(book.id)));
   const formatChartNumber = (value: unknown) => Number(value || 0).toLocaleString("pt-BR");
+  const chartAxisColor = theme === "dark" ? "#e5e7eb" : "#374151";
+  const chartGridColor = theme === "dark" ? "#334155" : "#d1d5db";
+  const chartTooltipContentStyle = {
+    backgroundColor: theme === "dark" ? "#111827" : "#ffffff",
+    border: `1px solid ${theme === "dark" ? "#374151" : "#d1d5db"}`,
+    borderRadius: "8px",
+    color: theme === "dark" ? "#f3f4f6" : "#111827",
+  } as const;
+  const chartTooltipLabelStyle = {
+    color: theme === "dark" ? "#f3f4f6" : "#111827",
+  } as const;
+  const chartTooltipItemStyle = {
+    color: theme === "dark" ? "#f3f4f6" : "#111827",
+  } as const;
 
   const handleEdit = (book: typeof myBooks[0]) => {
     setEditingId(book.id);
@@ -788,7 +804,12 @@ export default function ManageBooks() {
                           <Cell key={entry.label} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [formatChartNumber(value), "Livros"]} />
+                      <Tooltip
+                        formatter={(value) => [formatChartNumber(value), "Livros"]}
+                        contentStyle={chartTooltipContentStyle}
+                        labelStyle={chartTooltipLabelStyle}
+                        itemStyle={chartTooltipItemStyle}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -798,10 +819,16 @@ export default function ManageBooks() {
                 <div className="w-full h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={topFavoritesChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="label" />
-                      <YAxis allowDecimals={false} />
-                      <Tooltip formatter={(value) => [formatChartNumber(value), "Favoritos"]} />
+                      <CartesianGrid stroke={chartGridColor} strokeDasharray="3 3" />
+                      <XAxis dataKey="label" tick={{ fill: chartAxisColor }} axisLine={{ stroke: chartAxisColor }} tickLine={{ stroke: chartAxisColor }} />
+                      <YAxis allowDecimals={false} tick={{ fill: chartAxisColor }} axisLine={{ stroke: chartAxisColor }} tickLine={{ stroke: chartAxisColor }} />
+                      <Tooltip
+                        formatter={(value) => [formatChartNumber(value), "Favoritos"]}
+                        contentStyle={chartTooltipContentStyle}
+                        labelStyle={chartTooltipLabelStyle}
+                        itemStyle={chartTooltipItemStyle}
+                        cursor={{ fill: theme === "dark" ? "rgba(148,163,184,0.16)" : "rgba(100,116,139,0.12)" }}
+                      />
                       <Bar dataKey="value" fill="#da4653" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

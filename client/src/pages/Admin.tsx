@@ -7,10 +7,29 @@ import { toast } from "sonner";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 import BookCover from "@/components/BookCover";
 import { formatDatePtBr, formatDateTimePtBr } from "@/lib/datetime";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type AdminTab = "users" | "sebos" | "books";
 
+interface EditingAdminBook {
+  id: number;
+  title: string;
+  author?: string;
+  isbn?: string;
+  category?: string;
+  description?: string;
+  price: number;
+  condition?: "Novo" | "Excelente" | "Bom estado" | "Usado" | "Desgastado";
+  pages?: number;
+  year?: number;
+  quantity: number;
+  availabilityStatus?: "ativo" | "reservado" | "vendido";
+  isVisible?: boolean;
+  coverUrl?: string;
+}
+
 export default function Admin() {
+  const { theme } = useTheme();
   const {
     isAuthenticated,
     isServerAuthenticated,
@@ -30,6 +49,9 @@ export default function Admin() {
   const [booksCoverFilter, setBooksCoverFilter] = useState<"all" | "with-cover" | "no-cover">("all");
   const [bookCoverOptions, setBookCoverOptions] = useState<Record<number, string[]>>({});
   const [coverLoadingId, setCoverLoadingId] = useState<number | null>(null);
+  const [editingBookId, setEditingBookId] = useState<number | null>(null);
+  const [editingBook, setEditingBook] = useState<EditingAdminBook | null>(null);
+  const [isSavingBook, setIsSavingBook] = useState(false);
   const [showCharts, setShowCharts] = useState(false);
   const BOOKS_PAGE_SIZE = 50;
   const canRunAdminQueries =
@@ -80,6 +102,20 @@ export default function Admin() {
     [adminMetrics]
   );
   const formatChartNumber = (value: unknown) => Number(value || 0).toLocaleString("pt-BR");
+  const chartAxisColor = theme === "dark" ? "#e5e7eb" : "#374151";
+  const chartGridColor = theme === "dark" ? "#334155" : "#d1d5db";
+  const chartTooltipContentStyle = {
+    backgroundColor: theme === "dark" ? "#111827" : "#ffffff",
+    border: `1px solid ${theme === "dark" ? "#374151" : "#d1d5db"}`,
+    borderRadius: "8px",
+    color: theme === "dark" ? "#f3f4f6" : "#111827",
+  } as const;
+  const chartTooltipLabelStyle = {
+    color: theme === "dark" ? "#f3f4f6" : "#111827",
+  } as const;
+  const chartTooltipItemStyle = {
+    color: theme === "dark" ? "#f3f4f6" : "#111827",
+  } as const;
   const dedupeCoverUrls = (values: Array<string | null | undefined>) => {
     const seen = new Set<string>();
     const normalized: string[] = [];
@@ -305,6 +341,74 @@ export default function Admin() {
     });
   }, [books, booksCoverFilter, normalizedBooksFilter]);
 
+  const startEditBook = (book: any) => {
+    setEditingBookId(Number(book.id));
+    setEditingBook({
+      id: Number(book.id),
+      title: String(book.title || ""),
+      author: book.author || undefined,
+      isbn: book.isbn || undefined,
+      category: book.category || undefined,
+      description: book.description || undefined,
+      price: Number(book.price ?? 0),
+      condition: (book.condition || "Bom estado") as EditingAdminBook["condition"],
+      pages: Number.isFinite(Number(book.pages)) ? Number(book.pages) : undefined,
+      year: Number.isFinite(Number(book.year)) ? Number(book.year) : undefined,
+      quantity: Number(book.quantity ?? 1),
+      availabilityStatus: (book.availabilityStatus || "ativo") as EditingAdminBook["availabilityStatus"],
+      isVisible: book.isVisible ?? true,
+      coverUrl: book.coverUrl || undefined,
+    });
+    if (book.coverUrl) {
+      setBookCoverOptions((prev) => ({ ...prev, [Number(book.id)]: [String(book.coverUrl)] }));
+    }
+  };
+
+  const cancelEditBook = () => {
+    setEditingBookId(null);
+    setEditingBook(null);
+  };
+
+  const saveEditBook = async () => {
+    if (!editingBook) return;
+    if (!editingBook.title.trim()) {
+      toast.error("Título é obrigatório.");
+      return;
+    }
+    if (!Number.isFinite(editingBook.price) || editingBook.price <= 0) {
+      toast.error("Preço inválido.");
+      return;
+    }
+    if (!Number.isFinite(editingBook.quantity) || editingBook.quantity < 0) {
+      toast.error("Quantidade inválida.");
+      return;
+    }
+    try {
+      setIsSavingBook(true);
+      await adminUpdateBookMutation.mutateAsync({
+        id: editingBook.id,
+        title: editingBook.title.trim(),
+        author: editingBook.author?.trim() || undefined,
+        isbn: editingBook.isbn?.trim() || undefined,
+        category: editingBook.category?.trim() || undefined,
+        description: editingBook.description?.trim() || "",
+        price: Number(editingBook.price),
+        condition: editingBook.condition || "Bom estado",
+        pages: Number.isFinite(editingBook.pages) ? Number(editingBook.pages) : undefined,
+        year: Number.isFinite(editingBook.year) ? Number(editingBook.year) : undefined,
+        quantity: Math.max(0, Math.trunc(Number(editingBook.quantity))),
+        availabilityStatus: editingBook.availabilityStatus || "ativo",
+        isVisible: editingBook.isVisible ?? true,
+        coverUrl: editingBook.coverUrl?.trim() || undefined,
+      });
+      cancelEditBook();
+    } catch {
+      // toast handled by mutation
+    } finally {
+      setIsSavingBook(false);
+    }
+  };
+
   if (loading && role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -402,10 +506,16 @@ export default function Admin() {
                   <div className="w-full h-56">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={roleChartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="label" />
-                        <YAxis allowDecimals={false} />
-                        <Tooltip formatter={(value) => [formatChartNumber(value), "Quantidade"]} />
+                        <CartesianGrid stroke={chartGridColor} strokeDasharray="3 3" />
+                        <XAxis dataKey="label" tick={{ fill: chartAxisColor }} axisLine={{ stroke: chartAxisColor }} tickLine={{ stroke: chartAxisColor }} />
+                        <YAxis allowDecimals={false} tick={{ fill: chartAxisColor }} axisLine={{ stroke: chartAxisColor }} tickLine={{ stroke: chartAxisColor }} />
+                        <Tooltip
+                          formatter={(value) => [formatChartNumber(value), "Quantidade"]}
+                          contentStyle={chartTooltipContentStyle}
+                          labelStyle={chartTooltipLabelStyle}
+                          itemStyle={chartTooltipItemStyle}
+                          cursor={{ fill: theme === "dark" ? "rgba(148,163,184,0.16)" : "rgba(100,116,139,0.12)" }}
+                        />
                         <Bar dataKey="value" fill="#262969" radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -421,7 +531,12 @@ export default function Admin() {
                             <Cell key={entry.label} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value) => [formatChartNumber(value), "Livros"]} />
+                        <Tooltip
+                          formatter={(value) => [formatChartNumber(value), "Livros"]}
+                          contentStyle={chartTooltipContentStyle}
+                          labelStyle={chartTooltipLabelStyle}
+                          itemStyle={chartTooltipItemStyle}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -932,6 +1047,77 @@ export default function Admin() {
                 </div>
               </div>
             </div>
+
+            {editingBook ? (
+              <div className="p-4 border rounded-lg bg-white space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-semibold text-[#262969]">Editando livro #{editingBook.id}</h3>
+                  <button onClick={cancelEditBook} className="px-3 py-2 rounded border">Cancelar</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input value={editingBook.title} onChange={(e) => setEditingBook({ ...editingBook, title: e.target.value })} className="px-3 py-2 border rounded" placeholder="Título" />
+                  <input value={editingBook.author || ""} onChange={(e) => setEditingBook({ ...editingBook, author: e.target.value })} className="px-3 py-2 border rounded" placeholder="Autor" />
+                  <input value={editingBook.isbn || ""} onChange={(e) => setEditingBook({ ...editingBook, isbn: e.target.value })} className="px-3 py-2 border rounded" placeholder="ISBN" />
+                  <input value={editingBook.category || ""} onChange={(e) => setEditingBook({ ...editingBook, category: e.target.value })} className="px-3 py-2 border rounded" placeholder="Categoria" />
+                  <input type="number" step="0.01" min={0} value={String(editingBook.price)} onChange={(e) => setEditingBook({ ...editingBook, price: Number(e.target.value) })} className="px-3 py-2 border rounded" placeholder="Preço" />
+                  <input type="number" min={0} value={String(editingBook.quantity)} onChange={(e) => setEditingBook({ ...editingBook, quantity: Number.parseInt(e.target.value || "0", 10) })} className="px-3 py-2 border rounded" placeholder="Quantidade" />
+                  <select value={editingBook.condition || "Bom estado"} onChange={(e) => setEditingBook({ ...editingBook, condition: e.target.value as any })} className="px-3 py-2 border rounded">
+                    <option value="Novo">Novo</option>
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bom estado">Bom estado</option>
+                    <option value="Usado">Usado</option>
+                    <option value="Desgastado">Desgastado</option>
+                  </select>
+                  <select value={editingBook.availabilityStatus || "ativo"} onChange={(e) => setEditingBook({ ...editingBook, availabilityStatus: e.target.value as any })} className="px-3 py-2 border rounded">
+                    <option value="ativo">Disponível</option>
+                    <option value="reservado">Reservado</option>
+                    <option value="vendido">Vendido</option>
+                  </select>
+                  <input type="number" min={1} value={editingBook.pages ?? ""} onChange={(e) => setEditingBook({ ...editingBook, pages: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })} className="px-3 py-2 border rounded" placeholder="Páginas" />
+                  <input type="number" min={0} value={editingBook.year ?? ""} onChange={(e) => setEditingBook({ ...editingBook, year: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })} className="px-3 py-2 border rounded" placeholder="Ano" />
+                  <input value={editingBook.coverUrl || ""} onChange={(e) => setEditingBook({ ...editingBook, coverUrl: e.target.value })} className="px-3 py-2 border rounded md:col-span-2" placeholder="URL da capa" />
+                  <textarea value={editingBook.description || ""} onChange={(e) => setEditingBook({ ...editingBook, description: e.target.value })} className="px-3 py-2 border rounded md:col-span-2" rows={4} placeholder="Descrição" />
+                </div>
+                <label className="inline-flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={editingBook.isVisible ?? true} onChange={(e) => setEditingBook({ ...editingBook, isVisible: e.target.checked })} />
+                  Visível para compradores
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => void fetchCoverOptionsByIsbn(editingBook)} className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969]">
+                    {coverLoadingId === editingBook.id ? "Buscando..." : "Trocar capa (ISBN)"}
+                  </button>
+                  <button type="button" onClick={() => void fetchCoverOptionsByText(editingBook)} className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969]">
+                    Trocar capa (título/autor)
+                  </button>
+                  <button type="button" onClick={() => setEditingBook({ ...editingBook, coverUrl: "" })} className="px-3 py-2 text-sm rounded border border-gray-400 text-gray-700">
+                    Remover capa
+                  </button>
+                </div>
+                {bookCoverOptions[editingBook.id]?.length ? (
+                  <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                    {bookCoverOptions[editingBook.id].slice(0, 8).map((coverOption) => (
+                      <button
+                        key={`${editingBook.id}-${coverOption}`}
+                        type="button"
+                        onClick={() => setEditingBook({ ...editingBook, coverUrl: coverOption })}
+                        className={`rounded border-2 overflow-hidden ${editingBook.coverUrl === coverOption ? "border-[#da4653]" : "border-gray-200 hover:border-[#da4653]"}`}
+                      >
+                        <img src={coverOption} alt="Opção de capa" className="w-full h-20 object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="flex gap-2">
+                  <button onClick={() => void saveEditBook()} disabled={isSavingBook} className="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50">
+                    {isSavingBook ? "Salvando..." : "Salvar"}
+                  </button>
+                  <button onClick={cancelEditBook} className="px-4 py-2 rounded border">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-gray-600">
                 Página {booksPage + 1}
@@ -955,19 +1141,39 @@ export default function Admin() {
               </div>
             </div>
 
-            <div className="border rounded-lg overflow-auto">
+            <div className="space-y-3 md:hidden">
+              {filteredBooks.map((book: any) => (
+                <div key={`admin-book-mobile-${book.id}`} className="p-3 border rounded-lg bg-white">
+                  <p className="font-semibold text-[#262969]">{book.title}</p>
+                  <p className="text-xs text-gray-600">#{book.id} • {book.sebo?.name || "-"}</p>
+                  <p className="text-sm text-gray-700 mt-1">R$ {Number(book.price).toFixed(2)} • Qtd {Number(book.quantity ?? 1)}</p>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => startEditBook(book)} className="px-3 py-2 rounded bg-blue-600 text-white text-sm">Editar</button>
+                    <button
+                      onClick={() => {
+                        if (!confirm(`Excluir livro "${book.title}"?`)) return;
+                        void adminDeleteBookMutation.mutateAsync(book.id);
+                      }}
+                      className="px-3 py-2 rounded bg-red-600 text-white text-sm"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden md:block border rounded-lg overflow-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="text-left px-3 py-2">ID</th>
-                    <th className="text-left px-3 py-2">Dados</th>
+                    <th className="text-left px-3 py-2">Título</th>
                     <th className="text-left px-3 py-2">Sebo</th>
                     <th className="text-left px-3 py-2">Preço</th>
                     <th className="text-left px-3 py-2">Qtd</th>
-                    <th className="text-left px-3 py-2">Condição</th>
                     <th className="text-left px-3 py-2">Status</th>
                     <th className="text-left px-3 py-2">Visível</th>
-                    <th className="text-left px-3 py-2">Capa</th>
                     <th className="text-left px-3 py-2">Ações</th>
                   </tr>
                 </thead>
@@ -975,255 +1181,25 @@ export default function Admin() {
                   {filteredBooks.map((book: any) => (
                     <tr key={book.id} className="border-t">
                       <td className="px-3 py-2">{book.id}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex flex-col gap-2 min-w-[280px]">
-                          <input
-                            defaultValue={String(book.title || "")}
-                            className="w-full px-2 py-1 border rounded"
-                            placeholder="Título"
-                            onBlur={(e) => {
-                              const nextValue = e.target.value.trim();
-                              if (!nextValue || nextValue === String(book.title || "")) return;
-                              void adminUpdateBookMutation.mutateAsync({ id: book.id, title: nextValue });
-                            }}
-                          />
-                          <input
-                            defaultValue={String(book.author || "")}
-                            className="w-full px-2 py-1 border rounded"
-                            placeholder="Autor"
-                            onBlur={(e) => {
-                              const nextValue = e.target.value.trim() || undefined;
-                              if ((book.author || undefined) === nextValue) return;
-                              void adminUpdateBookMutation.mutateAsync({ id: book.id, author: nextValue });
-                            }}
-                          />
-                          <input
-                            defaultValue={String(book.isbn || "")}
-                            className="w-full px-2 py-1 border rounded"
-                            placeholder="ISBN"
-                            onBlur={(e) => {
-                              const nextValue = e.target.value.trim() || undefined;
-                              if ((book.isbn || undefined) === nextValue) return;
-                              void adminUpdateBookMutation.mutateAsync({ id: book.id, isbn: nextValue });
-                            }}
-                          />
-                          <input
-                            defaultValue={String(book.category || "")}
-                            className="w-full px-2 py-1 border rounded"
-                            placeholder="Categoria"
-                            onBlur={(e) => {
-                              const nextValue = e.target.value.trim() || undefined;
-                              if ((book.category || undefined) === nextValue) return;
-                              void adminUpdateBookMutation.mutateAsync({ id: book.id, category: nextValue });
-                            }}
-                          />
-                          <div className="grid grid-cols-2 gap-2">
-                            <input
-                              defaultValue={book.pages ? String(book.pages) : ""}
-                              type="number"
-                              min="1"
-                              className="w-full px-2 py-1 border rounded"
-                              placeholder="Páginas"
-                              onBlur={(e) => {
-                                const nextPages = e.target.value ? Number.parseInt(e.target.value, 10) : undefined;
-                                if (nextPages !== undefined && (!Number.isFinite(nextPages) || nextPages <= 0)) return;
-                                if (Number(book.pages || 0) === Number(nextPages || 0)) return;
-                                void adminUpdateBookMutation.mutateAsync({ id: book.id, pages: nextPages });
-                              }}
-                            />
-                            <input
-                              defaultValue={book.year ? String(book.year) : ""}
-                              type="number"
-                              min="0"
-                              className="w-full px-2 py-1 border rounded"
-                              placeholder="Ano"
-                              onBlur={(e) => {
-                                const nextYear = e.target.value ? Number.parseInt(e.target.value, 10) : undefined;
-                                if (nextYear !== undefined && (!Number.isFinite(nextYear) || nextYear < 0)) return;
-                                if (Number(book.year || 0) === Number(nextYear || 0)) return;
-                                void adminUpdateBookMutation.mutateAsync({ id: book.id, year: nextYear });
-                              }}
-                            />
-                          </div>
-                          <textarea
-                            defaultValue={String(book.description || "")}
-                            rows={3}
-                            className="w-full px-2 py-1 border rounded resize-y"
-                            placeholder="Descrição"
-                            onBlur={(e) => {
-                              const nextValue = e.target.value.trim();
-                              if (nextValue === String(book.description || "").trim()) return;
-                              void adminUpdateBookMutation.mutateAsync({ id: book.id, description: nextValue });
-                            }}
-                          />
-                          {!book.coverUrl ? (
-                            <span className="inline-flex w-fit text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                              Sem capa
-                            </span>
-                          ) : null}
-                        </div>
-                      </td>
+                      <td className="px-3 py-2">{book.title}</td>
                       <td className="px-3 py-2">{book.sebo?.name || "-"}</td>
+                      <td className="px-3 py-2">R$ {Number(book.price).toFixed(2)}</td>
+                      <td className="px-3 py-2">{Number(book.quantity ?? 1)}</td>
+                      <td className="px-3 py-2">{book.availabilityStatus || "ativo"}</td>
+                      <td className="px-3 py-2">{(book.isVisible ?? true) ? "Sim" : "Não"}</td>
                       <td className="px-3 py-2">
-                        <input
-                          defaultValue={String(book.price)}
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="w-24 px-2 py-1 border rounded"
-                          onBlur={(e) => {
-                            const nextPrice = Number(e.target.value);
-                            if (!Number.isFinite(nextPrice) || nextPrice <= 0 || nextPrice === Number(book.price)) return;
-                            void adminUpdateBookMutation.mutateAsync({ id: book.id, price: nextPrice });
-                          }}
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <select
-                          value={book.condition || "Bom estado"}
-                          onChange={(e) => {
-                            void adminUpdateBookMutation.mutateAsync({
-                              id: book.id,
-                              condition: e.target.value as any,
-                            });
-                          }}
-                          className="px-2 py-1 border rounded"
-                        >
-                          <option value="Novo">Novo</option>
-                          <option value="Excelente">Excelente</option>
-                          <option value="Bom estado">Bom estado</option>
-                          <option value="Usado">Usado</option>
-                          <option value="Desgastado">Desgastado</option>
-                        </select>
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          defaultValue={String(book.quantity ?? 1)}
-                          type="number"
-                          min="0"
-                          className="w-20 px-2 py-1 border rounded"
-                          onBlur={(e) => {
-                            const nextQuantity = Number.parseInt(e.target.value, 10);
-                            if (!Number.isFinite(nextQuantity) || nextQuantity < 0 || nextQuantity === Number(book.quantity ?? 1)) return;
-                            void adminUpdateBookMutation.mutateAsync({
-                              id: book.id,
-                              quantity: nextQuantity,
-                              ...(nextQuantity === 0 ? { availabilityStatus: "vendido" as const } : {}),
-                            });
-                          }}
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <select
-                          value={book.availabilityStatus || "ativo"}
-                          onChange={(e) => {
-                            void adminUpdateBookMutation.mutateAsync({
-                              id: book.id,
-                              availabilityStatus: e.target.value as any,
-                            });
-                          }}
-                          className="px-2 py-1 border rounded"
-                        >
-                          <option value="ativo">ativo</option>
-                          <option value="reservado">reservado</option>
-                          <option value="vendido">vendido</option>
-                        </select>
-                      </td>
-                      <td className="px-3 py-2">
-                        <label className="inline-flex items-center gap-2 text-xs text-gray-700">
-                          <input
-                            type="checkbox"
-                            checked={book.isVisible ?? true}
-                            onChange={(e) => {
-                              void adminUpdateBookMutation.mutateAsync({
-                                id: Number(book.id),
-                                isVisible: e.target.checked,
-                              });
+                        <div className="flex gap-2">
+                          <button onClick={() => startEditBook(book)} className="px-2 py-1 rounded bg-blue-600 text-white">Editar</button>
+                          <button
+                            onClick={() => {
+                              if (!confirm(`Excluir livro "${book.title}"?`)) return;
+                              void adminDeleteBookMutation.mutateAsync(book.id);
                             }}
-                          />
-                          {(book.isVisible ?? true) ? "Sim" : "Não"}
-                        </label>
-                      </td>
-                      <td className="px-3 py-2 min-w-[280px]">
-                        <div className="space-y-2">
-                          <div className="w-16 h-24 rounded overflow-hidden border border-gray-200 bg-white">
-                            <BookCover
-                              isbn={book.isbn ?? undefined}
-                              title={book.title}
-                              author={book.author ?? undefined}
-                              coverUrl={book.coverUrl ?? undefined}
-                              className="w-full h-full"
-                            />
-                          </div>
-                          <input
-                            defaultValue={book.coverUrl || ""}
-                            placeholder="URL da capa"
-                            className="w-full px-2 py-1 border rounded"
-                            onBlur={(e) => {
-                              const nextCoverUrl = e.target.value?.trim() || undefined;
-                              if ((book.coverUrl || undefined) === nextCoverUrl) return;
-                              void adminUpdateBookMutation.mutateAsync({ id: book.id, coverUrl: nextCoverUrl });
-                            }}
-                          />
-                          <div className="flex flex-wrap gap-1">
-                            <button
-                              type="button"
-                              onClick={() => void fetchCoverOptionsByIsbn(book)}
-                              className="px-2 py-1 text-xs rounded border border-[#262969] text-[#262969]"
-                            >
-                              {coverLoadingId === Number(book.id) ? "Buscando..." : "Trocar capa (ISBN)"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void fetchCoverOptionsByText(book)}
-                              className="px-2 py-1 text-xs rounded border border-[#262969] text-[#262969]"
-                            >
-                              Trocar capa (título/autor)
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void adminUpdateBookMutation.mutateAsync({ id: book.id, coverUrl: undefined })}
-                              className="px-2 py-1 text-xs rounded border border-gray-400 text-gray-700"
-                            >
-                              Remover capa
-                            </button>
-                          </div>
-                          {bookCoverOptions[Number(book.id)]?.length ? (
-                            <div className="grid grid-cols-4 gap-1">
-                              {bookCoverOptions[Number(book.id)].slice(0, 8).map((coverOption) => (
-                                <button
-                                  key={`${book.id}-${coverOption}`}
-                                  type="button"
-                                  onClick={() =>
-                                    void adminUpdateBookMutation.mutateAsync({
-                                      id: Number(book.id),
-                                      coverUrl: coverOption,
-                                    })
-                                  }
-                                  className={`rounded border-2 overflow-hidden ${
-                                    (book.coverUrl || "") === coverOption
-                                      ? "border-[#da4653]"
-                                      : "border-gray-200 hover:border-[#da4653]"
-                                  }`}
-                                  title="Selecionar capa"
-                                >
-                                  <img src={coverOption} alt="Opção de capa" className="w-full h-16 object-cover" />
-                                </button>
-                              ))}
-                            </div>
-                          ) : null}
+                            className="px-2 py-1 rounded bg-red-600 text-white"
+                          >
+                            Excluir
+                          </button>
                         </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <button
-                          onClick={() => {
-                            if (!confirm(`Excluir livro "${book.title}"?`)) return;
-                            void adminDeleteBookMutation.mutateAsync(book.id);
-                          }}
-                          className="px-2 py-1 rounded bg-red-600 text-white"
-                        >
-                          Excluir
-                        </button>
                       </td>
                     </tr>
                   ))}
