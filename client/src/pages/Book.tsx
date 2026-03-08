@@ -359,7 +359,7 @@ export default function Book() {
 
             {/* Seller Info */}
             {book.sebo && (
-              <div className="rounded-lg p-4 mb-8 border border-[#f1d7da] bg-[#fff7f8]">
+              <div className="rounded-lg p-4 mb-8 border border-[#f1d7da] dark:border-[#55303a] bg-[#fff7f8] dark:bg-[#1b1114]">
                 <h3 className="font-outfit font-semibold text-base text-[#262969] mb-3">Informações do Sebo</h3>
                 <div className="flex gap-3">
                   <div className="w-14 h-14 rounded-md overflow-hidden border border-gray-200 bg-white shrink-0 flex items-center justify-center">
@@ -386,20 +386,20 @@ export default function Book() {
                         </span>
                       )}
                       {(book.sebo.city || book.sebo.state) && (
-                        <span className="text-[10px] bg-white text-gray-700 px-2 py-0.5 rounded border border-gray-200">
+                        <span className="text-[10px] bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:border-slate-600">
                           {book.sebo.city || "-"} / {book.sebo.state || "-"}
                         </span>
                       )}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-                      <span className="bg-white text-gray-700 px-2 py-0.5 rounded border border-gray-200">
+                      <span className="bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:border-slate-600">
                         Catálogo: {book.seboStats?.totalBooks ?? "-"}
                       </span>
-                      <span className="bg-white text-gray-700 px-2 py-0.5 rounded border border-gray-200">
+                      <span className="bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-100 px-2 py-0.5 rounded border border-gray-200 dark:border-slate-600">
                         {book.sebo.supportsPickup ? "Retirada no local" : "Sem retirada presencial"}
                       </span>
                     </div>
-                    <p className="font-inter text-xs text-gray-700 mt-2">
+                    <p className="font-inter text-xs text-gray-700 dark:text-gray-200 mt-2">
                       Contato e negociação direto com o sebo via WhatsApp.
                     </p>
                   </div>
@@ -407,13 +407,13 @@ export default function Book() {
                 <button
                   type="button"
                   onClick={() => setShowSeboDetails((prev) => !prev)}
-                  className="mt-3 text-xs font-semibold text-[#262969] hover:text-[#da4653] underline"
+                  className="mt-3 text-xs font-semibold text-[#262969] dark:text-gray-100 hover:text-[#da4653] underline"
                 >
                   {showSeboDetails ? "Ocultar detalhes do sebo" : "Ver mais detalhes do sebo"}
                 </button>
                 {showSeboDetails ? (
-                  <div className="mt-3 p-3 rounded border border-gray-200 bg-white text-gray-700">
-                    <p className="text-sm font-semibold mb-2 text-[#262969]">Logística de entrega</p>
+                  <div className="mt-3 p-3 rounded border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-100">
+                    <p className="text-sm font-semibold mb-2 text-[#262969] dark:text-gray-100">Logística de entrega</p>
                     <p className="text-xs">
                       {[
                         book.sebo.supportsPickup ? "Retirada no local" : null,
@@ -437,7 +437,7 @@ export default function Book() {
                     {book.sebo.shippingNotes && (
                       <p className="text-xs mt-1">Obs.: {book.sebo.shippingNotes}</p>
                     )}
-                    <p className="text-xs mt-2 text-gray-600">
+                    <p className="text-xs mt-2 text-gray-600 dark:text-gray-300">
                       Por privacidade e segurança, o endereço completo é informado somente no atendimento direto com o sebo.
                     </p>
                   </div>
