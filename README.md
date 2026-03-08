@@ -10,7 +10,7 @@ Plataforma para conectar leitores e sebos, com foco em catálogo de livros (usad
 
 `Pronto para validação com usuários de teste (Beta controlado)`
 
-Versão de referência: `0.7.0+233`
+Versão de referência: `0.7.0+238`
 
 Escopo recomendado para teste:
 - fluxo de comprador (busca, filtros, detalhe, WhatsApp);
@@ -23,6 +23,15 @@ Escopo recomendado para teste:
 Acesse o guia completo de operação:
 
 - [Guia de Uso - TEKA](docs/GUIA-USO-TEKA.md)
+
+## Linha do Tempo (03/03 a 08/03)
+
+- **03/03**: estrutura inicial do MVP, base de catálogo/sebo/livros e primeiros fluxos de cadastro.
+- **04/03**: estabilização técnica de build/deploy e evolução forte do fluxo ISBN/capas/mobile.
+- **05/03**: migração de foco para Cloudflare, login Google, roles (comprador/livreiro/admin), favoritos/interesses e PWA/câmera.
+- **06/03**: expansão do painel admin, melhorias de catálogo/estoque, OCR e robustez de sessão/cache.
+- **07/03**: polimento de UX comprador/livreiro/admin, scan em lote guiado, documentação e compliance.
+- **08/03**: refinos visuais finais, melhorias de filtros/home, hardening de segurança (itens 1-6) e ajustes de usabilidade.
 
 ## Visão Geral
 
