@@ -1249,7 +1249,7 @@ export default function ManageBooks() {
                             setEditingId(null);
                             setEditingBook(null);
                           }}
-                          className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 rounded font-medium text-sm"
+                          className="flex-1 bg-gray-300 hover:bg-gray-400 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-100 py-2 rounded font-medium text-sm border border-gray-400 dark:border-slate-500"
                         >
                           Cancelar
                         </button>

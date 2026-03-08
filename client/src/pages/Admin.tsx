@@ -52,6 +52,7 @@ export default function Admin() {
   const [editingBookId, setEditingBookId] = useState<number | null>(null);
   const [editingBook, setEditingBook] = useState<EditingAdminBook | null>(null);
   const [isSavingBook, setIsSavingBook] = useState(false);
+  const [showFullAudit, setShowFullAudit] = useState(false);
   const [showCharts, setShowCharts] = useState(false);
   const BOOKS_PAGE_SIZE = 50;
   const canRunAdminQueries =
@@ -547,13 +548,22 @@ export default function Admin() {
               <div className="p-4 border rounded-lg bg-white">
                 <h2 className="font-semibold text-[#262969] dark:text-gray-100 mb-2">Ações recentes (auditoria)</h2>
                 <div className="space-y-1 text-sm text-gray-700 max-h-36 overflow-y-auto pr-1">
-                  {adminMetrics.recentAudit.map((item: any, idx: number) => (
+                  {(showFullAudit ? adminMetrics.recentAudit : adminMetrics.recentAudit.slice(0, 5)).map((item: any, idx: number) => (
                     <p key={`${item.action}-${item.createdAt}-${idx}`}>
                       {formatDateTimePtBr(item.createdAt)} • {item.action} • {item.entityType}
                       {item.entityId ? ` #${item.entityId}` : ""} • {item.actorRole || "sistema"}
                     </p>
                   ))}
                 </div>
+                {adminMetrics.recentAudit.length > 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFullAudit((prev) => !prev)}
+                    className="mt-3 text-xs font-semibold text-[#262969] hover:text-[#da4653] underline"
+                  >
+                    {showFullAudit ? "Mostrar somente as últimas 5" : "Ver histórico completo"}
+                  </button>
+                )}
               </div>
             )}
           </section>
