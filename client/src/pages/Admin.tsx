@@ -651,185 +651,40 @@ export default function Admin() {
             </div>
 
             <div className="space-y-3 md:hidden">
-              {filteredBooks.map((book: any) => (
-                <div key={`mobile-${book.id}`} className="p-3 border rounded-lg bg-white">
-                  <div className="flex items-start gap-3">
-                    <div className="w-14 h-20 rounded overflow-hidden border border-gray-200 bg-white shrink-0">
-                      <BookCover
-                        isbn={book.isbn ?? undefined}
-                        title={book.title}
-                        author={book.author ?? undefined}
-                        coverUrl={book.coverUrl ?? undefined}
-                        className="w-full h-full"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-[#262969] dark:text-gray-100 truncate">{book.title}</p>
-                      <p className="text-xs text-gray-600 truncate">{book.sebo?.name || "-"}</p>
-                      {!book.coverUrl ? (
-                        <span className="inline-flex mt-1 text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                          Sem capa
-                        </span>
-                      ) : null}
-                    </div>
+              {filteredUsers.map((user: any) => (
+                <div key={`mobile-user-${user.id}`} className="p-3 border rounded-lg bg-white">
+                  <p className="font-semibold text-[#262969] dark:text-gray-100">{user.name || "Sem nome"}</p>
+                  <p className="text-xs text-gray-600">ID {user.id}</p>
+                  <p className="text-sm text-gray-700 mt-1">{user.email || "-"}</p>
+                  <p className="text-xs text-gray-600 mt-1">{user.whatsapp || "Sem WhatsApp"}</p>
+                  <p className="text-xs text-gray-600">
+                    {user.city || "-"}{user.state ? ` / ${user.state}` : ""}
+                  </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <select
+                      value={user.role}
+                      onChange={(e) => {
+                        void adminUpdateUserMutation.mutateAsync({
+                          userId: user.id,
+                          role: e.target.value as any,
+                        });
+                      }}
+                      className="px-2 py-1 border rounded text-sm"
+                    >
+                      <option value="comprador">comprador</option>
+                      <option value="livreiro">livreiro</option>
+                      <option value="admin">admin</option>
+                      <option value="user">user</option>
+                    </select>
                     <button
                       onClick={() => {
-                        if (!confirm(`Excluir livro "${book.title}"?`)) return;
-                        void adminDeleteBookMutation.mutateAsync(book.id);
+                        if (!confirm(`Remover usuário ${user.email || user.id}?`)) return;
+                        void adminDeleteUserMutation.mutateAsync({ userId: user.id });
                       }}
-                      className="px-2 py-1 rounded bg-red-600 text-white text-xs"
+                      className="px-2 py-1 rounded bg-red-600 text-white text-sm"
                     >
                       Excluir
                     </button>
-                  </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <input
-                      defaultValue={String(book.title || "")}
-                      className="px-2 py-1 border rounded col-span-2"
-                      placeholder="Título"
-                      onBlur={(e) => {
-                        const nextValue = e.target.value.trim();
-                        if (!nextValue || nextValue === String(book.title || "")) return;
-                        void adminUpdateBookMutation.mutateAsync({ id: book.id, title: nextValue });
-                      }}
-                    />
-                    <input
-                      defaultValue={String(book.author || "")}
-                      className="px-2 py-1 border rounded"
-                      placeholder="Autor"
-                      onBlur={(e) => {
-                        const nextValue = e.target.value.trim() || undefined;
-                        if ((book.author || undefined) === nextValue) return;
-                        void adminUpdateBookMutation.mutateAsync({ id: book.id, author: nextValue });
-                      }}
-                    />
-                    <input
-                      defaultValue={String(book.isbn || "")}
-                      className="px-2 py-1 border rounded"
-                      placeholder="ISBN"
-                      onBlur={(e) => {
-                        const nextValue = e.target.value.trim() || undefined;
-                        if ((book.isbn || undefined) === nextValue) return;
-                        void adminUpdateBookMutation.mutateAsync({ id: book.id, isbn: nextValue });
-                      }}
-                    />
-                    <input
-                      defaultValue={String(book.category || "")}
-                      className="px-2 py-1 border rounded"
-                      placeholder="Categoria"
-                      onBlur={(e) => {
-                        const nextValue = e.target.value.trim() || undefined;
-                        if ((book.category || undefined) === nextValue) return;
-                        void adminUpdateBookMutation.mutateAsync({ id: book.id, category: nextValue });
-                      }}
-                    />
-                    <select
-                      value={book.condition || "Bom estado"}
-                      onChange={(e) => {
-                        void adminUpdateBookMutation.mutateAsync({
-                          id: book.id,
-                          condition: e.target.value as any,
-                        });
-                      }}
-                      className="px-2 py-1 border rounded"
-                    >
-                      <option value="Novo">Novo</option>
-                      <option value="Excelente">Excelente</option>
-                      <option value="Bom estado">Bom estado</option>
-                      <option value="Usado">Usado</option>
-                      <option value="Desgastado">Desgastado</option>
-                    </select>
-                    <input
-                      defaultValue={book.pages ? String(book.pages) : ""}
-                      type="number"
-                      min="1"
-                      className="px-2 py-1 border rounded"
-                      placeholder="Páginas"
-                      onBlur={(e) => {
-                        const nextPages = e.target.value ? Number.parseInt(e.target.value, 10) : undefined;
-                        if (nextPages !== undefined && (!Number.isFinite(nextPages) || nextPages <= 0)) return;
-                        if (Number(book.pages || 0) === Number(nextPages || 0)) return;
-                        void adminUpdateBookMutation.mutateAsync({ id: book.id, pages: nextPages });
-                      }}
-                    />
-                    <input
-                      defaultValue={book.year ? String(book.year) : ""}
-                      type="number"
-                      min="0"
-                      className="px-2 py-1 border rounded"
-                      placeholder="Ano"
-                      onBlur={(e) => {
-                        const nextYear = e.target.value ? Number.parseInt(e.target.value, 10) : undefined;
-                        if (nextYear !== undefined && (!Number.isFinite(nextYear) || nextYear < 0)) return;
-                        if (Number(book.year || 0) === Number(nextYear || 0)) return;
-                        void adminUpdateBookMutation.mutateAsync({ id: book.id, year: nextYear });
-                      }}
-                    />
-                    <textarea
-                      defaultValue={String(book.description || "")}
-                      rows={3}
-                      placeholder="Descrição"
-                      className="px-2 py-1 border rounded col-span-2 resize-y"
-                      onBlur={(e) => {
-                        const nextValue = e.target.value.trim();
-                        if (nextValue === String(book.description || "").trim()) return;
-                        void adminUpdateBookMutation.mutateAsync({ id: book.id, description: nextValue });
-                      }}
-                    />
-                    <input
-                      defaultValue={String(book.price)}
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="px-2 py-1 border rounded"
-                      onBlur={(e) => {
-                        const nextPrice = Number(e.target.value);
-                        if (!Number.isFinite(nextPrice) || nextPrice <= 0 || nextPrice === Number(book.price)) return;
-                        void adminUpdateBookMutation.mutateAsync({ id: book.id, price: nextPrice });
-                      }}
-                    />
-                    <input
-                      defaultValue={String(book.quantity ?? 1)}
-                      type="number"
-                      min="0"
-                      className="px-2 py-1 border rounded"
-                      onBlur={(e) => {
-                        const nextQuantity = Number.parseInt(e.target.value, 10);
-                        if (!Number.isFinite(nextQuantity) || nextQuantity < 0 || nextQuantity === Number(book.quantity ?? 1)) return;
-                        void adminUpdateBookMutation.mutateAsync({
-                          id: book.id,
-                          quantity: nextQuantity,
-                          ...(nextQuantity === 0 ? { availabilityStatus: "vendido" as const } : {}),
-                        });
-                      }}
-                    />
-                    <select
-                      value={book.availabilityStatus || "ativo"}
-                      onChange={(e) => {
-                        void adminUpdateBookMutation.mutateAsync({
-                          id: book.id,
-                          availabilityStatus: e.target.value as any,
-                        });
-                      }}
-                      className="px-2 py-1 border rounded"
-                    >
-                      <option value="ativo">ativo</option>
-                      <option value="reservado">reservado</option>
-                      <option value="vendido">vendido</option>
-                    </select>
-                    <label className="inline-flex items-center gap-2 text-xs text-gray-700 px-2 py-1 border rounded">
-                      <input
-                        type="checkbox"
-                        checked={book.isVisible ?? true}
-                        onChange={(e) => {
-                          void adminUpdateBookMutation.mutateAsync({
-                            id: Number(book.id),
-                            isVisible: e.target.checked,
-                          });
-                        }}
-                      />
-                      {(book.isVisible ?? true) ? "Visível" : "Oculto"}
-                    </label>
                   </div>
                 </div>
               ))}
@@ -1168,6 +1023,18 @@ export default function Admin() {
                   </select>
                   <input type="number" min={1} value={editingBook.pages ?? ""} onChange={(e) => setEditingBook({ ...editingBook, pages: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })} className="px-3 py-2 border rounded" placeholder="Páginas" />
                   <input type="number" min={0} value={editingBook.year ?? ""} onChange={(e) => setEditingBook({ ...editingBook, year: e.target.value ? Number.parseInt(e.target.value, 10) : undefined })} className="px-3 py-2 border rounded" placeholder="Ano" />
+                  <div className="md:col-span-2">
+                    <p className="text-xs text-gray-600 mb-2">Pré-visualização da capa</p>
+                    <div className="rounded-lg overflow-hidden border border-gray-200 aspect-[2/3] w-32 bg-white">
+                      <BookCover
+                        isbn={editingBook.isbn ?? undefined}
+                        title={editingBook.title}
+                        author={editingBook.author ?? undefined}
+                        coverUrl={editingBook.coverUrl ?? undefined}
+                        className="w-full h-full"
+                      />
+                    </div>
+                  </div>
                   <input value={editingBook.coverUrl || ""} onChange={(e) => setEditingBook({ ...editingBook, coverUrl: e.target.value })} className="px-3 py-2 border rounded md:col-span-2" placeholder="URL da capa" />
                   <textarea value={editingBook.description || ""} onChange={(e) => setEditingBook({ ...editingBook, description: e.target.value })} className="px-3 py-2 border rounded md:col-span-2" rows={4} placeholder="Descrição" />
                 </div>
@@ -1195,7 +1062,7 @@ export default function Admin() {
                         onClick={() => setEditingBook({ ...editingBook, coverUrl: coverOption })}
                         className={`rounded border-2 overflow-hidden ${editingBook.coverUrl === coverOption ? "border-[#da4653]" : "border-gray-200 hover:border-[#da4653]"}`}
                       >
-                        <img src={coverOption} alt="Opção de capa" className="w-full h-20 object-cover" />
+                        <img src={coverOption} alt="Opção de capa" className="w-full h-20 object-contain bg-white" />
                       </button>
                     ))}
                   </div>

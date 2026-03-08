@@ -1159,6 +1159,18 @@ export default function ManageBooks() {
                         />
                         Visível para compradores
                       </label>
+                      <div>
+                        <p className="text-xs text-gray-600 mb-2">Pré-visualização da capa</p>
+                        <div className="rounded-lg overflow-hidden border border-gray-200 aspect-[2/3] w-32 bg-white">
+                          <BookCover
+                            isbn={editingBook?.isbn ?? undefined}
+                            title={editingBook?.title || "Livro"}
+                            author={editingBook?.author ?? undefined}
+                            coverUrl={editingBook?.coverUrl ?? undefined}
+                            className="w-full h-full"
+                          />
+                        </div>
+                      </div>
                       <input
                         type="text"
                         placeholder="URL da capa (https://...)"
@@ -1212,7 +1224,7 @@ export default function ManageBooks() {
                                   : "border-gray-200 hover:border-gray-400"
                               }`}
                             >
-                              <img src={coverOption} alt="Opção de capa" className="w-full h-20 object-cover" />
+                              <img src={coverOption} alt="Opção de capa" className="w-full h-20 object-contain bg-white" />
                             </button>
                           ))}
                         </div>
