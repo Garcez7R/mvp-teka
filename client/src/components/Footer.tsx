@@ -80,7 +80,7 @@ export default function Footer() {
               href={`https://wa.me/${WHATSAPP_DEFAULT}?text=Olá! Tenho uma dúvida sobre o app TEKA (suporte da plataforma).`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#da4653] hover:bg-[#c23a45] px-4 py-2 rounded-lg transition-colors font-inter text-sm font-medium"
+              className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] px-4 py-2 rounded-lg transition-colors font-inter text-sm font-medium text-[#0f172a]"
             >
               <MessageCircle className="w-4 h-4" />
               Equipe Teka - Suporte

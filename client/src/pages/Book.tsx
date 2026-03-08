@@ -454,7 +454,7 @@ export default function Book() {
                 className={`flex items-center justify-center gap-2 w-full text-white font-outfit font-bold py-4 px-6 rounded-lg transition-colors shadow-md ${
                   book.availabilityStatus === "vendido"
                     ? "bg-gray-400 pointer-events-none"
-                    : "bg-[#da4653] hover:bg-[#c23a45] hover:shadow-lg"
+                    : "bg-[#25D366] hover:bg-[#1ebe5d] hover:shadow-lg"
                 }`}
               >
                 <MessageCircle className="w-5 h-5" />
