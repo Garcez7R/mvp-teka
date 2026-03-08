@@ -202,6 +202,23 @@
     border-color: #2d3d73 !important;
   }
 
+  /* Dark mode: native dropdown/select readability across the app */
+  .dark select {
+    background-color: #0f172a !important;
+    color: #f3f4f6 !important;
+    border-color: #475569 !important;
+  }
+
+  .dark select option {
+    background-color: #0f172a !important;
+    color: #f3f4f6 !important;
+  }
+
+  .dark select:focus {
+    border-color: #8ea4ff !important;
+    box-shadow: 0 0 0 2px rgba(142, 164, 255, 0.25) !important;
+  }
+
   /* Keep mobile sandwich menu readable in dark mode */
   .dark .teka-mobile-menu {
     background-color: #ffffff !important;
@@ -222,6 +239,13 @@
 
   .dark .teka-mobile-menu .text-gray-700 {
     color: #374151 !important;
+  }
+
+  .dark .teka-mobile-menu select,
+  .dark .teka-mobile-menu select option {
+    background-color: #ffffff !important;
+    color: #374151 !important;
+    border-color: #d1d5db !important;
   }
 
   /* Dark mode: brand blue text used across pages should stay readable */
