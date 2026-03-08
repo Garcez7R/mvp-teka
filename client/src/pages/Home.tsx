@@ -511,24 +511,30 @@ export default function Home() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSortBy("recent")}
-                className={`px-3 py-2 rounded-full border text-sm ${
-                  sortBy === "recent" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+                className={`px-3 py-2 rounded-full border-2 text-sm font-semibold ${
+                  sortBy === "recent"
+                    ? "bg-[#c93d45] text-[#1f245f] border-[#da4653]"
+                    : "bg-[#da4653] text-[#262969] border-[#da4653] hover:bg-[#c93d45] hover:text-[#1f245f]"
                 }`}
               >
                 Recentes
               </button>
               <button
                 onClick={() => setSortBy("price_asc")}
-                className={`px-3 py-2 rounded-full border text-sm ${
-                  sortBy === "price_asc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+                className={`px-3 py-2 rounded-full border-2 text-sm font-semibold ${
+                  sortBy === "price_asc"
+                    ? "bg-[#c93d45] text-[#1f245f] border-[#da4653]"
+                    : "bg-[#da4653] text-[#262969] border-[#da4653] hover:bg-[#c93d45] hover:text-[#1f245f]"
                 }`}
               >
                 Menor preço
               </button>
               <button
                 onClick={() => setSortBy("price_desc")}
-                className={`px-3 py-2 rounded-full border text-sm ${
-                  sortBy === "price_desc" ? "bg-[#262969] text-white border-[#262969]" : "bg-white"
+                className={`px-3 py-2 rounded-full border-2 text-sm font-semibold ${
+                  sortBy === "price_desc"
+                    ? "bg-[#c93d45] text-[#1f245f] border-[#da4653]"
+                    : "bg-[#da4653] text-[#262969] border-[#da4653] hover:bg-[#c93d45] hover:text-[#1f245f]"
                 }`}
               >
                 Maior preço
@@ -572,7 +578,11 @@ export default function Home() {
           {isAuthenticated && role !== "livreiro" && (
             <button
               onClick={() => setOnlyFavorites((prev) => !prev)}
-              className="flex items-center gap-2 px-4 py-2 border-2 border-[#262969] rounded-full hover:bg-[#262969] hover:text-white transition-colors font-inter text-sm font-medium text-[#262969]"
+              className={`flex items-center gap-2 px-4 py-2 border-2 rounded-full transition-colors font-inter text-sm font-semibold ${
+                onlyFavorites
+                  ? "border-[#da4653] bg-[#c93d45] text-[#1f245f]"
+                  : "border-[#da4653] bg-[#da4653] text-[#262969] hover:bg-[#c93d45] hover:text-[#1f245f]"
+              }`}
               title="Ver livros favoritos"
             >
               <Heart className="w-4 h-4" />
@@ -591,7 +601,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => void refetchBooks()}
-              className="mt-3 px-3 py-2 rounded bg-[#262969] text-white"
+              className="mt-3 px-3 py-2 rounded-lg border-2 border-[#da4653] bg-[#da4653] text-[#262969] font-semibold hover:bg-[#c93d45] hover:text-[#1f245f] transition-colors"
             >
               Tentar novamente
             </button>
@@ -729,7 +739,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => void applyDraftFilters()}
-                  className="px-4 py-2 rounded-lg border border-[#262969] bg-[#262969] text-white font-semibold hover:bg-[#1f245f] transition-colors"
+                  className="px-4 py-2 rounded-lg border-2 border-[#da4653] bg-[#da4653] text-[#262969] font-semibold hover:bg-[#c93d45] hover:text-[#1f245f] transition-colors"
                 >
                   Aplicar filtros
                 </button>
@@ -796,7 +806,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setPage((prev) => prev + 1)}
-                  className="px-4 py-2 rounded border border-[#262969] text-[#262969] text-sm hover:bg-[#262969] hover:text-white"
+                  className="px-4 py-2 rounded-lg border-2 border-[#da4653] bg-[#da4653] text-[#262969] text-sm font-semibold hover:bg-[#c93d45] hover:text-[#1f245f] transition-colors"
                 >
                   Carregar mais
                 </button>
@@ -804,7 +814,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                  className="text-sm text-[#262969] dark:text-gray-100 hover:text-[#da4653] underline"
+                  className="px-4 py-2 rounded-lg border-2 border-[#da4653] bg-[#da4653] text-[#262969] text-sm font-semibold hover:bg-[#c93d45] hover:text-[#1f245f] transition-colors"
                 >
                   Voltar ao topo
                 </button>
