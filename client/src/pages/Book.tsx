@@ -475,13 +475,13 @@ export default function Book() {
             </div>
 
             {/* Additional Info */}
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-4">
-              <p className="font-inter text-sm text-blue-900">
+            <div className="p-4 bg-blue-50 dark:bg-[#0b1220] rounded-lg border border-blue-200 dark:border-[#1e3a5f] mb-4">
+              <p className="font-inter text-sm text-blue-900 dark:text-blue-100">
                 <span className="font-semibold">💡 Dica:</span> Confirme a disponibilidade antes de se deslocar até o sebo. Muitos livros são vendidos rapidamente!
               </p>
             </div>
-            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 mb-8">
-              <p className="font-inter text-sm text-amber-900">
+            <div className="p-4 bg-amber-50 dark:bg-[#1a1407] rounded-lg border border-amber-200 dark:border-[#5b4a1d] mb-8">
+              <p className="font-inter text-sm text-amber-900 dark:text-amber-100">
                 A TEKA conecta leitores e sebos. Pagamento, entrega e condições finais são tratados diretamente com o sebo.
               </p>
             </div>
