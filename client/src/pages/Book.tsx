@@ -465,7 +465,7 @@ export default function Book() {
               <button
                 onClick={() => void handleInterest(book.id, book.title)}
                 disabled={registerInterestMutation.isPending}
-                className="flex items-center justify-center gap-2 w-full border border-[#da4653] text-[#da4653] font-inter font-semibold py-3 px-4 rounded-lg bg-white hover:bg-[#da4653] hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 w-full border border-[#da4653] text-[#262969] font-inter font-semibold py-3 px-4 rounded-lg bg-[#da4653] hover:bg-[#c23a45] hover:text-[#262969] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Heart className="w-4 h-4" />
                 {registerInterestMutation.isPending

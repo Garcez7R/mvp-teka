@@ -1093,13 +1093,13 @@ export default function Admin() {
                   Visível para compradores
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => void fetchCoverOptionsByIsbn(editingBook)} className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969]">
+                  <button type="button" onClick={() => void fetchCoverOptionsByIsbn(editingBook)} className="teka-cover-btn teka-cover-btn--primary">
                     {coverLoadingId === editingBook.id ? "Buscando..." : "Trocar capa (ISBN)"}
                   </button>
-                  <button type="button" onClick={() => void fetchCoverOptionsByText(editingBook)} className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969]">
+                  <button type="button" onClick={() => void fetchCoverOptionsByText(editingBook)} className="teka-cover-btn teka-cover-btn--primary">
                     Trocar capa (título/autor)
                   </button>
-                  <button type="button" onClick={() => setEditingBook({ ...editingBook, coverUrl: "" })} className="px-3 py-2 text-sm rounded border border-gray-400 text-gray-700">
+                  <button type="button" onClick={() => setEditingBook({ ...editingBook, coverUrl: "" })} className="teka-cover-btn teka-cover-btn--danger">
                     Remover capa
                   </button>
                 </div>

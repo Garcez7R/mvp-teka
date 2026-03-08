@@ -1174,14 +1174,14 @@ export default function ManageBooks() {
                       <button
                         type="button"
                         onClick={() => void fetchCoverOptionsByIsbn(editingBook?.isbn)}
-                        className="w-full px-3 py-2 border border-[#262969] text-[#262969] rounded hover:bg-[#262969] hover:text-white text-sm"
+                        className="w-full teka-cover-btn teka-cover-btn--primary"
                       >
                         Trocar capa (ISBN)
                       </button>
                       <button
                         type="button"
                         onClick={() => void fetchCoverOptionsByText(editingBook?.title, editingBook?.author)}
-                        className="w-full px-3 py-2 border border-[#262969] text-[#262969] rounded hover:bg-[#262969] hover:text-white text-sm"
+                        className="w-full teka-cover-btn teka-cover-btn--primary"
                       >
                         Trocar capa (título/autor)
                       </button>
@@ -1190,7 +1190,7 @@ export default function ManageBooks() {
                         onClick={() =>
                           setEditingBook((prev) => (prev ? { ...prev, coverUrl: "" } : prev))
                         }
-                        className="w-full px-3 py-2 border border-gray-400 text-gray-700 rounded hover:bg-gray-100 text-sm"
+                        className="w-full teka-cover-btn teka-cover-btn--danger"
                       >
                         Remover capa
                       </button>

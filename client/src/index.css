@@ -271,6 +271,64 @@
 }
 
 @layer components {
+  .teka-cover-btn {
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+  }
+
+  .teka-cover-btn--primary {
+    border-color: #262969;
+    color: #262969;
+    background-color: #ffffff;
+  }
+
+  .teka-cover-btn--primary:hover {
+    background-color: #262969;
+    color: #ffffff;
+  }
+
+  .teka-cover-btn--danger {
+    border-color: #da4653;
+    color: #da4653;
+    background-color: #ffffff;
+  }
+
+  .teka-cover-btn--danger:hover {
+    background-color: #da4653;
+    color: #ffffff;
+  }
+
+  .dark .teka-cover-btn {
+    background-color: #0f172a;
+  }
+
+  .dark .teka-cover-btn--primary {
+    border-color: #8ea4ff;
+    color: #dce3ff;
+  }
+
+  .dark .teka-cover-btn--primary:hover {
+    background-color: #262969;
+    border-color: #262969;
+    color: #ffffff;
+  }
+
+  .dark .teka-cover-btn--danger {
+    border-color: #f08b95;
+    color: #ffd5da;
+  }
+
+  .dark .teka-cover-btn--danger:hover {
+    background-color: #da4653;
+    border-color: #da4653;
+    color: #ffffff;
+  }
+
   /**
    * Custom container utility that centers content and adds responsive padding.
    *
