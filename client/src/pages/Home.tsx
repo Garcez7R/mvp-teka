@@ -488,7 +488,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => toggleTheme?.()}
-              className="px-3 py-2 text-sm rounded border border-[#262969] bg-white text-[#262969] dark:bg-slate-900 dark:text-gray-100 hover:bg-[#262969] hover:text-white"
+              className="px-3 py-2 text-sm rounded border-2 border-[#da4653] bg-[#da4653] text-[#262969] hover:bg-[#c93d45] hover:text-[#1f245f] font-semibold"
             >
               <span className="inline-flex items-center gap-1">
                 {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -498,7 +498,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setPrioritizeNearby((prev) => !prev)}
-              className="px-3 py-2 text-sm rounded border border-[#262969] bg-white text-[#262969] dark:bg-slate-900 dark:text-gray-100 hover:bg-[#262969] hover:text-white"
+              className="px-3 py-2 text-sm rounded border-2 border-[#da4653] bg-[#da4653] text-[#262969] hover:bg-[#c93d45] hover:text-[#1f245f] font-semibold"
             >
               {prioritizeNearby ? "Ver perto de mim: ON" : "Ver perto de mim: OFF"}
             </button>
