@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import WhatsAppLink from "@/components/WhatsAppLink";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ArrowLeft, Camera, Download, CheckCircle2 } from "lucide-react";
 import { SESSION_MAX_AGE_MS } from "@/lib/session";
@@ -619,14 +620,13 @@ export default function SettingsPage() {
                           <p className="text-xs text-gray-700 mt-1 line-clamp-3">{seboForm.description}</p>
                         )}
                         {seboForm.whatsapp && (
-                          <a
+                          <WhatsAppLink
                             href={`https://wa.me/${seboForm.whatsapp.replace(/\D/g, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             className="inline-block mt-2 text-xs text-[#da4653] hover:underline"
+                            iconClassName="w-3 h-3"
                           >
                             Contato do sebo no WhatsApp
-                          </a>
+                          </WhatsAppLink>
                         )}
                       </div>
                     </div>

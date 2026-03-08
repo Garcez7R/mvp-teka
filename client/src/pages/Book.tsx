@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BookCover from "@/components/BookCover";
-import WhatsAppIcon from "@/components/WhatsAppIcon";
+import WhatsAppLink from "@/components/WhatsAppLink";
 import { WHATSAPP_DEFAULT } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { trackEvent } from "@/lib/analytics";
@@ -448,21 +448,19 @@ export default function Book() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col gap-3 mb-8">
-              <a
+              <WhatsAppLink
                 href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                iconClassName="w-5 h-5"
                 className={`flex items-center justify-center gap-2 w-full text-white font-outfit font-bold py-4 px-6 rounded-lg transition-colors shadow-md ${
                   book.availabilityStatus === "vendido"
                     ? "bg-gray-400 pointer-events-none"
                     : "bg-[#25D366] hover:bg-[#1ebe5d] hover:shadow-lg"
                 }`}
               >
-                <WhatsAppIcon className="w-5 h-5" />
                 {book.availabilityStatus === "vendido"
                   ? "Livro Vendido"
                   : "Contatar Sebo no WhatsApp"}
-              </a>
+              </WhatsAppLink>
               <button
                 onClick={() => void handleInterest(book.id, book.title)}
                 disabled={registerInterestMutation.isPending}

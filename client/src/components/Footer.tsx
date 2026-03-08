@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { WHATSAPP_DEFAULT } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import WhatsAppIcon from "@/components/WhatsAppIcon";
+import WhatsAppLink from "@/components/WhatsAppLink";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -76,15 +76,12 @@ export default function Footer() {
           {/* Contact */}
           <div>
             <h4 className="font-outfit font-semibold mb-4">Contato</h4>
-            <a
+            <WhatsAppLink
               href={`https://wa.me/${WHATSAPP_DEFAULT}?text=Olá! Tenho uma dúvida sobre o app TEKA (suporte da plataforma).`}
-              target="_blank"
-              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] px-4 py-2 rounded-lg transition-colors font-inter text-sm font-medium text-[#0f172a]"
             >
-              <WhatsAppIcon className="w-4 h-4" />
               Equipe Teka - Suporte
-            </a>
+            </WhatsAppLink>
             <p className="mt-2 text-xs text-gray-400">
               Canal exclusivo para suporte do app/site. Para negociar livros, use o WhatsApp do sebo.
             </p>
