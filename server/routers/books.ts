@@ -247,18 +247,21 @@ export const booksRouter = router({
                   shippingNotes: row.sebo.shippingNotes,
                 }
               : null,
+            _ownerUserId: row.sebo?.userId ?? null,
           };
         })
         .filter((book: any) => {
-          const canSeeHidden =
-            input.includeHidden === true ||
-            (input.includeHidden !== false &&
-              (ctx.role === "admin" || ctx.role === "livreiro"));
-          return canSeeHidden || book.isVisible;
+          const wantsHidden = input.includeHidden === true;
+          const hasPrivilegedHiddenAccess =
+            ctx.role === "admin" ||
+            (ctx.userId !== null &&
+              Number(book._ownerUserId || 0) === Number(ctx.userId));
+          return book.isVisible || (wantsHidden && hasPrivilegedHiddenAccess);
         })
         .filter((book: any) =>
           input.availabilityStatus ? book.availabilityStatus === input.availabilityStatus : true
-        );
+        )
+        .map(({ _ownerUserId, ...safeBook }) => safeBook);
       return data;
     }),
 

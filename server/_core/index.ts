@@ -18,6 +18,7 @@ app.set("trust proxy", true);
 
 type RateBucket = { count: number; resetAt: number };
 const rateBuckets = new Map<string, RateBucket>();
+let lastRateBucketsCleanupAt = 0;
 const allowedOrigins = new Set(
   String(process.env.ALLOWED_ORIGINS || "")
     .split(",")
@@ -38,6 +39,15 @@ function createRateLimiter(pathPrefix: string, maxRequests: number, windowMs: nu
     }
 
     const now = Date.now();
+    // Prevent unbounded memory growth from stale IP buckets.
+    if (now - lastRateBucketsCleanupAt > 60_000) {
+      rateBuckets.forEach((bucket, bucketKey) => {
+        if (now >= bucket.resetAt) {
+          rateBuckets.delete(bucketKey);
+        }
+      });
+      lastRateBucketsCleanupAt = now;
+    }
     const sourceIp =
       req.ip ||
       req.socket.remoteAddress ||

@@ -60,15 +60,6 @@ function getGoogleAudiencesAllowlist(): string[] {
   return Array.from(new Set(values));
 }
 
-function isAudienceMismatchError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-  const maybe = error as Record<string, unknown>;
-  return (
-    maybe.code === "ERR_JWT_CLAIM_VALIDATION_FAILED" &&
-    maybe.claim === "aud"
-  );
-}
-
 export async function createTRPCContext(
   opts?: ContextOptionsLike
 ): Promise<Context> {
@@ -105,16 +96,9 @@ export async function createTRPCContext(
           break;
         } catch (error) {
           lastError = error;
-          if (!isAudienceMismatchError(error)) {
-            throw error;
-          }
         }
       }
 
-      // Compatibility fallback: keep signature + issuer validation even when aud mismatches.
-      if (!verified && isAudienceMismatchError(lastError)) {
-        verified = await jwtVerify(bearerToken, googleJwks, { issuer });
-      }
       if (!verified) {
         throw lastError instanceof Error ? lastError : new Error("Google token verification failed");
       }

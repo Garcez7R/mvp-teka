@@ -4,6 +4,11 @@ import { db } from "./_utils/db.js";
 import { users, sebos, books, favorites, bookInterests, wishlistItems, auditLogs } from "../_schema.ts";
 import { eq, inArray, sql, desc, gte } from "drizzle-orm";
 import { logAuditEvent } from "./_utils/audit.js";
+import { TRPCError } from "@trpc/server";
+
+const legacyEmailAuthEnabled =
+  process.env.NODE_ENV !== "production" ||
+  String(process.env.ALLOW_LEGACY_EMAIL_AUTH || "").toLowerCase() === "true";
 
 export const usersRouter = router({
   adminMetrics: adminProcedure.query(async () => {
@@ -134,9 +139,10 @@ export const usersRouter = router({
         throw new Error("User not found");
       }
 
-      // Don't expose sensitive info
-      const { openId, ...safe } = user;
-      return safe;
+      return {
+        id: user.id,
+        name: user.name,
+      };
     }),
 
   // Register user (for testing, use real auth in production)
@@ -150,6 +156,12 @@ export const usersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      if (!legacyEmailAuthEnabled) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Método de autenticação não disponível.",
+        });
+      }
       try {
         const generatedOpenId = input.openId || `email:${input.email.toLowerCase()}`;
         const newUser = await db
@@ -179,6 +191,12 @@ export const usersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      if (!legacyEmailAuthEnabled) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Método de autenticação não disponível.",
+        });
+      }
       const user = await db
         .select()
         .from(users)
@@ -186,7 +204,10 @@ export const usersRouter = router({
         .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
 
       if (!user) {
-        throw new Error("Usuário não encontrado para este e-mail");
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Credenciais inválidas.",
+        });
       }
 
       return user;

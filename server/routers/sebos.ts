@@ -5,10 +5,80 @@ import { sebos, books, users, favorites, bookInterests } from "../_schema.ts";
 import { eq, inArray } from "drizzle-orm";
 import { logAuditEvent } from "./_utils/audit.js";
 
+const HIDDEN_MARKER = /^\[HIDDEN\]\s*/i;
+const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
+type AvailabilityStatus = "ativo" | "reservado" | "vendido";
+
+const seboPublicSelect = {
+  id: sebos.id,
+  name: sebos.name,
+  description: sebos.description,
+  logoUrl: sebos.logoUrl,
+  whatsapp: sebos.whatsapp,
+  city: sebos.city,
+  state: sebos.state,
+  verified: sebos.verified,
+  supportsPickup: sebos.supportsPickup,
+  shipsNeighborhood: sebos.shipsNeighborhood,
+  shipsCity: sebos.shipsCity,
+  shipsState: sebos.shipsState,
+  shipsNationwide: sebos.shipsNationwide,
+  shippingAreas: sebos.shippingAreas,
+  shippingFeeNotes: sebos.shippingFeeNotes,
+  shippingEta: sebos.shippingEta,
+  shippingNotes: sebos.shippingNotes,
+  createdAt: sebos.createdAt,
+  updatedAt: sebos.updatedAt,
+} as const;
+
+function sanitizeBookDescription(raw?: string | null): string | null {
+  if (typeof raw !== "string") return null;
+  const cleaned = raw
+    .replace(/source\s*title\s*:[^\n\r]*/gi, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return cleaned || null;
+}
+
+function normalizeBookDescription(raw?: string | null): {
+  availabilityStatus: AvailabilityStatus;
+  isVisible: boolean;
+  description: string | null;
+} {
+  let value = String(raw ?? "").trim();
+  if (!value) {
+    return { availabilityStatus: "ativo", isVisible: true, description: null };
+  }
+
+  let availabilityStatus: AvailabilityStatus = "ativo";
+  let isVisible = true;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    if (HIDDEN_MARKER.test(value)) {
+      isVisible = false;
+      value = value.replace(HIDDEN_MARKER, "").trim();
+      changed = true;
+    }
+    const statusMatch = value.match(STATUS_MARKER);
+    if (statusMatch?.[1]) {
+      availabilityStatus = statusMatch[1].toLowerCase() as AvailabilityStatus;
+      value = value.replace(STATUS_MARKER, "").trim();
+      changed = true;
+    }
+  }
+
+  return {
+    availabilityStatus,
+    isVisible,
+    description: sanitizeBookDescription(value),
+  };
+}
+
 export const sebosRouter = router({
   // Get all sebos
   list: publicProcedure.query(async () => {
-    return await db.select().from(sebos);
+    return await db.select(seboPublicSelect).from(sebos);
   }),
 
   // Get all sebos owned by current user
@@ -19,7 +89,7 @@ export const sebosRouter = router({
   // Get sebo by ID with books
   getById: publicProcedure
     .input(z.number())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const sebo = await db
         .select()
         .from(sebos)
@@ -35,7 +105,42 @@ export const sebosRouter = router({
         .from(books)
         .where(eq(books.seboId, input));
 
-      return { ...sebo, books: seboBooks };
+      const canSeeHidden = ctx.role === "admin" || (ctx.userId !== null && sebo.userId === ctx.userId);
+      const visibleBooks = seboBooks
+        .map((book) => {
+          const normalized = normalizeBookDescription(book.description);
+          return {
+            ...book,
+            description: normalized.description,
+            availabilityStatus: normalized.availabilityStatus,
+            isVisible: normalized.isVisible,
+          };
+        })
+        .filter((book) => canSeeHidden || book.isVisible);
+
+      const publicSebo = {
+        id: sebo.id,
+        name: sebo.name,
+        description: sebo.description,
+        logoUrl: sebo.logoUrl,
+        whatsapp: sebo.whatsapp,
+        city: sebo.city,
+        state: sebo.state,
+        verified: sebo.verified,
+        supportsPickup: sebo.supportsPickup,
+        shipsNeighborhood: sebo.shipsNeighborhood,
+        shipsCity: sebo.shipsCity,
+        shipsState: sebo.shipsState,
+        shipsNationwide: sebo.shipsNationwide,
+        shippingAreas: sebo.shippingAreas,
+        shippingFeeNotes: sebo.shippingFeeNotes,
+        shippingEta: sebo.shippingEta,
+        shippingNotes: sebo.shippingNotes,
+        createdAt: sebo.createdAt,
+        updatedAt: sebo.updatedAt,
+      };
+
+      return { ...publicSebo, books: visibleBooks };
     }),
 
   // Get current user's sebo
