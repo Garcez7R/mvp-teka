@@ -184,6 +184,12 @@
     color: #374151 !important;
   }
 
+  /* Dark mode: brand blue text used across pages should stay readable */
+  .dark
+    :is(h1, h2, h3, h4, h5, h6, p, span, label, small, strong, td, th, li, div)[class*="text-[#262969]"] {
+    color: #f3f4f6 !important;
+  }
+
   /* Dark mode: normalize action buttons with the same visual pattern used in login */
   .dark button[class*="border"][class*="text-[#262969]"],
   .dark a[class*="border"][class*="text-[#262969]"] {
@@ -208,6 +214,19 @@
   .dark a[class*="bg-[#da4653]"]:hover {
     background-color: #c93d45 !important;
     color: #262969 !important;
+  }
+
+  /* Dark mode: chart readability (admin + livreiro dashboards) */
+  .dark .recharts-text,
+  .dark .recharts-cartesian-axis-tick-value,
+  .dark .recharts-legend-item-text {
+    fill: #e5e7eb !important;
+  }
+
+  .dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+    background-color: #111827 !important;
+    border: 1px solid #374151 !important;
+    color: #f3f4f6 !important;
   }
 }
 
