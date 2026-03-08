@@ -91,6 +91,27 @@ export default function Home() {
   const [maxPriceFilter, setMaxPriceFilter] = useState("");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [draftFilters, setDraftFilters] = useState<{
+    category: string;
+    sebo: string;
+    condition: string;
+    status: string;
+    sortBy: CatalogSort;
+    city: string;
+    state: string;
+    minPrice: string;
+    maxPrice: string;
+  }>({
+    category: "",
+    sebo: "",
+    condition: "",
+    status: "",
+    sortBy: "recent",
+    city: "",
+    state: "",
+    minPrice: "",
+    maxPrice: "",
+  });
   const [prioritizeNearby, setPrioritizeNearby] = useState(true);
   const [searchBarKey, setSearchBarKey] = useState(0);
   const [page, setPage] = useState(0);
@@ -131,6 +152,34 @@ export default function Home() {
     setLoadedBooks([]);
     setHasMore(true);
     setSearchBarKey((prev) => prev + 1);
+  };
+
+  const syncDraftFromAppliedFilters = () => {
+    setDraftFilters({
+      category: selectedCategory || "",
+      sebo: selectedSebo || "",
+      condition: selectedCondition || "",
+      status: selectedStatus || "",
+      sortBy,
+      city: cityFilter,
+      state: stateFilter,
+      minPrice: minPriceFilter,
+      maxPrice: maxPriceFilter,
+    });
+  };
+
+  const applyDraftFilters = async () => {
+    setSelectedCategory(draftFilters.category || null);
+    setSelectedSebo(draftFilters.sebo || null);
+    setSelectedCondition(draftFilters.condition || null);
+    setSelectedStatus((draftFilters.status || null) as "ativo" | "reservado" | "vendido" | null);
+    setSortBy(draftFilters.sortBy);
+    setCityFilter(draftFilters.city);
+    setStateFilter(draftFilters.state.toUpperCase());
+    setMinPriceFilter(draftFilters.minPrice);
+    setMaxPriceFilter(draftFilters.maxPrice);
+    setShowFilters(false);
+    await refetchBooks();
   };
 
   const booksQueryInput = {
@@ -511,7 +560,10 @@ export default function Home() {
         {/* Filters Section */}
         <div className="mb-8 flex gap-3 flex-wrap">
           <button
-            onClick={() => setShowFilters(!showFilters)}
+            onClick={() => {
+              if (!showFilters) syncDraftFromAppliedFilters();
+              setShowFilters(!showFilters);
+            }}
             className="flex items-center gap-2 px-4 py-2 border-2 border-[#da4653] rounded-full bg-[#da4653] text-[#262969] hover:bg-[#c93d45] hover:text-[#1f245f] transition-colors font-inter text-sm font-semibold"
           >
             <Filter className="w-4 h-4" />
@@ -552,8 +604,8 @@ export default function Home() {
                 <div>
                   <h3 className="font-outfit font-semibold text-[#262969] mb-3">Categoria</h3>
                   <select
-                    value={selectedCategory || ""}
-                    onChange={(e) => setSelectedCategory(e.target.value || null)}
+                    value={draftFilters.category}
+                    onChange={(e) => setDraftFilters((prev) => ({ ...prev, category: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
                   >
                     <option value="">Todas</option>
@@ -568,8 +620,8 @@ export default function Home() {
                 <div>
                   <h3 className="font-outfit font-semibold text-[#262969] mb-3">Sebo</h3>
                   <select
-                    value={selectedSebo || ""}
-                    onChange={(e) => setSelectedSebo(e.target.value || null)}
+                    value={draftFilters.sebo}
+                    onChange={(e) => setDraftFilters((prev) => ({ ...prev, sebo: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
                   >
                     <option value="">Todos</option>
@@ -583,8 +635,8 @@ export default function Home() {
                 <div>
                   <h3 className="font-outfit font-semibold text-[#262969] mb-3">Condição, Status e Ordenação</h3>
                   <select
-                    value={selectedCondition || ""}
-                    onChange={(e) => setSelectedCondition(e.target.value || null)}
+                    value={draftFilters.condition}
+                    onChange={(e) => setDraftFilters((prev) => ({ ...prev, condition: e.target.value }))}
                     className="w-full mb-2 px-3 py-2 border border-gray-300 rounded bg-white"
                   >
                     <option value="">Todas condições</option>
@@ -595,12 +647,8 @@ export default function Home() {
                     <option value="Desgastado">Desgastado</option>
                   </select>
                   <select
-                    value={selectedStatus || ""}
-                    onChange={(e) =>
-                      setSelectedStatus(
-                        (e.target.value || null) as "ativo" | "reservado" | "vendido" | null
-                      )
-                    }
+                    value={draftFilters.status}
+                    onChange={(e) => setDraftFilters((prev) => ({ ...prev, status: e.target.value }))}
                     className="w-full mb-2 px-3 py-2 border border-gray-300 rounded bg-white"
                   >
                     <option value="">Todos os status</option>
@@ -609,8 +657,10 @@ export default function Home() {
                     <option value="vendido">Vendidos</option>
                   </select>
                   <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as CatalogSort)}
+                    value={draftFilters.sortBy}
+                    onChange={(e) =>
+                      setDraftFilters((prev) => ({ ...prev, sortBy: e.target.value as CatalogSort }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
                   >
                     <option value="recent">Recentes</option>
@@ -623,34 +673,66 @@ export default function Home() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
                 <input
-                  value={cityFilter}
-                  onChange={(e) => setCityFilter(e.target.value)}
+                  value={draftFilters.city}
+                  onChange={(e) => setDraftFilters((prev) => ({ ...prev, city: e.target.value }))}
                   placeholder="Cidade"
                   className="px-3 py-2 border border-gray-300 rounded bg-white"
                 />
                 <input
-                  value={stateFilter}
-                  onChange={(e) => setStateFilter(e.target.value.toUpperCase())}
+                  value={draftFilters.state}
+                  onChange={(e) =>
+                    setDraftFilters((prev) => ({ ...prev, state: e.target.value.toUpperCase() }))
+                  }
                   placeholder="Estado (UF)"
                   maxLength={2}
                   className="px-3 py-2 border border-gray-300 rounded bg-white"
                 />
                 <input
-                  value={minPriceFilter}
-                  onChange={(e) => setMinPriceFilter(e.target.value)}
+                  value={draftFilters.minPrice}
+                  onChange={(e) => setDraftFilters((prev) => ({ ...prev, minPrice: e.target.value }))}
                   placeholder="Preco min"
                   type="number"
                   min="0"
                   className="px-3 py-2 border border-gray-300 rounded bg-white"
                 />
                 <input
-                  value={maxPriceFilter}
-                  onChange={(e) => setMaxPriceFilter(e.target.value)}
+                  value={draftFilters.maxPrice}
+                  onChange={(e) => setDraftFilters((prev) => ({ ...prev, maxPrice: e.target.value }))}
                   placeholder="Preco max"
                   type="number"
                   min="0"
                   className="px-3 py-2 border border-gray-300 rounded bg-white"
                 />
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearAllFilters();
+                    setDraftFilters({
+                      category: "",
+                      sebo: "",
+                      condition: "",
+                      status: "",
+                      sortBy: "recent",
+                      city: "",
+                      state: "",
+                      minPrice: "",
+                      maxPrice: "",
+                    });
+                    setShowFilters(false);
+                  }}
+                  className="px-4 py-2 rounded-lg border-2 border-[#da4653] bg-[#da4653] text-[#262969] font-semibold hover:bg-[#c93d45] hover:text-[#1f245f] transition-colors"
+                >
+                  Limpar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void applyDraftFilters()}
+                  className="px-4 py-2 rounded-lg border border-[#262969] bg-[#262969] text-white font-semibold hover:bg-[#1f245f] transition-colors"
+                >
+                  Aplicar filtros
+                </button>
               </div>
             </div>
           )}
