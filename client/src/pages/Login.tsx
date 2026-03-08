@@ -161,7 +161,7 @@ export default function Login() {
                   onClick={() => setRole("comprador")}
                   className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                     role === "comprador"
-                      ? "bg-[#da4653] text-[#262969] border-[#da4653]"
+                      ? "bg-[#da4653] text-white border-[#da4653]"
                       : "bg-white text-[#262969] border-[#da4653] hover:bg-[#ffe9eb]"
                   }`}
                 >
@@ -172,7 +172,7 @@ export default function Login() {
                   onClick={() => setRole("livreiro")}
                   className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                     role === "livreiro"
-                      ? "bg-[#da4653] text-[#262969] border-[#da4653]"
+                      ? "bg-[#da4653] text-white border-[#da4653]"
                       : "bg-white text-[#262969] border-[#da4653] hover:bg-[#ffe9eb]"
                   }`}
                 >
