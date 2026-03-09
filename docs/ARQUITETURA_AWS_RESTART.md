@@ -55,15 +55,15 @@ CloudFront + AWS WAF
 | S3 | Armazenar o build do frontend e, futuramente, imagens/arquivos | Alta durabilidade, baixo custo e integração nativa com CloudFront | AWS Amplify Hosting ou EC2 simples | Muito baixo |
 | API Gateway | Expor rotas HTTP da aplicação, como `/trpc`, `/api/ocr` e `/health` | Padroniza entrada da API, escala sob demanda e integra com Lambda | Application Load Balancer com ECS/Fargate | Baixo a moderado |
 | AWS Lambda | Executar o backend serverless da aplicação | Bom encaixe para a API atual, reduz custo ocioso e facilita escalar sob demanda | ECS Fargate ou EC2 | Baixo no início |
-| Aurora PostgreSQL Serverless v2 | Armazenar os dados da aplicação com modelo relacional | Melhor aderência ao modelo atual de usuários, livros, sebos, favoritos, auditoria e reviews | RDS PostgreSQL tradicional ou DynamoDB em redesign completo | Moderado |
+| Aurora PostgreSQL Serverless v2 | Armazenar os dados da aplicação com modelo relacional | Melhor aderência ao modelo atual de usuários, livros, sebos, favoritos, auditoria e reviews | RDS PostgreSQL tradicional | Moderado |
 | Secrets Manager | Guardar segredos, chaves e credenciais | Centraliza segurança de variáveis sensíveis e evita segredos em código | SSM Parameter Store para parte dos casos | Baixo |
 | CloudWatch | Centralizar logs, métricas e alarmes | Essencial para operação, troubleshooting e acompanhamento da solução | Ferramentas externas de observabilidade | Baixo |
 
-## 5. Qual banco usar
+## 5. Banco de Dados da Aplicação
 
-Embora o DynamoDB seja um banco de dados totalmente gerenciado e muito escalável, ele **não é a melhor opção principal para este projeto no formato atual**.
+Para esta arquitetura, o banco de dados da aplicação será o `Aurora PostgreSQL Serverless v2`.
 
-Motivo:
+Motivo da escolha:
 
 - O TEKA possui modelo relacional claro.
 - Existem entidades fortemente ligadas entre si.
@@ -81,23 +81,16 @@ Motivo:
 - `audit_logs`
 - `sebo_reviews`
 
-### Recomendação
+### Papel do Aurora no TEKA
 
-Usar `Aurora PostgreSQL Serverless v2` como banco principal da aplicação.
-
-### Quando o DynamoDB faria sentido
-
-O `DynamoDB` faria mais sentido se o projeto fosse remodelado para:
-
-- acesso predominantemente por chave;
-- poucos relacionamentos complexos;
-- altíssima escala de leitura/escrita distribuída;
-- modelagem orientada a documentos ou itens agregados.
+- armazenar os dados transacionais da plataforma;
+- sustentar consultas relacionais entre usuários, sebos, livros e interações;
+- permitir crescimento com administração reduzida;
+- manter aderência ao modelo atual usado pelo backend.
 
 ### Conclusão sobre banco
 
-- `Aurora PostgreSQL`: recomendado para o TEKA.
-- `DynamoDB`: possível em outro desenho, mas exigiria remodelagem importante da aplicação.
+`Aurora PostgreSQL Serverless v2` é a opção recomendada para o TEKA porque combina modelo relacional, elasticidade e boa aderência ao desenho atual da aplicação.
 
 ## 6. Mapeamento da Arquitetura Atual para AWS
 
