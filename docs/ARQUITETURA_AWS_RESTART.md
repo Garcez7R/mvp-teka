@@ -4,9 +4,7 @@ Documento de apoio para apresentação técnica à banca do programa AWS re/Star
 
 ## 1. Objetivo
 
-Apresentar uma proposta de topologia AWS para o projeto **TEKA**, atualmente preparado para execução com frontend em Vite/React, backend em tRPC e banco relacional modelado com Drizzle.
-
-Esta proposta considera uma migração conceitual da arquitetura atual em Cloudflare para uma arquitetura equivalente e escalável na AWS.
+Apresentar uma proposta de topologia AWS para o projeto **TEKA**, com frontend em Vite/React, backend em tRPC e banco relacional modelado com Drizzle.
 
 ## 2. Resumo Executivo
 
@@ -92,17 +90,7 @@ Motivo da escolha:
 
 `Aurora PostgreSQL Serverless v2` é a opção recomendada para o TEKA porque combina modelo relacional, elasticidade e boa aderência ao desenho atual da aplicação.
 
-## 6. Mapeamento da Arquitetura Atual para AWS
-
-| Arquitetura atual | Equivalente na AWS |
-|---|---|
-| Cloudflare Pages | S3 + CloudFront |
-| Cloudflare Pages Functions | API Gateway + Lambda |
-| Cloudflare D1 | Aurora PostgreSQL Serverless v2 |
-| Variáveis/Secrets no Cloudflare | Secrets Manager / Parameter Store |
-| Cloudflare WAF/Bot features | AWS WAF |
-
-## 7. Como cada camada seria usada no TEKA
+## 6. Como cada camada seria usada no TEKA
 
 ### Frontend
 
@@ -132,7 +120,7 @@ Motivo da escolha:
 - O CloudWatch receberia logs das funções.
 - Alarmes poderiam notificar falhas de autenticação, picos de erro 5xx e timeout de OCR.
 
-## 8. Alternativa mais econômica
+## 7. Alternativa mais econômica
 
 Se a prioridade fosse reduzir custo ao máximo para um MVP ou ambiente acadêmico, a versão mais enxuta seria:
 
@@ -146,7 +134,7 @@ Se a prioridade fosse reduzir custo ao máximo para um MVP ou ambiente acadêmic
 
 Essa alternativa tende a reduzir custo de banco no início, mas perde parte da elasticidade e da sofisticação operacional do Aurora Serverless.
 
-## 9. Estimativa inicial mensal
+## 8. Estimativa inicial mensal
 
 Valores abaixo são apenas uma simulação de referência para apresentação. Eles variam conforme região, volume de acesso, tráfego, armazenamento e quantidade de chamadas.
 
@@ -167,7 +155,7 @@ Valores abaixo são apenas uma simulação de referência para apresentação. E
 - Ambiente acadêmico ou MVP com baixo tráfego: `US$ 59 a US$ 240 / mês`
 - Ambiente enxuto com banco mais barato em RDS pequeno: `US$ 25 a US$ 120 / mês`
 
-## 10. Justificativa final da proposta
+## 9. Justificativa final da proposta
 
 Essa topologia foi escolhida porque:
 
@@ -178,7 +166,7 @@ Essa topologia foi escolhida porque:
 - mantém coerência com a arquitetura lógica do projeto atual;
 - facilita apresentar conceitos de DNS, CDN, serverless, banco relacional, segurança e observabilidade.
 
-## 11. Conclusão
+## 10. Conclusão
 
 Para a banca, a proposta mais coerente é apresentar o TEKA na AWS com:
 

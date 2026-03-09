@@ -141,7 +141,7 @@ O TEKA foi desenhado para:
 
 ## Arquitetura de Referência na AWS
 
-Para apresentação acadêmica e simulação de migração da solução atual em Cloudflare para AWS, foi preparado um documento executivo com:
+Para apresentação acadêmica de uma arquitetura de referência na AWS, foi preparado um documento executivo com:
 
 - módulos da arquitetura;
 - responsabilidade de cada serviço;
