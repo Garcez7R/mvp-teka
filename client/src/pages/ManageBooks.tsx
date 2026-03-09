@@ -1146,7 +1146,7 @@ export default function ManageBooks() {
                         <option value="reservado">Reservado</option>
                         <option value="vendido">Vendido</option>
                       </select>
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                         <input
                           type="checkbox"
                           checked={editingBook?.isVisible ?? true}
@@ -1156,6 +1156,7 @@ export default function ManageBooks() {
                               isVisible: e.target.checked,
                             })
                           }
+                          className="h-4 w-4 rounded border border-gray-400 bg-white text-[#da4653] accent-[#da4653] focus:ring-2 focus:ring-[#da4653] dark:border-slate-500 dark:bg-slate-900"
                         />
                         Visível para compradores
                       </label>

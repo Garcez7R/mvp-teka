@@ -192,7 +192,7 @@ export default function About() {
               </button>
             </Link>
             <Link href="/sebo/novo">
-              <button className="bg-white text-[#262969] hover:bg-gray-100 font-outfit font-bold py-3 px-8 rounded-lg transition-colors">
+              <button className="border border-white bg-[#ffffff] text-[#262969] hover:bg-[#f3f4f6] font-outfit font-bold py-3 px-8 rounded-lg transition-colors">
                 Quero vender livros
               </button>
             </Link>
