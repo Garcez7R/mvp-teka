@@ -214,6 +214,16 @@ Explicando para um leigo:
 
 Ela roda quando necessário. Se ninguém estiver usando, não há máquina da aplicação parada esperando.
 
+Complemento para apresentação:
+
+Na TEKA, a Lambda foi pensada para receber a requisição, processar a lógica, consultar o banco, devolver a resposta e encerrar.
+
+Se existir algo mais demorado, ela pode apenas iniciar outro fluxo e finalizar logo em seguida.
+
+Benefício de custo:
+
+Como esse modelo cobra pelo uso e pelo tempo de execução, ele tende a ser mais barato do que manter uma máquina ativa o tempo todo para atender poucas requisições.
+
 ### 21. O que é o Aurora PostgreSQL Serverless v2?
 
 Resposta simples:
@@ -613,6 +623,10 @@ Porque a proposta busca menos operação e mais elasticidade.
 Explicando para um leigo:
 
 Na EC2, a equipe cuida mais diretamente da máquina. Na Lambda, a AWS gerencia essa parte e a aplicação roda sob demanda.
+
+Complemento:
+
+Como a ideia é usar execuções curtas, a Lambda também ajuda a reduzir custo ocioso, porque não exige manter um servidor ligado continuamente apenas esperando requisições.
 
 ### 54. Por que usar CloudFront se o S3 já armazena o frontend?
 

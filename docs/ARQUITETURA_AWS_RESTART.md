@@ -181,6 +181,14 @@ CloudFront + AWS WAF
   - executar autenticação;
   - aplicar regra de negócio;
   - integrar com banco e serviços externos.
+- Modelo de execução esperado:
+  - receber a requisição;
+  - processar a lógica necessária;
+  - consultar ou gravar dados;
+  - opcionalmente acionar outro fluxo assíncrono;
+  - finalizar a execução rapidamente.
+- Vantagem de custo:
+  - como a cobrança ocorre por invocação e tempo de execução, esse uso curto e sob demanda tende a ser bem mais econômico do que manter servidor dedicado ligado continuamente.
 
 ### Aurora PostgreSQL Serverless v2
 
@@ -237,6 +245,16 @@ Os componentes de processamento são serverless:
 - `Aurora Serverless v2` para banco relacional com capacidade elástica.
 
 Isso simplifica a operação e reduz a necessidade de administração de servidores.
+
+### Observação sobre processamento longo
+
+Nesta arquitetura, a Lambda foi pensada para tarefas curtas de API.
+
+Se existir necessidade de processamento mais longo, a função pode apenas iniciar outro fluxo e encerrar, por exemplo com:
+
+- fila;
+- orquestração;
+- processamento assíncrono separado.
 
 ## 6. Banco de Dados da Aplicação
 
