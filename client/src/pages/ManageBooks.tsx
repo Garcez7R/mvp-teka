@@ -1308,8 +1308,8 @@ export default function ManageBooks() {
                           <span
                             className={`text-xs px-2 py-1 rounded ${
                               (book.isVisible ?? true)
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-slate-200 text-slate-700"
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100"
+                                : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-100"
                             }`}
                           >
                             {(book.isVisible ?? true) ? "Visível" : "Oculto"}
