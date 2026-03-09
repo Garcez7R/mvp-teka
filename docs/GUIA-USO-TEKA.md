@@ -9,7 +9,7 @@ Voltar para o documento principal:
 
 ## 1. Visão Geral
 
-O TEKA conecta compradores e livreiros para negociação de livros.
+A TEKA conecta compradores e livreiros para negociação de livros.
 
 Perfis:
 - Comprador: busca, filtros, favoritos e interesse.

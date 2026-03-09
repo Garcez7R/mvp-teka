@@ -4,15 +4,15 @@ Documento de apoio para apresentação do projeto **TEKA** com foco em perguntas
 
 ## 1. Perguntas Gerais sobre a Solução
 
-### 1. O que é o TEKA?
+### 1. O que é a TEKA?
 
 Resposta simples:
 
-O TEKA é uma plataforma web que conecta leitores e sebos. Ele permite cadastrar livros, pesquisar ofertas, favoritar itens e administrar catálogos.
+A TEKA é uma plataforma web que conecta leitores e sebos. Ela permite cadastrar livros, pesquisar ofertas, favoritar itens e administrar catálogos.
 
 Explicando para um leigo:
 
-Pense no TEKA como uma vitrine digital para livrarias de livros usados. O comprador consegue encontrar livros e o livreiro consegue organizar e publicar o catálogo dele.
+Pense na TEKA como uma vitrine digital para livrarias de livros usados. O comprador consegue encontrar livros e o livreiro consegue organizar e publicar o catálogo dele.
 
 ### 2. Qual problema essa solução resolve?
 
@@ -22,7 +22,7 @@ Ela facilita a divulgação e a busca de livros em sebos, organizando catálogos
 
 Explicando para um leigo:
 
-Muitos sebos pequenos não têm estrutura técnica para manter um catálogo online bem organizado. O TEKA simplifica isso e melhora a experiência de quem procura livros.
+Muitos sebos pequenos não têm estrutura técnica para manter um catálogo online bem organizado. A TEKA simplifica isso e melhora a experiência de quem procura livros.
 
 ### 3. Por que usar AWS nesse projeto?
 
@@ -266,7 +266,7 @@ Explicando para um leigo:
 
 Esse tipo de banco é ideal quando as informações têm ligação entre si e precisam ser consultadas com consistência.
 
-### 26. O que o banco armazena no TEKA?
+### 26. O que o banco armazena na TEKA?
 
 Resposta simples:
 
@@ -300,7 +300,7 @@ Explicando para um leigo:
 - o backend é a parte que processa regras e consultas;
 - o banco guarda os dados da aplicação.
 
-### 29. O que existe no frontend do TEKA?
+### 29. O que existe no frontend da TEKA?
 
 Resposta simples:
 
@@ -320,7 +320,7 @@ Explicando para um leigo:
 - configurações;
 - scan em lote.
 
-### 30. O que existe no backend do TEKA?
+### 30. O que existe no backend da TEKA?
 
 Resposta simples:
 
@@ -670,7 +670,7 @@ Mesmo em nuvem, a arquitetura precisa ser bem planejada. Se a rede ou as permiss
 
 Resposta simples:
 
-O TEKA foi desenhado na AWS com frontend distribuído globalmente, backend serverless, banco relacional gerenciado e camadas de segurança e monitoramento.
+A TEKA foi desenhada na AWS com frontend distribuído globalmente, backend serverless, banco relacional gerenciado e camadas de segurança e monitoramento.
 
 Explicando para um leigo:
 

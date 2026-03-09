@@ -1,4 +1,4 @@
-# Arquitetura AWS Proposta para o TEKA
+# Arquitetura AWS Proposta para a TEKA
 
 Documento de apoio para apresentação técnica à banca do programa AWS re/Start da Escola da Nuvem.
 
@@ -8,7 +8,7 @@ Apresentar uma proposta de topologia AWS para o projeto **TEKA**, com frontend e
 
 ## 2. Resumo Executivo
 
-O TEKA é uma plataforma web para conectar leitores e sebos, com funcionalidades de catálogo, autenticação, favoritos, interesses, OCR e painel administrativo.
+A TEKA é uma plataforma web para conectar leitores e sebos, com funcionalidades de catálogo, autenticação, favoritos, interesses, OCR e painel administrativo.
 
 Na AWS, a recomendação é separar a solução em quatro camadas:
 
@@ -244,7 +244,7 @@ Para esta arquitetura, o banco de dados da aplicação será o `Aurora PostgreSQ
 
 Motivo da escolha:
 
-- O TEKA possui modelo relacional claro.
+- A TEKA possui modelo relacional claro.
 - Existem entidades fortemente ligadas entre si.
 - O backend usa Drizzle ORM com estrutura mais próxima de banco SQL.
 - Há consultas e relacionamentos entre usuários, sebos, livros, favoritos, auditoria e avaliações.
@@ -260,7 +260,7 @@ Motivo da escolha:
 - `audit_logs`
 - `sebo_reviews`
 
-### Papel do Aurora no TEKA
+### Papel do Aurora na TEKA
 
 - armazenar os dados transacionais da plataforma;
 - sustentar consultas relacionais entre usuários, sebos, livros e interações;
@@ -269,9 +269,9 @@ Motivo da escolha:
 
 ### Conclusão sobre banco
 
-`Aurora PostgreSQL Serverless v2` é a opção recomendada para o TEKA porque combina modelo relacional, elasticidade e boa aderência ao desenho atual da aplicação.
+`Aurora PostgreSQL Serverless v2` é a opção recomendada para a TEKA porque combina modelo relacional, elasticidade e boa aderência ao desenho atual da aplicação.
 
-## 7. Como cada camada seria usada no TEKA
+## 7. Como cada camada seria usada na TEKA
 
 ### Frontend
 

@@ -36,7 +36,7 @@ Acesse o guia completo de operação:
 
 ## Visão Geral
 
-O TEKA foi desenhado para:
+A TEKA foi desenhada para:
 
 - permitir cadastro rápido de livros por ISBN/câmera;
 - suportar múltiplos lotes do mesmo livro (ex.: mesmo ISBN com estados e preços diferentes);

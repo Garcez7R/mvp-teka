@@ -12,7 +12,7 @@ export default function About() {
         {/* Hero */}
         <section className="mb-16">
           <h1 className="font-outfit font-bold text-4xl text-[#262969] mb-6">
-            Sobre o TEKA
+            Sobre a TEKA
           </h1>
           <p className="font-inter text-lg text-gray-700 max-w-3xl leading-relaxed">
             A TEKA conecta leitores e sebos para facilitar a descoberta de livros usados com preço justo, transparência e contato direto entre as partes.

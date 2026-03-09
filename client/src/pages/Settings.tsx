@@ -734,7 +734,7 @@ export default function SettingsPage() {
           <section className="border border-gray-200 rounded-xl p-5 bg-white">
             <h2 className="font-outfit font-semibold text-xl text-[#262969] mb-2">Instalar App</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Instale o TEKA no dispositivo para abrir como app (PWA).
+              Instale a TEKA no dispositivo para abrir como app (PWA).
             </p>
             <button
               type="button"
