@@ -23,6 +23,7 @@ Escopo recomendado para teste:
 Acesse o guia completo de operação:
 
 - [Guia de Uso - TEKA](docs/GUIA-USO-TEKA.md)
+- [Arquitetura AWS Proposta - AWS re/Start](docs/ARQUITETURA_AWS_RESTART.md)
 
 ## Linha do Tempo (03/03 a 08/03)
 
@@ -137,6 +138,20 @@ O TEKA foi desenhado para:
 - Backend: tRPC + Cloudflare Pages Functions
 - Banco: Cloudflare D1 (SQLite) + Drizzle ORM
 - Deploy: Cloudflare Pages
+
+## Arquitetura de Referência na AWS
+
+Para apresentação acadêmica e simulação de migração da solução atual em Cloudflare para AWS, foi preparado um documento executivo com:
+
+- módulos da arquitetura;
+- responsabilidade de cada serviço;
+- justificativa de uso;
+- alternativa mais barata;
+- estimativa inicial mensal.
+
+Documento:
+
+- [Arquitetura AWS Proposta - AWS re/Start](docs/ARQUITETURA_AWS_RESTART.md)
 
 ## Configuração de Ambiente
 
