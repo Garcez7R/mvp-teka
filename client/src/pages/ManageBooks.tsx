@@ -36,8 +36,16 @@ type StatusHistoryEntry = {
 };
 
 export default function ManageBooks() {
+  const loginRedirect = useMemo(() => {
+    if (typeof window === "undefined") return "/login";
+    const next = `${window.location.pathname}${window.location.search}`;
+    return `/login?next=${encodeURIComponent(next)}`;
+  }, []);
   const { theme } = useTheme();
-  const { isAuthenticated, role } = useAuth({ redirectOnUnauthenticated: true });
+  const { isAuthenticated, role } = useAuth({
+    redirectOnUnauthenticated: true,
+    redirectPath: loginRedirect,
+  });
   const utils = trpc.useUtils();
   const [searchQuery, setSearchQuery] = useState("");
   const [coverFilter, setCoverFilter] = useState<"all" | "with-cover" | "no-cover">("all");

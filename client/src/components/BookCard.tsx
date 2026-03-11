@@ -127,12 +127,14 @@ export default function BookCard({
           <div className={`flex items-center gap-1 text-gray-700 font-inter ${compact ? "text-[11px]" : "text-sm"}`}>
             <MapPin className="w-4 h-4 text-gray-400" />
             <span className="truncate">{compact ? compactLocationLabel : (locationSummary || seboName)}</span>
-            {!compact && proximityLabel && (
+            {proximityLabel && (
               <span
-                className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
+                className={`rounded font-semibold ${
+                  compact ? "text-[9px] px-1.5 py-0.5" : "text-[10px] px-2 py-0.5"
+                } ${
                   proximityLabel === "na_sua_cidade"
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-indigo-100 text-indigo-700"
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-100"
+                    : "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-100"
                 }`}
               >
                 {compactLocationLabel}

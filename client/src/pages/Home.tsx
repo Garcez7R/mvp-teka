@@ -741,6 +741,9 @@ export default function Home() {
                   className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                 />
               </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Dica: a busca por cidade funciona com ou sem acento.
+              </p>
               <div className="mt-4 flex flex-wrap gap-2 justify-end">
                 <button
                   type="button"
