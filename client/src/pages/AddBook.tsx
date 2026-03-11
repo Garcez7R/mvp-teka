@@ -1000,10 +1000,12 @@ export default function AddBook() {
         <Header />
         <main className="container flex-1 py-12 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-gray-700 dark:text-gray-200">Faça login para continuar.</p>
-            <Link href={loginRedirect}>
+            <p className="text-gray-700 dark:text-gray-200">
+              Para cadastrar livros, é necessário estar logado como vendedor.
+            </p>
+            <Link href="/">
               <button className="mt-3 px-4 py-2 rounded bg-[#262969] text-white text-sm">
-                Entrar
+                Voltar para o catálogo
               </button>
             </Link>
           </div>
