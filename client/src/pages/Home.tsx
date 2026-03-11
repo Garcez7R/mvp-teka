@@ -296,8 +296,8 @@ export default function Home() {
 
   // Client-only filters (sebo/favoritos/lista de procura) on top of server query
   const filteredBooks = useMemo(() => {
-    const buyerCity = normalizeLocation((meProfile as any)?.city);
-    const buyerState = normalizeLocation((meProfile as any)?.state);
+    const buyerCity = normalizeLocation(cityFilter) || normalizeLocation((meProfile as any)?.city);
+    const buyerState = normalizeLocation(stateFilter) || normalizeLocation((meProfile as any)?.state);
     const withReason = displayBooks.map((book: any) => {
       const normalizedTitle = normalizeSearchValue(String(book.title ?? ""));
       const normalizedAuthor = normalizeSearchValue(String(book.author ?? ""));
@@ -362,13 +362,15 @@ export default function Home() {
     onlyFavorites,
     normalizedSearchQuery,
     prioritizeNearby,
+    cityFilter,
+    stateFilter,
     (meProfile as any)?.city,
     (meProfile as any)?.state,
   ]);
   const fallbackBooks = useMemo(() => {
     if (filteredBooks.length > 0 || normalizedSearchQuery.length < 4) return [];
-    const buyerCity = normalizeLocation((meProfile as any)?.city);
-    const buyerState = normalizeLocation((meProfile as any)?.state);
+    const buyerCity = normalizeLocation(cityFilter) || normalizeLocation((meProfile as any)?.city);
+    const buyerState = normalizeLocation(stateFilter) || normalizeLocation((meProfile as any)?.state);
     const baseFallback = fuzzyFallbackBooks
       .map((book: any) => {
         const normalizedTitle = normalizeSearchValue(String(book.title ?? ""));
@@ -410,7 +412,17 @@ export default function Home() {
         .map((entry) => entry.book);
 
     return sortBooksWithCoverFirst(sortedByProximity).slice(0, PAGE_SIZE);
-  }, [filteredBooks.length, fuzzyFallbackBooks, normalizedSearchQuery, PAGE_SIZE, prioritizeNearby, (meProfile as any)?.city, (meProfile as any)?.state]);
+  }, [
+    filteredBooks.length,
+    fuzzyFallbackBooks,
+    normalizedSearchQuery,
+    PAGE_SIZE,
+    prioritizeNearby,
+    cityFilter,
+    stateFilter,
+    (meProfile as any)?.city,
+    (meProfile as any)?.state,
+  ]);
 
   const groupedBooks = filteredBooks.length > 0 ? filteredBooks : fallbackBooks;
   const lastCatalogUpdate = useMemo(() => {
