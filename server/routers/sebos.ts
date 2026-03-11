@@ -5,6 +5,7 @@ import { sebos, books, users, favorites, bookInterests, seboReviews } from "../_
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { logAuditEvent } from "./_utils/audit.js";
 import { featureFlags } from "./_utils/features.ts";
+import { getRuntimeEnvValue } from "../_core/runtime-env.ts";
 
 const HIDDEN_MARKER = /^\[HIDDEN\]\s*/i;
 const STATUS_MARKER = /^\[STATUS:(ATIVO|RESERVADO|VENDIDO)\]\s*/i;
@@ -37,6 +38,11 @@ function normalizeState(value: string | undefined | null): string | null {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toUpperCase();
+}
+
+function isBackfillAllowed(): boolean {
+  const raw = String(getRuntimeEnvValue("ALLOW_ADMIN_BACKFILL_LOCATION") || "").trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(raw);
 }
 
 async function ensureUniqueProSlug(baseSlug: string, currentSeboId?: number): Promise<string> {
@@ -574,6 +580,55 @@ export const sebosRouter = router({
       });
       return { success: true };
     }),
+
+  adminBackfillLocation: adminProcedure.mutation(async ({ ctx }) => {
+    if (!isBackfillAllowed()) {
+      throw new Error("Backfill bloqueado. Defina ALLOW_ADMIN_BACKFILL_LOCATION=true para executar.");
+    }
+
+    const rows = await db
+      .select({
+        id: sebos.id,
+        city: sebos.city,
+        state: sebos.state,
+        cityNormalized: sebos.cityNormalized,
+        stateNormalized: sebos.stateNormalized,
+      })
+      .from(sebos);
+
+    let updated = 0;
+    let skipped = 0;
+
+    for (const row of rows) {
+      const cityNormalized = normalizeLocation(row.city);
+      const stateNormalized = normalizeState(row.state);
+      const shouldUpdate =
+        cityNormalized !== row.cityNormalized || stateNormalized !== row.stateNormalized;
+      if (!shouldUpdate) {
+        skipped += 1;
+        continue;
+      }
+      await db
+        .update(sebos)
+        .set({ cityNormalized, stateNormalized })
+        .where(eq(sebos.id, row.id));
+      updated += 1;
+    }
+
+    await logAuditEvent({
+      actorUserId: ctx.userId,
+      actorRole: ctx.role,
+      action: "admin.sebo.backfill_location",
+      entityType: "sebo",
+      entityId: null,
+      metadata: {
+        updated,
+        skipped,
+      },
+    });
+
+    return { updated, skipped };
+  }),
 
   adminSetPlan: adminProcedure
     .input(

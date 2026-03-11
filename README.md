@@ -26,7 +26,7 @@ Acesse o guia completo de operação:
 - [Arquitetura AWS Proposta - AWS re/Start](docs/ARQUITETURA_AWS_RESTART.md)
 - [Esboco da Apresentacao - AWS re/Start](docs/ESBOCO_APRESENTACAO_AWS_RESTART.md)
 
-## Linha do Tempo (03/03 a 08/03)
+## Linha do Tempo (03/03 a 11/03)
 
 - **03/03**: estrutura inicial do MVP, base de catálogo/sebo/livros e primeiros fluxos de cadastro.
 - **04/03**: estabilização técnica de build/deploy e evolução forte do fluxo ISBN/capas/mobile.
@@ -34,6 +34,7 @@ Acesse o guia completo de operação:
 - **06/03**: expansão do painel admin, melhorias de catálogo/estoque, OCR e robustez de sessão/cache.
 - **07/03**: polimento de UX comprador/livreiro/admin, scan em lote guiado, documentação e compliance.
 - **08/03**: refinos visuais finais, melhorias de filtros/home, hardening de segurança (itens 1-6) e ajustes de usabilidade.
+- **09/03-11/03**: normalização de cidade/UF, ordenação por proximidade, ajustes de visibilidade e documentação técnica.
 
 ## Visão Geral
 
@@ -175,6 +176,7 @@ Variáveis importantes de produção (Cloudflare Pages > Settings > Variables an
 - `pnpm build` - build de produção
 - `pnpm db:push` - geração/aplicação de migrações Drizzle
 - `pnpm db:seed` - seed local
+- `pnpm db:backfill:location` - backfill de cidade/UF normalizadas (NFD)
 
 ## Estrutura de Dados (resumo)
 
@@ -211,6 +213,7 @@ Variáveis importantes de produção (Cloudflare Pages > Settings > Variables an
 - Migrações envolvidas: `drizzle/0012_sebo_location_normalized.sql` e `drizzle/0013_sebo_location_normalized_unaccent.sql`.
 - O backfill em SQL cobre a maioria dos casos, mas pode não contemplar 100% dos caracteres (ex.: variações de “Ç”).
 - Backfill robusto via script (recomendado quando houver dados legados): `pnpm db:backfill:location`.
+- Alternativa no ambiente com binding do DB: `sebos.adminBackfillLocation` (requer `ALLOW_ADMIN_BACKFILL_LOCATION=true`).
 - O script exige acesso ao DB/binding do ambiente (mesmo contexto do backend) e aplica `normalize("NFD")`.
 - Revisão visual rápida recomendada para modo claro/escuro nas telas: Home, Book, MyInterests, Admin.
 - `normalizeLocation` está duplicado em client/server; pode virar utilitário compartilhado no futuro.
