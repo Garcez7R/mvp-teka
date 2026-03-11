@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -127,14 +127,13 @@ export default function CreateSebo() {
     }
   };
 
-  const canCreateSebo = role === "livreiro" || role === "admin";
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
   }
-  if (!isAuthenticated || !canCreateSebo) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
-        <p className="text-gray-700">Apenas livreiros e admins podem criar sebos.</p>
+        <p className="text-gray-700">Faça login para criar seu sebo.</p>
       </div>
     );
   }

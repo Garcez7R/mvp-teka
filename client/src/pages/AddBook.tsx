@@ -994,10 +994,24 @@ export default function AddBook() {
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
   }
-  if (!isAuthenticated || !canManageBooks) {
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
+        <p className="text-gray-700 dark:text-gray-200">Faça login para continuar.</p>
+      </div>
+    );
+  }
+  if (!canManageBooks) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <p className="text-gray-700">Apenas livreiros e admins podem cadastrar livros.</p>
+        <div className="text-center">
+          <p className="text-gray-700">Para cadastrar livros, crie seu sebo primeiro.</p>
+          <Link href="/sebo/novo">
+            <button className="mt-3 px-4 py-2 rounded bg-[#262969] text-white text-sm">
+              Criar Sebo
+            </button>
+          </Link>
+        </div>
       </div>
     );
   }
