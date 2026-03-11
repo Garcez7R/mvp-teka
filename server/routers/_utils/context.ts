@@ -22,13 +22,6 @@ type ContextOptionsLike = {
 const googleJwks = createRemoteJWKSet(
   new URL("https://www.googleapis.com/oauth2/v3/certs")
 );
-const BUILTIN_ADMIN_EMAILS = new Set([
-  "rgs.dba7@gmail.com",
-  "claudiasobralm@gmail.com",
-  "carlosdanielbp101@gmail.com",
-  "dianadasilv4ds@gmail.com",
-]);
-
 function readFirstValue(value: unknown): string | null {
   if (typeof value === "string") return value;
   if (Array.isArray(value) && value.length > 0) {
@@ -43,7 +36,7 @@ function getAdminEmailsAllowlist(): Set<string> {
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
-  return new Set([...Array.from(BUILTIN_ADMIN_EMAILS), ...fromEnv]);
+  return new Set(fromEnv);
 }
 
 function getGoogleAudiencesAllowlist(): string[] {
@@ -116,7 +109,6 @@ export async function createTRPCContext(
       const email = typeof payload.email === "string" ? payload.email : null;
       const normalizedEmail = email?.trim().toLowerCase() ?? null;
       const name = typeof payload.name === "string" ? payload.name : null;
-      const requestedRole = readFirstValue(req?.headers?.["x-teka-role"]);
       const adminEmailAllowlist = getAdminEmailsAllowlist();
       const isAdminEmail = Boolean(
         normalizedEmail && adminEmailAllowlist.has(normalizedEmail)
@@ -124,9 +116,6 @@ export async function createTRPCContext(
       const initialRole =
         isAdminEmail
           ? "admin"
-          : 
-        requestedRole === "livreiro" || requestedRole === "comprador"
-          ? requestedRole
           : "comprador";
 
       if (googleSub && email) {
@@ -138,13 +127,8 @@ export async function createTRPCContext(
           .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
 
         if (existing) {
-          const shouldPromoteToLivreiro =
-            requestedRole === "livreiro" &&
-            (existing.role === "comprador" || existing.role === "user");
           const effectiveRole = isAdminEmail
             ? "admin"
-            : shouldPromoteToLivreiro
-            ? "livreiro"
             : existing.role;
 
           await db
@@ -204,7 +188,6 @@ export async function createTRPCContext(
     const emailHeader =
       readFirstValue(req?.headers?.["x-teka-email"]) ??
       readFirstValue(req?.headers?.["X-Teka-Email"]);
-    const requestedRole = readFirstValue(req?.headers?.["x-teka-role"]);
     const nameHeader =
       readFirstValue(req?.headers?.["x-teka-name"]) ??
       readFirstValue(req?.headers?.["X-Teka-Name"]);
@@ -215,11 +198,6 @@ export async function createTRPCContext(
       const isAdminEmail = adminEmailAllowlist.has(normalizedEmail);
       const fallbackName = normalizedEmail.split("@")[0] || "Usuário";
       const effectiveName = (nameHeader || "").trim() || fallbackName;
-      const roleFromHeader =
-        requestedRole === "livreiro" || requestedRole === "comprador"
-          ? requestedRole
-          : "comprador";
-
       const openId = `email:${normalizedEmail}`;
       const existing = await db
         .select()
@@ -228,13 +206,8 @@ export async function createTRPCContext(
         .then((res: Array<typeof users.$inferSelect>) => res[0] ?? null);
 
       if (existing) {
-        const shouldPromoteToLivreiro =
-          requestedRole === "livreiro" &&
-          (existing.role === "comprador" || existing.role === "user");
         const effectiveRole = isAdminEmail
           ? "admin"
-          : shouldPromoteToLivreiro
-          ? "livreiro"
           : existing.role;
 
         await db
@@ -266,7 +239,7 @@ export async function createTRPCContext(
           openId,
           name: effectiveName,
           email: normalizedEmail,
-          role: isAdminEmail ? "admin" : roleFromHeader,
+          role: isAdminEmail ? "admin" : "comprador",
           loginMethod: "email",
         })
         .returning({ id: users.id });
