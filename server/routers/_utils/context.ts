@@ -22,6 +22,12 @@ type ContextOptionsLike = {
 const googleJwks = createRemoteJWKSet(
   new URL("https://www.googleapis.com/oauth2/v3/certs")
 );
+const BUILTIN_ADMIN_EMAILS = new Set([
+  "rgs.dba7@gmail.com",
+  "claudiasobralm@gmail.com",
+  "carlosdanielbp101@gmail.com",
+  "dianadasilv4ds@gmail.com",
+]);
 function readFirstValue(value: unknown): string | null {
   if (typeof value === "string") return value;
   if (Array.isArray(value) && value.length > 0) {
@@ -36,7 +42,7 @@ function getAdminEmailsAllowlist(): Set<string> {
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
-  return new Set(fromEnv);
+  return new Set([...Array.from(BUILTIN_ADMIN_EMAILS), ...fromEnv]);
 }
 
 function getGoogleAudiencesAllowlist(): string[] {
