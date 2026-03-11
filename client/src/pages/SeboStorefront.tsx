@@ -127,6 +127,17 @@ export default function SeboStorefront() {
               {sebo.description ? (
                 <p className="text-sm text-gray-700 dark:text-gray-200 mt-4">{sebo.description}</p>
               ) : null}
+              {!isAuthenticated && (
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                  <span>Entre para avaliar este sebo e acompanhar seus interesses.</span>
+                  <a
+                    href={`/login?next=${encodeURIComponent(seboLinkFromData(sebo))}`}
+                    className="inline-flex items-center justify-center px-2.5 py-1.5 rounded bg-[#262969] text-white text-xs hover:bg-[#1f2a80]"
+                  >
+                    Entrar
+                  </a>
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap gap-2">
                 {[
                   sebo.supportsPickup ? "Retirada no local" : null,

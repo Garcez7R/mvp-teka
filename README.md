@@ -203,3 +203,14 @@ Variáveis importantes de produção (Cloudflare Pages > Settings > Variables an
 - upload manual de capa está desativado no fluxo Cloudflare-only;
 - OCR remoto depende de chave válida no ambiente;
 - mudanças de schema no D1 exigem sincronização de migrações/colunas.
+
+## Localização (Cidade/UF) - Notas de Deploy e Qualidade
+
+- Migrações de localização precisam rodar antes do código ir para produção.
+- O backend usa `sebos.cityNormalized` e `sebos.stateNormalized` para filtros; sem as colunas, o filtro por cidade/UF quebra.
+- Migrações envolvidas: `drizzle/0012_sebo_location_normalized.sql` e `drizzle/0013_sebo_location_normalized_unaccent.sql`.
+- O backfill em SQL cobre a maioria dos casos, mas pode não contemplar 100% dos caracteres (ex.: variações de “Ç”).
+- Backfill robusto via script (recomendado quando houver dados legados): `pnpm db:backfill:location`.
+- O script exige acesso ao DB/binding do ambiente (mesmo contexto do backend) e aplica `normalize("NFD")`.
+- Revisão visual rápida recomendada para modo claro/escuro nas telas: Home, Book, MyInterests, Admin.
+- `normalizeLocation` está duplicado em client/server; pode virar utilitário compartilhado no futuro.

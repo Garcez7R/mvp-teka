@@ -465,6 +465,13 @@ export default function Home() {
     role === "livreiro" &&
     !isMySeboLoading &&
     (!mySebo || (!isMySeboBooksLoading && mySeboBooks.length === 0));
+  const hasBuyerLocation = Boolean(
+    normalizeLocation(cityFilter) ||
+    normalizeLocation(stateFilter) ||
+    normalizeLocation((meProfile as any)?.city) ||
+    normalizeLocation((meProfile as any)?.state)
+  );
+  const showNearbyHint = prioritizeNearby && !hasBuyerLocation;
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
@@ -483,6 +490,12 @@ export default function Home() {
           <div className="max-w-xl">
             <SearchBar key={searchBarKey} onSearch={setSearchQuery} />
           </div>
+          {showNearbyHint && (
+            <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">
+              “Perto de mim” está ativo, mas sua cidade/UF não foi informada. Preencha nos filtros ou no seu perfil para
+              melhorar a ordem.
+            </p>
+          )}
         </div>
       </section>
 

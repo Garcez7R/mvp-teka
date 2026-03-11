@@ -59,11 +59,12 @@ export default function BookCard({
       : availabilityStatus === "vendido"
       ? "Vendido"
       : "Disponivel";
-  const compactLocationLabel = proximityLabel
+  const proximityText = proximityLabel
     ? proximityLabel === "na_sua_cidade"
       ? "Na sua cidade"
       : "No seu estado"
-    : (locationSummary || seboName);
+    : null;
+  const locationText = locationSummary || seboName;
 
   return (
     <div className="group cursor-pointer relative">
@@ -126,7 +127,7 @@ export default function BookCard({
 
           <div className={`flex items-center gap-1 text-gray-700 font-inter ${compact ? "text-[11px]" : "text-sm"}`}>
             <MapPin className="w-4 h-4 text-gray-400" />
-            <span className="truncate">{compact ? compactLocationLabel : (locationSummary || seboName)}</span>
+            <span className="truncate">{locationText}</span>
             {proximityLabel && (
               <span
                 className={`rounded font-semibold ${
@@ -137,7 +138,7 @@ export default function BookCard({
                     : "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-100"
                 }`}
               >
-                {compactLocationLabel}
+                {proximityText}
               </span>
             )}
             {!compact && sebo?.verified && (
