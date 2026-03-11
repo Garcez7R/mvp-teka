@@ -289,6 +289,13 @@ export default function Admin() {
     },
     onError: (error) => toast.error(error.message || "Erro ao moderar avaliação."),
   });
+  const adminBackfillLocationMutation = trpc.sebos.adminBackfillLocation.useMutation({
+    onSuccess: async (data) => {
+      await utils.sebos.list.invalidate();
+      toast.success(`Backfill concluído. Atualizados: ${data.updated}. Ignorados: ${data.skipped}.`);
+    },
+    onError: (error) => toast.error(error.message || "Erro ao executar backfill."),
+  });
 
   const adminUpdateBookMutation = trpc.books.update.useMutation({
     onSuccess: async () => {
@@ -518,13 +525,21 @@ export default function Admin() {
         {adminMetrics && (
           <section className="mb-8 space-y-4">
             <h2 className="text-sm font-semibold text-[#262969] dark:text-gray-100">Relatório Admin (Visão Global)</h2>
-            <div className="flex justify-end">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowCharts((prev) => !prev)}
                 className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white"
               >
                 {showCharts ? "Ocultar gráficos" : "Exibir gráficos"}
+              </button>
+              <button
+                type="button"
+                onClick={() => adminBackfillLocationMutation.mutate()}
+                disabled={adminBackfillLocationMutation.isPending}
+                className="px-3 py-2 text-sm rounded border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white disabled:opacity-60"
+              >
+                {adminBackfillLocationMutation.isPending ? "Backfill em andamento..." : "Rodar backfill cidade/UF"}
               </button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
