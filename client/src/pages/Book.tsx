@@ -369,6 +369,14 @@ export default function Book() {
                         src={seboLogoUrl}
                         alt={`Logo de ${book.sebo.name}`}
                         className="w-full h-full object-cover"
+                        onError={(event) => {
+                          const target = event.currentTarget;
+                          if (target.dataset.fallbackApplied === "true") return;
+                          target.dataset.fallbackApplied = "true";
+                          target.src = "/teka-logo.png";
+                          target.classList.remove("object-cover");
+                          target.classList.add("object-contain", "p-1");
+                        }}
                       />
                     ) : (
                       <img

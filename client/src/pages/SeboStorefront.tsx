@@ -79,6 +79,14 @@ export default function SeboStorefront() {
                     src={sebo.logoUrl}
                     alt={`Logo de ${sebo.name}`}
                     className="w-14 h-14 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
+                    onError={(event) => {
+                      const target = event.currentTarget;
+                      if (target.dataset.fallbackApplied === "true") return;
+                      target.dataset.fallbackApplied = "true";
+                      target.src = "/teka-logo.png";
+                      target.classList.remove("object-cover");
+                      target.classList.add("object-contain", "p-1");
+                    }}
                   />
                 ) : (
                   <img

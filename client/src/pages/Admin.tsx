@@ -323,6 +323,7 @@ export default function Admin() {
     whatsapp: "",
     city: "",
     state: "",
+    logoUrl: "",
   });
 
   const usersById = useMemo(
@@ -824,12 +825,13 @@ export default function Admin() {
           <section className="space-y-4">
             <div className="p-4 border rounded-lg bg-gray-50">
               <h2 className="font-semibold text-[#262969] dark:text-gray-100 mb-3">Criar Sebo</h2>
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
                 <input value={newSebo.userId} onChange={(e) => setNewSebo((p) => ({ ...p, userId: e.target.value }))} placeholder="User ID" className="px-3 py-2 border rounded" />
                 <input value={newSebo.name} onChange={(e) => setNewSebo((p) => ({ ...p, name: e.target.value }))} placeholder="Nome do sebo" className="px-3 py-2 border rounded" />
                 <input value={newSebo.whatsapp} onChange={(e) => setNewSebo((p) => ({ ...p, whatsapp: e.target.value }))} placeholder="WhatsApp" className="px-3 py-2 border rounded" />
                 <input value={newSebo.city} onChange={(e) => setNewSebo((p) => ({ ...p, city: e.target.value }))} placeholder="Cidade" className="px-3 py-2 border rounded" />
                 <input value={newSebo.state} onChange={(e) => setNewSebo((p) => ({ ...p, state: e.target.value }))} placeholder="UF" className="px-3 py-2 border rounded" />
+                <input value={newSebo.logoUrl} onChange={(e) => setNewSebo((p) => ({ ...p, logoUrl: e.target.value }))} placeholder="Logo URL" className="px-3 py-2 border rounded" />
                 <button
                   onClick={() => {
                     const userId = Number.parseInt(newSebo.userId, 10);
@@ -842,6 +844,7 @@ export default function Admin() {
                       whatsapp: newSebo.whatsapp,
                       city: newSebo.city || undefined,
                       state: newSebo.state || undefined,
+                      logoUrl: newSebo.logoUrl || undefined,
                     });
                   }}
                   className="px-3 py-2 rounded bg-[#262969] text-white"
@@ -1002,7 +1005,7 @@ export default function Admin() {
                       </button>
                     </div>
                   </div>
-                  <div className="mt-3 grid grid-cols-1 md:grid-cols-5 gap-2">
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-6 gap-2">
                     <input
                       defaultValue={sebo.name || ""}
                       onBlur={(e) => {
@@ -1038,6 +1041,15 @@ export default function Admin() {
                       }}
                       className="px-3 py-2 border rounded"
                       placeholder="UF"
+                    />
+                    <input
+                      defaultValue={sebo.logoUrl || ""}
+                      onBlur={(e) => {
+                        if (e.target.value === sebo.logoUrl) return;
+                        void adminUpdateSeboMutation.mutateAsync({ id: sebo.id, logoUrl: e.target.value || undefined });
+                      }}
+                      className="px-3 py-2 border rounded"
+                      placeholder="Logo URL"
                     />
                     <input
                       defaultValue={sebo.maxActiveBooks ?? ""}

@@ -40,6 +40,17 @@ function normalizeState(value: string | undefined | null): string | null {
     .toUpperCase();
 }
 
+function normalizeLogoUrl(value: string | undefined | null): string | null {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith("javascript:") || lower.startsWith("data:")) return null;
+  if (lower.startsWith("https://")) return trimmed;
+  if (lower.startsWith("http://")) return `https://${trimmed.slice(7)}`;
+  if (lower.startsWith("//")) return `https:${trimmed}`;
+  return `https://${trimmed}`;
+}
+
 function isBackfillAllowed(): boolean {
   const raw = String(getRuntimeEnvValue("ALLOW_ADMIN_BACKFILL_LOCATION") || "").trim().toLowerCase();
   return ["1", "true", "yes", "on"].includes(raw);
@@ -386,6 +397,7 @@ export const sebosRouter = router({
           ...input,
           cityNormalized: normalizeLocation(input.city),
           stateNormalized: normalizeState(input.state),
+          logoUrl: normalizeLogoUrl(input.logoUrl),
         })
       .returning({ id: sebos.id });
 
@@ -438,10 +450,12 @@ export const sebosRouter = router({
       const { id, ...updateData } = input;
       const hasCity = Object.prototype.hasOwnProperty.call(updateData, "city");
       const hasState = Object.prototype.hasOwnProperty.call(updateData, "state");
+      const hasLogo = Object.prototype.hasOwnProperty.call(updateData, "logoUrl");
       const normalizedUpdate = {
         ...updateData,
         ...(hasCity ? { cityNormalized: normalizeLocation(updateData.city) } : {}),
         ...(hasState ? { stateNormalized: normalizeState(updateData.state) } : {}),
+        ...(hasLogo ? { logoUrl: normalizeLogoUrl(updateData.logoUrl) } : {}),
       };
 
       const sebo = await db
@@ -509,6 +523,7 @@ export const sebosRouter = router({
           verified: input.verified ?? false,
           cityNormalized: normalizeLocation(input.city),
           stateNormalized: normalizeState(input.state),
+          logoUrl: normalizeLogoUrl(input.logoUrl),
         })
         .returning({ id: sebos.id });
 
@@ -562,10 +577,12 @@ export const sebosRouter = router({
       const { id, ...updateData } = input;
       const hasCity = Object.prototype.hasOwnProperty.call(updateData, "city");
       const hasState = Object.prototype.hasOwnProperty.call(updateData, "state");
+      const hasLogo = Object.prototype.hasOwnProperty.call(updateData, "logoUrl");
       const normalizedUpdate = {
         ...updateData,
         ...(hasCity ? { cityNormalized: normalizeLocation(updateData.city) } : {}),
         ...(hasState ? { stateNormalized: normalizeState(updateData.state) } : {}),
+        ...(hasLogo ? { logoUrl: normalizeLogoUrl(updateData.logoUrl) } : {}),
       };
       await db.update(sebos).set(normalizedUpdate).where(eq(sebos.id, id));
       await logAuditEvent({

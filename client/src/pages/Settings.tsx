@@ -690,6 +690,14 @@ export default function SettingsPage() {
                           src={seboForm.logoUrl}
                           alt="Logo do sebo"
                           className="w-16 h-16 object-cover rounded border border-gray-200 bg-white"
+                          onError={(event) => {
+                            const target = event.currentTarget;
+                            if (target.dataset.fallbackApplied === "true") return;
+                            target.dataset.fallbackApplied = "true";
+                            target.src = "/teka-logo.png";
+                            target.classList.remove("object-cover");
+                            target.classList.add("object-contain", "p-1");
+                          }}
                         />
                       ) : (
                         <img
