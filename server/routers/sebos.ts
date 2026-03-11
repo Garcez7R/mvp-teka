@@ -21,6 +21,18 @@ function slugifySeboName(value?: string | null): string {
   return base || "sebo";
 }
 
+function normalizeLocation(value: string | undefined | null): string | null {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) return null;
+  return trimmed.toLowerCase();
+}
+
+function normalizeState(value: string | undefined | null): string | null {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) return null;
+  return trimmed.toUpperCase();
+}
+
 async function ensureUniqueProSlug(baseSlug: string, currentSeboId?: number): Promise<string> {
   let nextSlug = baseSlug;
   let suffix = 1;
@@ -355,10 +367,14 @@ export const sebosRouter = router({
           .where(eq(users.id, currentUser.id));
       }
 
-      const newSebo = await db.insert(sebos).values({
-        userId: ctx.userId!,
-        ...input,
-      })
+      const newSebo = await db
+        .insert(sebos)
+        .values({
+          userId: ctx.userId!,
+          ...input,
+          cityNormalized: normalizeLocation(input.city),
+          stateNormalized: normalizeState(input.state),
+        })
       .returning({ id: sebos.id });
 
       await logAuditEvent({
@@ -408,6 +424,13 @@ export const sebosRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { id, ...updateData } = input;
+      const hasCity = Object.prototype.hasOwnProperty.call(updateData, "city");
+      const hasState = Object.prototype.hasOwnProperty.call(updateData, "state");
+      const normalizedUpdate = {
+        ...updateData,
+        ...(hasCity ? { cityNormalized: normalizeLocation(updateData.city) } : {}),
+        ...(hasState ? { stateNormalized: normalizeState(updateData.state) } : {}),
+      };
 
       const sebo = await db
         .select()
@@ -420,7 +443,7 @@ export const sebosRouter = router({
         throw new Error("Unauthorized");
       }
 
-      await db.update(sebos).set(updateData).where(eq(sebos.id, id));
+      await db.update(sebos).set(normalizedUpdate).where(eq(sebos.id, id));
 
       await logAuditEvent({
         actorUserId: ctx.userId,
@@ -429,7 +452,7 @@ export const sebosRouter = router({
         entityType: "sebo",
         entityId: id,
         metadata: {
-          changedFields: Object.keys(updateData),
+          changedFields: Object.keys(normalizedUpdate),
         },
       });
 
@@ -472,6 +495,8 @@ export const sebosRouter = router({
         .values({
           ...input,
           verified: input.verified ?? false,
+          cityNormalized: normalizeLocation(input.city),
+          stateNormalized: normalizeState(input.state),
         })
         .returning({ id: sebos.id });
 
@@ -523,7 +548,14 @@ export const sebosRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { id, ...updateData } = input;
-      await db.update(sebos).set(updateData).where(eq(sebos.id, id));
+      const hasCity = Object.prototype.hasOwnProperty.call(updateData, "city");
+      const hasState = Object.prototype.hasOwnProperty.call(updateData, "state");
+      const normalizedUpdate = {
+        ...updateData,
+        ...(hasCity ? { cityNormalized: normalizeLocation(updateData.city) } : {}),
+        ...(hasState ? { stateNormalized: normalizeState(updateData.state) } : {}),
+      };
+      await db.update(sebos).set(normalizedUpdate).where(eq(sebos.id, id));
       await logAuditEvent({
         actorUserId: ctx.userId,
         actorRole: ctx.role,
@@ -531,7 +563,7 @@ export const sebosRouter = router({
         entityType: "sebo",
         entityId: id,
         metadata: {
-          changedFields: Object.keys(updateData),
+          changedFields: Object.keys(normalizedUpdate),
         },
       });
       return { success: true };

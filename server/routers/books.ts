@@ -38,6 +38,18 @@ const seboBaseSelect = {
   updatedAt: sebos.updatedAt,
 } as const;
 
+function normalizeLocation(value: string | undefined | null): string | null {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) return null;
+  return trimmed.toLowerCase();
+}
+
+function normalizeState(value: string | undefined | null): string | null {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed) return null;
+  return trimmed.toUpperCase();
+}
+
 function isBookActiveAndVisible(params: {
   availabilityStatus: AvailabilityStatus;
   isVisible: boolean;
@@ -200,11 +212,13 @@ export const booksRouter = router({
       if (input.seboId) {
         filters.push(eq(books.seboId, input.seboId));
       }
-      if (input.city) {
-        filters.push(like(sql`lower(${sebos.city})`, `%${input.city.toLowerCase()}%`));
+      const cityNormalized = normalizeLocation(input.city);
+      if (cityNormalized) {
+        filters.push(like(sebos.cityNormalized, `%${cityNormalized}%`));
       }
-      if (input.state) {
-        filters.push(eq(sebos.state, input.state.toUpperCase()));
+      const stateNormalized = normalizeState(input.state);
+      if (stateNormalized) {
+        filters.push(eq(sebos.stateNormalized, stateNormalized));
       }
 
       if (input.condition) {

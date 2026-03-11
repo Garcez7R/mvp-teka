@@ -68,6 +68,8 @@ export const sebos = sqliteTable("sebos", {
   whatsapp: text("whatsapp").notNull(),
   city: text("city"),
   state: text("state"),
+  cityNormalized: text("cityNormalized"),
+  stateNormalized: text("stateNormalized"),
   verified: integer("verified", { mode: "boolean" }).default(false),
   createdAt: integer("createdAt", { mode: "timestamp_ms" })
     .$defaultFn(() => new Date())
