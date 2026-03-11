@@ -27,8 +27,16 @@ type BookSuggestion = {
 };
 
 export default function AddBook() {
+  const loginRedirect = useMemo(() => {
+    if (typeof window === "undefined") return "/login";
+    const next = `${window.location.pathname}${window.location.search}`;
+    return `/login?next=${encodeURIComponent(next)}`;
+  }, []);
   const [, navigate] = useLocation();
-  const { isAuthenticated, role, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { isAuthenticated, role, loading } = useAuth({
+    redirectOnUnauthenticated: true,
+    redirectPath: loginRedirect,
+  });
 
   const [formData, setFormData] = useState({
     seboId: "",

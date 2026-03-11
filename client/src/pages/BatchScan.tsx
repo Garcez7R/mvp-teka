@@ -34,7 +34,15 @@ const CONDITIONS: DraftCondition[] = ["Novo", "Excelente", "Bom estado", "Usado"
 const BATCH_COUNTER_KEY = `teka_batch_scanned_${new Date().toISOString().slice(0, 10)}`;
 
 export default function BatchScan() {
-  const { isAuthenticated, role, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const loginRedirect = useMemo(() => {
+    if (typeof window === "undefined") return "/login";
+    const next = `${window.location.pathname}${window.location.search}`;
+    return `/login?next=${encodeURIComponent(next)}`;
+  }, []);
+  const { isAuthenticated, role, loading } = useAuth({
+    redirectOnUnauthenticated: true,
+    redirectPath: loginRedirect,
+  });
   const canManageBooks = role === "livreiro" || role === "admin";
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerBusy, setScannerBusy] = useState(false);

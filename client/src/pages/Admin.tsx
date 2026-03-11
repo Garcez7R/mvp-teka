@@ -30,6 +30,11 @@ interface EditingAdminBook {
 }
 
 export default function Admin() {
+  const loginRedirect = useMemo(() => {
+    if (typeof window === "undefined") return "/login";
+    const next = `${window.location.pathname}${window.location.search}`;
+    return `/login?next=${encodeURIComponent(next)}`;
+  }, []);
   const { theme } = useTheme();
   const {
     isAuthenticated,
@@ -40,6 +45,7 @@ export default function Admin() {
     refresh,
   } = useAuth({
     redirectOnUnauthenticated: true,
+    redirectPath: loginRedirect,
   });
   const utils = trpc.useUtils();
   const [tab, setTab] = useState<AdminTab>("users");

@@ -16,7 +16,15 @@ type BeforeInstallPromptEventLike = Event & {
 };
 
 export default function SettingsPage() {
-  const { role, isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
+  const loginRedirect = useMemo(() => {
+    if (typeof window === "undefined") return "/login";
+    const next = `${window.location.pathname}${window.location.search}`;
+    return `/login?next=${encodeURIComponent(next)}`;
+  }, []);
+  const { role, isAuthenticated } = useAuth({
+    redirectOnUnauthenticated: true,
+    redirectPath: loginRedirect,
+  });
   const canManageSebo = role === "livreiro" || role === "admin";
   const utils = trpc.useUtils();
   const { data: me } = trpc.users.me.useQuery(undefined, {
