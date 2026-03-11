@@ -897,10 +897,13 @@ export default function Admin() {
                           href={(sebo.plan === "pro" || sebo.plan === "gold") && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[#da4653] hover:underline"
+                          className="text-[#da4653] hover:underline font-semibold"
                         >
-                          {(sebo.plan === "pro" || sebo.plan === "gold") && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`}
+                          Ver vitrine
                         </a>
+                        <span className="text-[11px] text-gray-500 dark:text-gray-400 ml-2">
+                          ({(sebo.plan === "pro" || sebo.plan === "gold") && sebo.proSlug ? `/s/${sebo.proSlug}` : `/sebo/${sebo.id}`})
+                        </span>
                       </p>
                       <p className="text-xs text-gray-600 dark:text-gray-300">
                         Avaliação: {Number(sebo.reviewSummary?.avgRating ?? 0).toFixed(1)} ({Number(sebo.reviewSummary?.totalReviews ?? 0)} avaliações)

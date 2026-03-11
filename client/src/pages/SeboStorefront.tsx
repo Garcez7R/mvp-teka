@@ -146,10 +146,13 @@ export default function SeboStorefront() {
                   ))}
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-300 mt-3">
-                Link desta vitrine:{" "}
-                <a href={seboLinkFromData(sebo)} className="text-[#da4653] hover:underline">
-                  {seboLinkFromData(sebo)}
+                Ver vitrine deste sebo:{" "}
+                <a href={seboLinkFromData(sebo)} className="text-[#da4653] hover:underline font-semibold">
+                  Ver vitrine
                 </a>
+                <span className="ml-2 text-[11px] text-gray-500 dark:text-gray-400">
+                  ({seboLinkFromData(sebo)})
+                </span>
               </p>
               {sebo.whatsapp ? (
                 <p className="text-xs text-gray-700 dark:text-gray-200 mt-2">

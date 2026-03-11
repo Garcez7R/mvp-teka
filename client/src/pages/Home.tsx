@@ -572,9 +572,7 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-          Visualização compacta ativa: mais livros por tela para navegação rápida.
-        </p>
+
 
         {/* Filters Section */}
         <div className="mb-8 flex gap-3 flex-wrap">
