@@ -24,6 +24,7 @@ Acesse o guia completo de operação:
 
 - [Guia de Uso - TEKA](docs/GUIA-USO-TEKA.md)
 - [Arquitetura AWS Proposta - AWS re/Start](docs/ARQUITETURA_AWS_RESTART.md)
+- [Esboco da Apresentacao - AWS re/Start](docs/ESBOCO_APRESENTACAO_AWS_RESTART.md)
 
 ## Linha do Tempo (03/03 a 08/03)
 
