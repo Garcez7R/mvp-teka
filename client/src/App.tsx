@@ -18,6 +18,7 @@ const Login = lazy(() => import("./pages/Login"));
 const Admin = lazy(() => import("./pages/Admin"));
 const MyInterests = lazy(() => import("./pages/MyInterests"));
 const Settings = lazy(() => import("./pages/Settings"));
+const SellerRequired = lazy(() => import("./pages/SellerRequired"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/sebo/:id" component={SeboStorefront} />
       <Route path="/s/:slug" component={SeboStorefront} />
       <Route path="/login" component={Login} />
+      <Route path="/seller-required" component={SellerRequired} />
       <Route path="/my-interests" component={MyInterests} />
       <Route path="/settings" component={Settings} />
       <Route path="/admin" component={Admin} />

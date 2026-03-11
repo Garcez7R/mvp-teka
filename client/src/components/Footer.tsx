@@ -17,9 +17,7 @@ export default function Footer() {
     ? mySebo?.id
       ? "/add-book"
       : "/sebo/novo"
-    : hasSessionToken
-    ? "/sebo/novo"
-    : "/login";
+    : "/seller-required";
   const sellerCtaLabel = canManageCatalog
     ? mySebo?.id
       ? "Cadastrar Livro"

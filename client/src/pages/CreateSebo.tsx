@@ -137,6 +137,26 @@ export default function CreateSebo() {
       </div>
     );
   }
+  if (role !== "livreiro" && role !== "admin") {
+    return (
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
+        <Header />
+        <main className="container flex-1 py-12 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-700 dark:text-gray-200">
+              Para cadastrar livros, você precisa estar logado como livreiro e concluir o cadastro do sebo.
+            </p>
+            <Link href="/">
+              <button className="mt-3 px-4 py-2 rounded bg-[#262969] text-white text-sm">
+                Voltar para o catálogo
+              </button>
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
