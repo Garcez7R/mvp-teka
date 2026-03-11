@@ -996,8 +996,19 @@ export default function AddBook() {
   }
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
-        <p className="text-gray-700 dark:text-gray-200">Faça login para continuar.</p>
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
+        <Header />
+        <main className="container flex-1 py-12 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-700 dark:text-gray-200">Faça login para continuar.</p>
+            <Link href={loginRedirect}>
+              <button className="mt-3 px-4 py-2 rounded bg-[#262969] text-white text-sm">
+                Entrar
+              </button>
+            </Link>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
