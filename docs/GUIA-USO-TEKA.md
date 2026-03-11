@@ -73,6 +73,14 @@ Rotas principais:
 - Preencha campos adicionais (opcionais): descrição, dono, documento, endereço, CEP, logo, logística.
 - Marque ciência legal quando solicitado.
 
+Padrão recomendado para a logo do sebo:
+- Formato: PNG ou JPG.
+- Proporção: quadrada (1:1).
+- Tamanho ideal: 512x512 px.
+- Peso recomendado: até 200 KB.
+- Fundo: transparente ou sólido neutro.
+- Área segura: deixe margem interna para o logo não encostar nas bordas.
+
 ## 3.2 Cadastrar Livro (`/add-book`)
 Opções disponíveis:
 - ISBN manual
