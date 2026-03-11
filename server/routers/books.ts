@@ -281,7 +281,6 @@ export const booksRouter = router({
           ];
           break;
         case "most_searched":
-          // TODO: swap to real metric once search analytics table is available.
           orderByClauses = [desc(books.createdAt)];
           break;
         case "recent":
