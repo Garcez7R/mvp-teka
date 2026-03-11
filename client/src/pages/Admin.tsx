@@ -523,7 +523,7 @@ export default function Admin() {
               <button
                 type="button"
                 onClick={() => setShowCharts((prev) => !prev)}
-                className="px-3 py-2 text-sm rounded border border-[#262969] text-[#262969] hover:bg-[#262969] hover:text-white dark:border-gray-200 dark:text-gray-100 dark:hover:bg-gray-200 dark:hover:text-gray-900"
+                className="px-3 py-2 text-sm rounded border border-[#da4653] bg-[#da4653] text-[#262969] hover:bg-[#c93d45] hover:text-[#1f245f] dark:border-[#262969] dark:bg-[#262969] dark:text-white dark:hover:bg-[#1f245f]"
               >
                 {showCharts ? "Ocultar gráficos" : "Exibir gráficos"}
               </button>
