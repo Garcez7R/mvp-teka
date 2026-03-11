@@ -5,52 +5,52 @@ import { CheckCircle2 } from "lucide-react";
 
 export default function About() {
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
 
       <main className="container flex-1 py-12">
         {/* Hero */}
         <section className="mb-16">
-          <h1 className="font-outfit font-bold text-4xl text-[#262969] mb-6">
+          <h1 className="font-outfit font-bold text-4xl text-[#262969] dark:text-gray-100 mb-6">
             Sobre a TEKA
           </h1>
-          <p className="font-inter text-lg text-gray-700 max-w-3xl leading-relaxed">
+          <p className="font-inter text-lg text-gray-700 dark:text-gray-300 max-w-3xl leading-relaxed">
             A TEKA conecta leitores e sebos para facilitar a descoberta de livros usados com preço justo, transparência e contato direto entre as partes.
           </p>
         </section>
 
-        <section className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-16">
-          <h2 className="font-outfit font-bold text-xl text-[#262969] mb-2">Aviso Legal</h2>
-          <p className="font-inter text-sm text-gray-700">
+        <section className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60 rounded-lg p-6 mb-16">
+          <h2 className="font-outfit font-bold text-xl text-[#262969] dark:text-gray-100 mb-2">Aviso Legal</h2>
+          <p className="font-inter text-sm text-gray-700 dark:text-gray-300">
             A TEKA apenas conecta leitores e sebos; não intermediamos pagamento, entrega ou garantias da transação.
           </p>
-          <p className="font-inter text-sm text-gray-700 mt-2">
+          <p className="font-inter text-sm text-gray-700 dark:text-gray-300 mt-2">
             Por privacidade e segurança, o endereço completo do sebo é informado diretamente no atendimento com o vendedor.
           </p>
-          <p className="font-inter text-xs text-gray-600 mt-3">
+          <p className="font-inter text-xs text-gray-600 dark:text-gray-400 mt-3">
             Referência legal informativa: LGPD (Lei nº 13.709/2018, arts. 7º, 18 e 46) e
             Marco Civil da Internet (Lei nº 12.965/2014, art. 15).
           </p>
         </section>
 
-        <section className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-16">
-          <h2 className="font-outfit font-bold text-xl text-[#262969] mb-3">
+        <section className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-16">
+          <h2 className="font-outfit font-bold text-xl text-[#262969] dark:text-gray-100 mb-3">
             Governança, Privacidade e Segurança
           </h2>
-          <ul className="space-y-2 text-sm text-gray-700 font-inter">
+          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300 font-inter">
             <li>Privacidade por padrão: dados pessoais não são exibidos publicamente.</li>
             <li>Controle de acesso por perfil e registro de ações administrativas sensíveis.</li>
             <li>Minimização de dados: coleta limitada ao necessário para operação, suporte e segurança.</li>
             <li>Direitos do titular: canal para solicitar acesso, correção e exclusão de dados.</li>
             <li>Segurança técnica: uso de HTTPS, proteção contra abuso e monitoramento de falhas.</li>
           </ul>
-          <p className="font-inter text-xs text-gray-600 mt-3">
+          <p className="font-inter text-xs text-gray-600 dark:text-gray-400 mt-3">
             Base legal informativa: LGPD (Lei nº 13.709/2018, arts. 7º, 18 e 46) e Marco Civil da Internet (Lei nº 12.965/2014, art. 15).
           </p>
         </section>
 
         <section className="mb-16">
-          <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-8">
+          <h2 className="font-outfit font-bold text-2xl text-[#262969] dark:text-gray-100 mb-8">
             Como Funciona
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -68,31 +68,31 @@ export default function About() {
                 description: "Fale direto com o sebo pelo WhatsApp para confirmar disponibilidade e retirada/entrega."
               }
             ].map((step, idx) => (
-              <div key={idx} className="p-5 border border-gray-200 rounded-lg bg-white">
-                <h3 className="font-outfit font-semibold text-lg text-[#262969] mb-2">{step.title}</h3>
-                <p className="font-inter text-sm text-gray-700">{step.description}</p>
+              <div key={idx} className="p-5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900">
+                <h3 className="font-outfit font-semibold text-lg text-[#262969] dark:text-gray-100 mb-2">{step.title}</h3>
+                <p className="font-inter text-sm text-gray-700 dark:text-gray-300">{step.description}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* Product Status */}
-        <section className="bg-blue-50 border border-blue-200 rounded-lg p-8 mb-16">
-          <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-4">
+        <section className="bg-blue-50 dark:bg-[#0b1220] border border-blue-200 dark:border-[#1e3a5f] rounded-lg p-8 mb-16">
+          <h2 className="font-outfit font-bold text-2xl text-[#262969] dark:text-gray-100 mb-4">
             Status do Produto
           </h2>
-          <p className="font-inter text-gray-700 mb-4">
+          <p className="font-inter text-gray-700 dark:text-gray-300 mb-4">
             Plataforma pronta para operação em piloto controlado, com funcionalidades essenciais para compradores e livreiros.
             Evoluímos continuamente com base em uso real e feedback de usuários.
           </p>
-          <p className="font-inter text-sm text-gray-600">
+          <p className="font-inter text-sm text-gray-600 dark:text-gray-400">
             <strong>Versão:</strong> 0.7.0+241 | <strong>Ciclo:</strong> Release contínua | <strong>Ambiente:</strong> Cloudflare Pages
           </p>
         </section>
 
         {/* Features */}
         <section className="mb-16">
-          <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-8">
+          <h2 className="font-outfit font-bold text-2xl text-[#262969] dark:text-gray-100 mb-8">
             Funcionalidades Principais
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -128,7 +128,7 @@ export default function About() {
                   <h3 className="font-outfit font-semibold text-lg text-[#262969] mb-2">
                     {feature.title}
                   </h3>
-                  <p className="font-inter text-gray-700">
+                  <p className="font-inter text-gray-700 dark:text-gray-300">
                     {feature.description}
                   </p>
                 </div>
@@ -138,19 +138,19 @@ export default function About() {
         </section>
 
         <section className="mb-16">
-          <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-8">
+          <h2 className="font-outfit font-bold text-2xl text-[#262969] dark:text-gray-100 mb-8">
             Instalação do App (PWA)
           </h2>
-          <div className="p-6 border border-gray-200 rounded-lg bg-white">
-            <p className="font-inter text-gray-700 mb-3">
+          <div className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900">
+            <p className="font-inter text-gray-700 dark:text-gray-300 mb-3">
               A TEKA funciona como PWA (Progressive Web App): você pode instalar no celular ou computador e abrir como aplicativo, sem loja.
             </p>
-            <ul className="space-y-2 text-sm text-gray-700 font-inter">
+            <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300 font-inter">
               <li>Android/Chrome: menu do navegador &gt; <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</li>
               <li>iPhone/Safari: botão compartilhar &gt; <strong>Adicionar à Tela de Início</strong>.</li>
               <li>Desktop/Chrome: ícone de instalação na barra de endereço.</li>
             </ul>
-            <p className="font-inter text-xs text-gray-600 mt-3">
+            <p className="font-inter text-xs text-gray-600 dark:text-gray-400 mt-3">
               Após instalar, o acesso à câmera para escanear ISBN e capas pode ser mais estável em alguns dispositivos.
             </p>
           </div>
@@ -158,7 +158,7 @@ export default function About() {
 
         {/* Roadmap */}
         <section className="mb-16">
-          <h2 className="font-outfit font-bold text-2xl text-[#262969] mb-8">
+          <h2 className="font-outfit font-bold text-2xl text-[#262969] dark:text-gray-100 mb-8">
             Próximos Passos
           </h2>
           <div className="space-y-4">
@@ -169,9 +169,9 @@ export default function About() {
               "Métricas operacionais para livreiros",
               "Melhorias contínuas de logística e experiência mobile"
             ].map((item, idx) => (
-              <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="w-2 h-2 bg-[#da4653] rounded-full"></div>
-                <p className="font-inter text-gray-700">{item}</p>
+                <p className="font-inter text-gray-700 dark:text-gray-300">{item}</p>
               </div>
             ))}
           </div>

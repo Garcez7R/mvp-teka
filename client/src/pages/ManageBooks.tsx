@@ -142,7 +142,7 @@ export default function ManageBooks() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex flex-col bg-white">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
         <Header />
         <main className="container flex-1 py-12 flex items-center justify-center">
           <div className="text-center">
@@ -165,7 +165,7 @@ export default function ManageBooks() {
 
   if (role !== "livreiro" && role !== "admin") {
     return (
-      <div className="min-h-screen flex flex-col bg-white">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
         <Header />
         <main className="container flex-1 py-12 flex items-center justify-center">
           <p className="text-gray-700">Apenas livreiros e admins podem gerenciar livros.</p>
@@ -177,7 +177,7 @@ export default function ManageBooks() {
 
   if (!availableSebos.length) {
     return (
-      <div className="min-h-screen flex flex-col bg-white">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
         <Header />
         <main className="container flex-1 py-12 text-center">
           <p className="text-gray-600 mb-6">
@@ -726,7 +726,7 @@ export default function ManageBooks() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
       <main className="container flex-1 py-12">
         <Link href="/">

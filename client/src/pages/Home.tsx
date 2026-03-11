@@ -451,7 +451,7 @@ export default function Home() {
     (!mySebo || (!isMySeboBooksLoading && mySeboBooks.length === 0));
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
 
       {/* Hero Section */}
@@ -473,10 +473,14 @@ export default function Home() {
       {/* Main Content */}
       <main className="container flex-1 py-12">
         {showSellerOnboarding && (
-          <div className="mb-8 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-            <h3 className="font-outfit font-semibold text-[#262969] mb-2">Onboarding do Livreiro</h3>
+          <div className="mb-8 p-4 bg-indigo-50 dark:bg-slate-900/60 border border-indigo-200 dark:border-slate-700 rounded-lg">
+            <h3 className="font-outfit font-semibold text-[#262969] dark:text-gray-100 mb-2">Onboarding do Livreiro</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-              <div className={`p-3 rounded border ${mySebo ? "bg-green-50 border-green-200" : "bg-white border-gray-200"}`}>
+              <div
+                className={`p-3 rounded border ${
+                  mySebo ? "bg-green-50 border-green-200" : "bg-white border-gray-200"
+                } dark:bg-gray-900 dark:border-gray-700`}
+              >
                 <p className="font-semibold">1. Criar Sebo</p>
                 <p>{mySebo ? "Concluído" : "Pendente"}</p>
                 {!mySebo && (
@@ -485,7 +489,11 @@ export default function Home() {
                   </Link>
                 )}
               </div>
-              <div className={`p-3 rounded border ${mySeboBooks.length > 0 ? "bg-green-50 border-green-200" : "bg-white border-gray-200"}`}>
+              <div
+                className={`p-3 rounded border ${
+                  mySeboBooks.length > 0 ? "bg-green-50 border-green-200" : "bg-white border-gray-200"
+                } dark:bg-gray-900 dark:border-gray-700`}
+              >
                 <p className="font-semibold">2. Cadastrar 1º Livro</p>
                 <p>{mySeboBooks.length > 0 ? "Concluído" : "Pendente"}</p>
                 {mySebo && mySeboBooks.length === 0 && (
@@ -494,7 +502,11 @@ export default function Home() {
                   </Link>
                 )}
               </div>
-              <div className={`p-3 rounded border ${mySeboBooks.length > 0 ? "bg-green-50 border-green-200" : "bg-white border-gray-200"}`}>
+              <div
+                className={`p-3 rounded border ${
+                  mySeboBooks.length > 0 ? "bg-green-50 border-green-200" : "bg-white border-gray-200"
+                } dark:bg-gray-900 dark:border-gray-700`}
+              >
                 <p className="font-semibold">3. Gerenciar Catálogo</p>
                 <p>{mySeboBooks.length > 0 ? "Pronto para usar" : "Aguardando livro"}</p>
                 {mySeboBooks.length > 0 && (
@@ -560,7 +572,7 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
           Visualização compacta ativa: mais livros por tela para navegação rápida.
         </p>
 
@@ -610,14 +622,14 @@ export default function Home() {
         )}
 
         {showFilters && (
-            <div className="mt-4 p-6 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="mt-4 p-6 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <h3 className="font-outfit font-semibold text-[#262969] mb-3">Categoria</h3>
+                  <h3 className="font-outfit font-semibold text-[#262969] dark:text-gray-100 mb-3">Categoria</h3>
                   <select
                     value={draftFilters.category}
                     onChange={(e) => setDraftFilters((prev) => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                   >
                     <option value="">Todas</option>
                     {categories.map((cat: any) => (
@@ -629,11 +641,11 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <h3 className="font-outfit font-semibold text-[#262969] mb-3">Sebo</h3>
+                  <h3 className="font-outfit font-semibold text-[#262969] dark:text-gray-100 mb-3">Sebo</h3>
                   <select
                     value={draftFilters.sebo}
                     onChange={(e) => setDraftFilters((prev) => ({ ...prev, sebo: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                   >
                     <option value="">Todos</option>
                     {sebos.map((sebo: any) => (
@@ -644,11 +656,11 @@ export default function Home() {
                   </select>
                 </div>
                 <div>
-                  <h3 className="font-outfit font-semibold text-[#262969] mb-3">Condição, Status e Ordenação</h3>
+                  <h3 className="font-outfit font-semibold text-[#262969] dark:text-gray-100 mb-3">Condição, Status e Ordenação</h3>
                   <select
                     value={draftFilters.condition}
                     onChange={(e) => setDraftFilters((prev) => ({ ...prev, condition: e.target.value }))}
-                    className="w-full mb-2 px-3 py-2 border border-gray-300 rounded bg-white"
+                    className="w-full mb-2 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                   >
                     <option value="">Todas condições</option>
                     <option value="Novo">Novo</option>
@@ -660,7 +672,7 @@ export default function Home() {
                   <select
                     value={draftFilters.status}
                     onChange={(e) => setDraftFilters((prev) => ({ ...prev, status: e.target.value }))}
-                    className="w-full mb-2 px-3 py-2 border border-gray-300 rounded bg-white"
+                    className="w-full mb-2 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                   >
                     <option value="">Todos os status</option>
                     <option value="ativo">Disponiveis</option>
@@ -672,7 +684,7 @@ export default function Home() {
                     onChange={(e) =>
                       setDraftFilters((prev) => ({ ...prev, sortBy: e.target.value as CatalogSort }))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded bg-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                   >
                     <option value="recent">Recentes</option>
                     <option value="most_favorited">Top favoritados</option>
@@ -687,7 +699,7 @@ export default function Home() {
                   value={draftFilters.city}
                   onChange={(e) => setDraftFilters((prev) => ({ ...prev, city: e.target.value }))}
                   placeholder="Cidade"
-                  className="px-3 py-2 border border-gray-300 rounded bg-white"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                 />
                 <input
                   value={draftFilters.state}
@@ -696,7 +708,7 @@ export default function Home() {
                   }
                   placeholder="Estado (UF)"
                   maxLength={2}
-                  className="px-3 py-2 border border-gray-300 rounded bg-white"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                 />
                 <input
                   value={draftFilters.minPrice}
@@ -704,7 +716,7 @@ export default function Home() {
                   placeholder="Preco min"
                   type="number"
                   min="0"
-                  className="px-3 py-2 border border-gray-300 rounded bg-white"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                 />
                 <input
                   value={draftFilters.maxPrice}
@@ -712,7 +724,7 @@ export default function Home() {
                   placeholder="Preco max"
                   type="number"
                   min="0"
-                  className="px-3 py-2 border border-gray-300 rounded bg-white"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                 />
               </div>
               <div className="mt-4 flex flex-wrap gap-2 justify-end">

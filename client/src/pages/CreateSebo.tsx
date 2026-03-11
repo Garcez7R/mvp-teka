@@ -125,14 +125,14 @@ export default function CreateSebo() {
   }
   if (!isAuthenticated || !canCreateSebo) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
         <p className="text-gray-700">Apenas livreiros e admins podem criar sebos.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
 
       <main className="container flex-1 py-12">

@@ -379,7 +379,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
       <main className="container flex-1 py-10">
         <Link href="/">

@@ -100,7 +100,7 @@ export default function MyInterests() {
 
   if (loading || interestsLoading || favoritesLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-white">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
         <Header />
         <main className="container flex-1 py-12 flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-[#da4653]" />
@@ -129,19 +129,19 @@ export default function MyInterests() {
   const favoritesTabError = Boolean(favoritesError) && effectiveFavorites.length === 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
       <main className="container flex-1 py-10">
         <Link href="/">
-          <button className="flex items-center gap-2 text-gray-600 hover:text-[#262969] transition-colors font-inter text-sm font-medium mb-6">
+          <button className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-[#262969] dark:hover:text-white transition-colors font-inter text-sm font-medium mb-6">
             <ArrowLeft className="w-4 h-4" />
             Voltar ao catálogo
           </button>
         </Link>
 
         <div className="mb-6">
-          <h1 className="font-outfit font-bold text-3xl text-[#262969]">Meus Interesses</h1>
-          <p className="text-gray-600 font-inter mt-1">
+          <h1 className="font-outfit font-bold text-3xl text-[#262969] dark:text-gray-100">Meus Interesses</h1>
+          <p className="text-gray-600 dark:text-gray-300 font-inter mt-1">
             Acompanhe livros com interesse e seus favoritos.
           </p>
         </div>
@@ -153,7 +153,7 @@ export default function MyInterests() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === "interests"
                 ? "bg-[#262969] text-white"
-                : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                : "bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
             }`}
           >
             Interesses ({interests.length})
@@ -164,7 +164,7 @@ export default function MyInterests() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === "favorites"
                 ? "bg-[#262969] text-white"
-                : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                : "bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
             }`}
             >
             Favoritos ({effectiveFavorites.length || localFavoriteSet.size})
@@ -172,7 +172,7 @@ export default function MyInterests() {
           </div>
 
         {activeTab === "interests" && interestsTabError ? (
-          <div className="text-center py-10 border border-red-200 rounded-xl bg-red-50">
+          <div className="text-center py-10 border border-red-200 dark:border-red-800/60 rounded-xl bg-red-50 dark:bg-red-950/40">
             <p className="font-inter text-red-700 mb-3">
               Não foi possível carregar seus dados agora.
             </p>
@@ -182,13 +182,13 @@ export default function MyInterests() {
                 void refetchInterests();
                 void refetchFavorites();
               }}
-              className="px-4 py-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-100"
+              className="px-4 py-2 rounded-lg border border-red-300 dark:border-red-800/60 text-red-700 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900/40"
             >
               Tentar novamente
             </button>
           </div>
         ) : activeTab === "favorites" && favoritesTabError ? (
-          <div className="text-center py-10 border border-red-200 rounded-xl bg-red-50">
+          <div className="text-center py-10 border border-red-200 dark:border-red-800/60 rounded-xl bg-red-50 dark:bg-red-950/40">
             <p className="font-inter text-red-700 mb-3">
               Não foi possível carregar seus favoritos agora.
             </p>
@@ -197,15 +197,17 @@ export default function MyInterests() {
               onClick={() => {
                 void refetchFavorites();
               }}
-              className="px-4 py-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-100"
+              className="px-4 py-2 rounded-lg border border-red-300 dark:border-red-800/60 text-red-700 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-900/40"
             >
               Tentar novamente
             </button>
           </div>
         ) : activeTab === "interests" && interests.length === 0 ? (
-          <div className="text-center py-16 border border-gray-200 rounded-xl bg-gray-50">
-            <Heart className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-            <p className="font-inter text-gray-700">Você ainda não marcou interesse em nenhum livro.</p>
+          <div className="text-center py-16 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900">
+            <Heart className="w-8 h-8 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+            <p className="font-inter text-gray-700 dark:text-gray-200">
+              Você ainda não marcou interesse em nenhum livro.
+            </p>
           </div>
         ) : activeTab === "interests" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -215,10 +217,10 @@ export default function MyInterests() {
                 <Link
                   key={item.interestId}
                   href={`/book/${book.id}`}
-                  className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow block bg-white"
+                  className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-md transition-shadow block bg-white dark:bg-gray-900"
                 >
                     <div className="flex gap-4">
-                      <div className="w-20 h-28 rounded overflow-hidden border border-gray-200 flex-shrink-0">
+                      <div className="w-20 h-28 rounded overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-900">
                         <BookCover
                           isbn={book.isbn}
                           title={book.title}
@@ -228,18 +230,18 @@ export default function MyInterests() {
                         />
                       </div>
                       <div className="min-w-0">
-                        <h2 className="font-outfit font-semibold text-[#262969] truncate">{book.title}</h2>
+                        <h2 className="font-outfit font-semibold text-[#262969] dark:text-gray-100 truncate">{book.title}</h2>
                         {book.author ? (
-                          <p className="text-sm text-gray-600 truncate">{book.author}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{book.author}</p>
                         ) : null}
                         <div className="mt-1">
                           <span
                             className={`text-[11px] px-2 py-1 rounded font-semibold ${
                               book.availabilityStatus === "vendido"
-                                ? "bg-gray-200 text-gray-700"
+                                ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
                                 : book.availabilityStatus === "reservado"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-emerald-100 text-emerald-700"
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
+                                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200"
                             }`}
                           >
                             {book.availabilityStatus === "vendido"
@@ -252,17 +254,17 @@ export default function MyInterests() {
                         <p className="text-sm font-semibold text-[#da4653] mt-1">
                           R$ {Number(book.price).toFixed(2)}
                         </p>
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                           {item.sebo?.name || "Sebo"}
                           {item.sebo?.city ? ` • ${item.sebo.city}` : ""}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           Interesse em{" "}
                           {formatDatePtBr(item.interestedAt)}
                         </p>
                         {(book.availabilityStatus === "reservado" ||
                           book.availabilityStatus === "vendido") && (
-                          <p className="text-xs mt-1 text-amber-700">
+                          <p className="text-xs mt-1 text-amber-700 dark:text-amber-300">
                             Atualização: este livro mudou de status. Veja alternativas semelhantes.
                           </p>
                         )}
@@ -273,9 +275,11 @@ export default function MyInterests() {
             })}
           </div>
         ) : effectiveFavorites.length === 0 ? (
-          <div className="text-center py-16 border border-gray-200 rounded-xl bg-gray-50">
-            <Heart className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-            <p className="font-inter text-gray-700">Você ainda não favoritou nenhum livro.</p>
+          <div className="text-center py-16 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900">
+            <Heart className="w-8 h-8 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+            <p className="font-inter text-gray-700 dark:text-gray-200">
+              Você ainda não favoritou nenhum livro.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -283,10 +287,10 @@ export default function MyInterests() {
               <Link
                 key={book.id}
                 href={`/book/${book.id}`}
-                className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow block bg-white"
+                className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:shadow-md transition-shadow block bg-white dark:bg-gray-900"
               >
                 <div className="flex gap-4">
-                  <div className="w-20 h-28 rounded overflow-hidden border border-gray-200 flex-shrink-0">
+                  <div className="w-20 h-28 rounded overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-900">
                     <BookCover
                       isbn={book.isbn}
                       title={book.title}
@@ -296,14 +300,16 @@ export default function MyInterests() {
                     />
                   </div>
                   <div className="min-w-0">
-                    <h2 className="font-outfit font-semibold text-[#262969] truncate">{book.title}</h2>
+                    <h2 className="font-outfit font-semibold text-[#262969] dark:text-gray-100 truncate">{book.title}</h2>
                     {book.author ? (
-                      <p className="text-sm text-gray-600 truncate">{book.author}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{book.author}</p>
                     ) : null}
                     <p className="text-sm font-semibold text-[#da4653] mt-1">
                       R$ {Number(book.price).toFixed(2)}
                     </p>
-                    <p className="text-xs text-gray-500 mt-2">{book.category || "Sem categoria"}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      {book.category || "Sem categoria"}
+                    </p>
                   </div>
                 </div>
               </Link>

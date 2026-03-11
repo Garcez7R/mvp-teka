@@ -465,7 +465,7 @@ export default function Admin() {
 
   if (role !== "admin") {
     return (
-      <div className="min-h-screen flex flex-col bg-white">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
         <Header />
         <main className="container flex-1 py-12">
           <div className="max-w-2xl mx-auto p-6 border border-red-200 bg-red-50 rounded-lg text-red-700">
@@ -479,7 +479,7 @@ export default function Admin() {
 
   if (!isServerAuthenticated) {
     return (
-      <div className="min-h-screen flex flex-col bg-white">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
         <Header />
         <main className="container flex-1 py-12">
           <div className="max-w-2xl mx-auto p-6 border border-amber-200 bg-amber-50 rounded-lg text-amber-800">
@@ -505,7 +505,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
       <main className="container flex-1 py-12">
         <h1 className="font-outfit text-3xl font-bold text-[#262969] dark:text-gray-100 mb-6">Painel Admin</h1>

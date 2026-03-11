@@ -34,12 +34,12 @@ export default function SebosPage() {
       : `/sebo/${sebo.id}`;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
       <main className="container flex-1 py-12">
         <div className="mb-6">
-          <h1 className="font-outfit font-bold text-3xl text-[#262969]">Sebos Cadastrados</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="font-outfit font-bold text-3xl text-[#262969] dark:text-gray-100">Sebos Cadastrados</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
             Encontre sebos por cidade, estado (UF) ou CEP.
           </p>
         </div>
@@ -49,31 +49,36 @@ export default function SebosPage() {
             value={cityFilter}
             onChange={(e) => setCityFilter(e.target.value)}
             placeholder="Filtrar por cidade"
-            className="px-3 py-2 border border-gray-300 rounded-lg"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
           />
           <input
             value={stateFilter}
             onChange={(e) => setStateFilter(e.target.value.toUpperCase())}
             placeholder="Filtrar por UF"
             maxLength={2}
-            className="px-3 py-2 border border-gray-300 rounded-lg"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
           />
           <input
             value={postalCodeFilter}
             onChange={(e) => setPostalCodeFilter(e.target.value)}
             placeholder="Filtrar por CEP"
-            className="px-3 py-2 border border-gray-300 rounded-lg"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
           />
         </div>
 
         {isLoading ? (
-          <p className="text-gray-600">Carregando sebos...</p>
+          <p className="text-gray-600 dark:text-gray-300">Carregando sebos...</p>
         ) : filteredSebos.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredSebos.map((sebo: any) => (
-              <div key={sebo.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+              <div
+                key={sebo.id}
+                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900"
+              >
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="font-outfit font-semibold text-xl text-[#262969]">{sebo.name}</h2>
+                  <h2 className="font-outfit font-semibold text-xl text-[#262969] dark:text-gray-100">
+                    {sebo.name}
+                  </h2>
                   <span
                     className={`text-[11px] px-2 py-1 rounded font-semibold ${
                       sebo?.plan === "gold"
@@ -86,18 +91,18 @@ export default function SebosPage() {
                     {sebo?.plan === "gold" ? "Gold" : sebo?.plan === "pro" ? "Pro" : "Free"}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   {sebo.city || "-"} / {sebo.state || "-"}
                   {(sebo as any).postalCode ? ` • CEP ${(sebo as any).postalCode}` : ""}
                 </p>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                   Nota: {Number((sebo as any).reviewSummary?.avgRating ?? 0).toFixed(1)} ({Number((sebo as any).reviewSummary?.totalReviews ?? 0)} avaliações)
                   {(sebo as any).reviewSummary?.topRated ? " • Top Avaliado" : ""}
                 </p>
                 {sebo.description ? (
-                  <p className="text-sm text-gray-700 mt-2">{sebo.description}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-200 mt-2">{sebo.description}</p>
                 ) : null}
-                <p className="text-xs text-gray-600 mt-2">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mt-2">
                   Entrega:{" "}
                   {[
                     (sebo as any).supportsPickup ? "Retirada" : null,

@@ -206,7 +206,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
       <main className="container flex-1 py-12">
         <div className="max-w-xl mx-auto border border-gray-200 rounded-xl p-8 bg-gray-50">

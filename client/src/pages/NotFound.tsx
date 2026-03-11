@@ -5,7 +5,7 @@ import { BookOpen } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
 
       <main className="container flex-1 flex items-center justify-center py-12">

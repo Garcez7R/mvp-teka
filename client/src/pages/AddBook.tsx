@@ -995,7 +995,7 @@ export default function AddBook() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
 
       <div className="bg-gradient-to-br from-[#262969] to-[#1a1a4d] text-white py-6">

@@ -164,7 +164,7 @@ export default function Book() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col bg-white">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
         <Header />
         <main className="container flex-1 py-12 flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-[#da4653]" />
@@ -176,7 +176,7 @@ export default function Book() {
 
   if (error || !book) {
     return (
-      <div className="min-h-screen flex flex-col bg-white">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
         <Header />
         <main className="container flex-1 py-12 flex items-center justify-center">
           <div className="text-center">
@@ -217,7 +217,7 @@ export default function Book() {
     .slice(0, 6);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
 
       <main className="container flex-1 py-12">
