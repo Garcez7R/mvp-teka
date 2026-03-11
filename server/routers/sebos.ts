@@ -24,13 +24,19 @@ function slugifySeboName(value?: string | null): string {
 function normalizeLocation(value: string | undefined | null): string | null {
   const trimmed = typeof value === "string" ? value.trim() : "";
   if (!trimmed) return null;
-  return trimmed.toLowerCase();
+  return trimmed
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
 function normalizeState(value: string | undefined | null): string | null {
   const trimmed = typeof value === "string" ? value.trim() : "";
   if (!trimmed) return null;
-  return trimmed.toUpperCase();
+  return trimmed
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
 }
 
 async function ensureUniqueProSlug(baseSlug: string, currentSeboId?: number): Promise<string> {

@@ -60,7 +60,11 @@ function titleMatchesWithTolerance(title: string, query: string): boolean {
 }
 
 function normalizeLocation(value: unknown): string {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
 function sortBooksWithCoverFirst<T extends { coverUrl?: string | null }>(books: T[]): T[] {

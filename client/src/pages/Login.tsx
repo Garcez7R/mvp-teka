@@ -27,6 +27,12 @@ export default function Login() {
     () => (import.meta.env.VITE_GOOGLE_CLIENT_ID || "").trim(),
     []
   );
+  const loginRedirect = useMemo(() => {
+    if (typeof window === "undefined") return "/";
+    const next = new URLSearchParams(window.location.search).get("next") || "/";
+    if (!next.startsWith("/")) return "/";
+    return next;
+  }, []);
 
   const isGoogleConfigured = googleEnabled && Boolean(googleClientId);
 
@@ -113,7 +119,7 @@ export default function Login() {
               // In some runtimes the first authenticated call may race with context creation.
               // Keep login flow non-blocking; role will be reconciled by subsequent requests.
             }
-            await refreshSessionAndGo("/");
+            await refreshSessionAndGo(loginRedirect);
             trackEvent("google_login_success", { role: selectedRole });
           } catch (err) {
             const message = err instanceof Error ? err.message : "Falha no login com Google";
@@ -194,7 +200,7 @@ export default function Login() {
         // Mantém fluxo não bloqueante.
       }
 
-      await refreshSessionAndGo("/");
+      await refreshSessionAndGo(loginRedirect);
       trackEvent("legacy_email_login_success", { role: selectedRole });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Falha no login por e-mail";

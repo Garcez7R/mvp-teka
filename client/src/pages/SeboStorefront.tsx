@@ -224,7 +224,19 @@ export default function SeboStorefront() {
                     {upsertReviewMutation.isPending ? "Salvando..." : "Enviar avaliação"}
                   </button>
                 </div>
-              ) : null}
+              ) : (
+                <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                    Entre para avaliar este sebo e acompanhar seus interesses.
+                  </p>
+                  <a
+                    href={`/login?next=${encodeURIComponent(seboLinkFromData(sebo))}`}
+                    className="inline-flex items-center justify-center px-3 py-2 rounded bg-[#262969] text-white text-sm hover:bg-[#1f2a80]"
+                  >
+                    Entrar
+                  </a>
+                </div>
+              )}
             </section>
 
             <section>
