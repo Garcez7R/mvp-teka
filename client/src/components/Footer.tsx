@@ -3,13 +3,10 @@ import { WHATSAPP_DEFAULT } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import WhatsAppLink from "@/components/WhatsAppLink";
-import { toast } from "sonner";
-import { useRef, useState } from "react";
+import { useMemo } from "react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  const [tekaClicks, setTekaClicks] = useState(0);
-  const tekaTimerRef = useRef<number | null>(null);
   const { role, hasSessionToken } = useAuth();
   const canManageCatalog = role === "livreiro" || role === "admin";
   const { data: mySebo } = trpc.sebos.getMySebo.useQuery(undefined, {
@@ -28,47 +25,12 @@ export default function Footer() {
       : "Criar Sebo"
     : "Quero vender livros";
 
-  const launchConfetti = () => {
-    if (typeof document === "undefined") return;
-    const container = document.createElement("div");
-    container.className = "teka-confetti";
-    const colors = ["#da4653", "#262969", "#f8fafc", "#e5e7eb", "#f59e0b"];
-    for (let i = 0; i < 30; i += 1) {
-      const piece = document.createElement("span");
-      piece.className = "teka-confetti-piece";
-      const drift = (Math.random() * 2 - 1) * 60;
-      const rotate = Math.random() * 360;
-      const delay = Math.random() * 150;
-      const duration = 900 + Math.random() * 600;
-      piece.style.left = `${Math.random() * 100}%`;
-      piece.style.backgroundColor = colors[i % colors.length];
-      piece.style.setProperty("--x", `${drift}px`);
-      piece.style.setProperty("--r", `${rotate}deg`);
-      piece.style.animationDelay = `${delay}ms`;
-      piece.style.animationDuration = `${duration}ms`;
-      container.appendChild(piece);
-    }
-    document.body.appendChild(container);
-    window.setTimeout(() => container.remove(), 1800);
-  };
-
-  const handleTekaEasterEgg = () => {
-    if (tekaTimerRef.current) {
-      window.clearTimeout(tekaTimerRef.current);
-    }
-    setTekaClicks((prev) => {
-      const next = prev + 1;
-      if (next >= 5) {
-        toast.success("Você encontrou o Sebo Secreto.");
-        launchConfetti();
-        return 0;
-      }
-      return next;
-    });
-    tekaTimerRef.current = window.setTimeout(() => {
-      setTekaClicks(0);
-    }, 1200);
-  };
+  useMemo(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => window.scrollTo({ top: 0, behavior: "smooth" });
+    window.addEventListener("teka:scroll-top", handler);
+    return () => window.removeEventListener("teka:scroll-top", handler);
+  }, []);
 
   return (
     <footer className="bg-[#262969] text-white mt-16">
@@ -76,16 +38,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           {/* Brand */}
           <div>
-            <h3 className="font-outfit font-bold text-lg mb-2">
-              <button
-                type="button"
-                onClick={handleTekaEasterEgg}
-                className="text-[#da4653] hover:opacity-80 transition-opacity"
-                title="Clique 5x"
-              >
-                TEKA
-              </button>
-            </h3>
+            <h3 className="font-outfit font-bold text-lg mb-2"><span className="text-[#da4653]">TEKA</span></h3>
             <p className="font-inter text-sm text-gray-300">
               Marketplace de livros usados. Encontre, busque e compre com segurança.
             </p>

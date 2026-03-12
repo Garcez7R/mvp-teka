@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import Header from "@/components/Header";
 import SearchBar from "@/components/SearchBar";
 import BookCard from "@/components/BookCard";
@@ -121,6 +122,8 @@ export default function Home() {
   const [page, setPage] = useState(0);
   const [loadedBooks, setLoadedBooks] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
+  const [heroClicks, setHeroClicks] = useState(0);
+  const heroTimerRef = useRef<number | null>(null);
   const { getFavoriteCount, isFavorite } = useFavorites();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -473,6 +476,48 @@ export default function Home() {
   );
   const showNearbyHint = prioritizeNearby && !hasBuyerLocation;
 
+  const launchConfetti = () => {
+    if (typeof document === "undefined") return;
+    const container = document.createElement("div");
+    container.className = "teka-confetti";
+    const colors = ["#da4653", "#262969", "#f8fafc", "#e5e7eb", "#f59e0b"];
+    for (let i = 0; i < 30; i += 1) {
+      const piece = document.createElement("span");
+      piece.className = "teka-confetti-piece";
+      const drift = (Math.random() * 2 - 1) * 60;
+      const rotate = Math.random() * 360;
+      const delay = Math.random() * 150;
+      const duration = 900 + Math.random() * 600;
+      piece.style.left = `${Math.random() * 100}%`;
+      piece.style.backgroundColor = colors[i % colors.length];
+      piece.style.setProperty("--x", `${drift}px`);
+      piece.style.setProperty("--r", `${rotate}deg`);
+      piece.style.animationDelay = `${delay}ms`;
+      piece.style.animationDuration = `${duration}ms`;
+      container.appendChild(piece);
+    }
+    document.body.appendChild(container);
+    window.setTimeout(() => container.remove(), 1800);
+  };
+
+  const handleHeroEasterEgg = () => {
+    if (heroTimerRef.current) {
+      window.clearTimeout(heroTimerRef.current);
+    }
+    setHeroClicks((prev) => {
+      const next = prev + 1;
+      if (next >= 5) {
+        toast.success("Você encontrou o Sebo Secreto.");
+        launchConfetti();
+        return 0;
+      }
+      return next;
+    });
+    heroTimerRef.current = window.setTimeout(() => {
+      setHeroClicks(0);
+    }, 1200);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
       <Header />
@@ -480,9 +525,16 @@ export default function Home() {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-[#262969] to-[#1a1a4d] text-white py-8 md:py-10">
         <div className="container">
-          <h1 className="font-outfit font-bold text-2xl md:text-3xl mb-2">
-            Encontre Livros Usados de Qualidade
-          </h1>
+          <button
+            type="button"
+            onClick={handleHeroEasterEgg}
+            className="text-left"
+            title="Clique 5x"
+          >
+            <h1 className="font-outfit font-bold text-2xl md:text-3xl mb-2">
+              Encontre Livros Usados de Qualidade
+            </h1>
+          </button>
           <p className="font-inter text-sm md:text-base text-gray-200 max-w-xl mb-5">
             Busque entre milhares de títulos em sebos parceiros. Preços justos, qualidade garantida.
           </p>
