@@ -1,14 +1,11 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import { Menu, X, BookOpen, Info, LogIn, Shield, Library, PlusCircle, LogOut, Heart, Settings } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { hasAnyAuthSession } from "@/lib/session";
-import { toast } from "sonner";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [logoClicks, setLogoClicks] = useState(0);
-  const logoTimerRef = useRef<number | null>(null);
   const { isAuthenticated, role, user, logout } = useAuth();
   const hasToken = hasAnyAuthSession();
   const displayName = user?.name?.trim() || user?.email?.trim() || "Usuário";
@@ -38,22 +35,6 @@ export default function Header() {
       window.location.href = "/";
     }
   };
-  const handleLogoEasterEgg = () => {
-    if (logoTimerRef.current) {
-      window.clearTimeout(logoTimerRef.current);
-    }
-    setLogoClicks((prev) => {
-      const next = prev + 1;
-      if (next >= 5) {
-        toast.success("Você encontrou o Sebo Secreto.");
-        return 0;
-      }
-      return next;
-    });
-    logoTimerRef.current = window.setTimeout(() => {
-      setLogoClicks(0);
-    }, 1200);
-  };
 
   return (
     <header className="sticky top-0 z-50 bg-[#da4653] border-b border-gray-200 shadow-sm">
@@ -64,7 +45,6 @@ export default function Header() {
           onClick={() => {
             handleHomeClick();
             closeMenu();
-            handleLogoEasterEgg();
           }}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
