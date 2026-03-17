@@ -6,6 +6,12 @@
 
 Plataforma para conectar leitores e sebos, com foco em catálogo de livros (usados e novos), gestão de estoque por livreiro e experiência de compra simples.
 
+⚠️ Repositório Oficial  
+Este é o repositório oficial do projeto TEKA.  
+Forks ou cópias não possuem autorização para uso além de estudo individual e podem estar desatualizados.
+
+Produção oficial: `https://mvp-teka.pages.dev`
+
 ## Status Atual
 
 `Pronto para validação com usuários de teste (Beta controlado)`
