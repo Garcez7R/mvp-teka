@@ -224,4 +224,4 @@ Este projeto está protegido por direitos autorais e possui uso restrito.
 
 É permitido apenas para estudo individual.
 
-Consulte os termos completos em: LICENSE
+Consulte os termos completos em: [LICENSE](./LICENSE.md)
