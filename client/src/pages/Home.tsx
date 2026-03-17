@@ -481,7 +481,7 @@ export default function Home() {
     const container = document.createElement("div");
     container.className = "teka-confetti";
     const colors = ["#da4653", "#262969", "#f8fafc", "#e5e7eb", "#f59e0b"];
-    for (let i = 0; i < 30; i += 1) {
+    for (let i = 0; i < 210; i += 1) {
       const piece = document.createElement("span");
       piece.className = "teka-confetti-piece";
       const drift = (Math.random() * 2 - 1) * 60;
@@ -507,7 +507,7 @@ export default function Home() {
     setHeroClicks((prev) => {
       const next = prev + 1;
       if (next >= 5) {
-        toast.success("Você encontrou o Sebo Secreto.");
+        toast.success("Desenvolvido por Rafael Garcez. Obrigado por testar!");
         launchConfetti();
         return 0;
       }
