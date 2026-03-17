@@ -206,6 +206,14 @@ Variáveis importantes de produção (Cloudflare Pages > Settings > Variables an
 - OCR remoto depende de chave válida no ambiente;
 - mudanças de schema no D1 exigem sincronização de migrações/colunas.
 
+## Licença
+
+Este projeto está protegido por direitos autorais e possui uso restrito.
+
+É permitido apenas para estudo individual.
+
+Consulte os termos completos em: [LICENSE](./LICENSE.md)
+
 ## Localização (Cidade/UF) - Notas de Deploy e Qualidade
 
 - Migrações de localização precisam rodar antes do código ir para produção.
