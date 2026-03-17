@@ -10,6 +10,8 @@ Plataforma para conectar leitores e sebos, com foco em catálogo de livros (usad
 Este é o repositório oficial do projeto TEKA.  
 Forks ou cópias não possuem autorização para uso além de estudo individual e podem estar desatualizados.
 
+Uso fora dos termos da licença será considerado violação de direitos autorais.
+
 Produção oficial: `https://mvp-teka.pages.dev`
 
 ## Status Atual
@@ -234,6 +236,10 @@ Consulte os termos completos em: [LICENSE](./LICENSE)
 
 ## Autoria
 
-Implementação técnica integral por Rafael Garcez.
+Implementação técnica integral (frontend, backend, arquitetura, lógica de negócio e deploy) por Rafael Garcez.
 
 Detalhes completos em: [AUTHORS](./AUTHORS.md)
+
+## Aviso Legal
+
+Forks e cópias não autorizadas que violem os termos da licença poderão ser objeto de notificação (DMCA) e medidas legais cabíveis.
