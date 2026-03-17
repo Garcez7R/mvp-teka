@@ -28,3 +28,5 @@ O autor se reserva o direito de tomar medidas legais cabíveis em caso de uso in
 
 CONTATO
 Para qualquer tipo de uso fora do escopo permitido, é obrigatória autorização formal do autor.
+
+Retornar ao README: [README](./README.md)
