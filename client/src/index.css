@@ -14,13 +14,16 @@
 .teka-confetti-piece {
   position: absolute;
   top: -12px;
-  width: 8px;
-  height: 14px;
   border-radius: 2px;
   opacity: 0.9;
   animation-name: teka-confetti-fall;
   animation-timing-function: ease-in;
   animation-fill-mode: forwards;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+}
+
+.teka-confetti-piece.is-circle {
+  border-radius: 999px;
 }
 
 @keyframes teka-confetti-fall {
@@ -29,7 +32,7 @@
     opacity: 1;
   }
   100% {
-    transform: translate3d(var(--x, 0px), 110vh, 0) rotate(var(--r, 0deg));
+    transform: translate3d(calc(var(--x, 0px) + var(--sway, 0px)), 110vh, 0) rotate(var(--r, 0deg));
     opacity: 0;
   }
 }
