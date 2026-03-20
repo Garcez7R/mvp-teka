@@ -3,7 +3,7 @@ import { WHATSAPP_DEFAULT } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import WhatsAppLink from "@/components/WhatsAppLink";
-import { useMemo } from "react";
+import { useEffect } from "react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -25,7 +25,7 @@ export default function Footer() {
       : "Criar Sebo"
     : "Quero vender livros";
 
-  useMemo(() => {
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const handler = () => window.scrollTo({ top: 0, behavior: "smooth" });
     window.addEventListener("teka:scroll-top", handler);
