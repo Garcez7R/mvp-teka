@@ -79,7 +79,7 @@ export default function Header() {
           )}
           {isAuthenticated && role !== "livreiro" && (
             <Link href="/my-interests" className="text-[#262969] hover:text-[#da4653] transition-all font-inter text-sm font-medium">
-              Meus Interesses
+              Favoritos e Interesses
             </Link>
           )}
           {isAuthenticated && role === "admin" && (
@@ -204,7 +204,7 @@ export default function Header() {
                 className="flex items-center gap-3 text-[#262969] font-inter font-medium p-3 hover:bg-gray-50 rounded-lg"
               >
                 <Heart className="w-5 h-5 text-[#da4653]" />
-                Meus Interesses
+                Favoritos e Interesses
               </Link>
             )}
             {isAuthenticated && role === "admin" && (

@@ -148,9 +148,9 @@ export default function MyInterests() {
         </Link>
 
         <div className="mb-6">
-          <h1 className="font-outfit font-bold text-3xl text-[#262969] dark:text-gray-100">Meus Interesses</h1>
+          <h1 className="font-outfit font-bold text-3xl text-[#262969] dark:text-gray-100">Favoritos e Interesses</h1>
           <p className="text-gray-600 dark:text-gray-300 font-inter mt-1">
-            Acompanhe livros com interesse e seus favoritos.
+            Acompanhe seus livros salvos e os titulos que voce marcou com interesse.
           </p>
         </div>
 
